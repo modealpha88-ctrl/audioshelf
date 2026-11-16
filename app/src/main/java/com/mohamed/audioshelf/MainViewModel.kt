@@ -8,6 +8,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.LibraryStore
 import com.mohamed.audioshelf.data.captions.TimedCaptionStore
+import com.mohamed.audioshelf.data.captions.OfflineSpeechModel
+import com.mohamed.audioshelf.data.captions.OnDeviceTranscriber
 import com.mohamed.audioshelf.data.source.ProviderRepositoryStore
 import com.mohamed.audioshelf.data.source.SourceProviderDefinition
 import com.mohamed.audioshelf.data.source.SourceRepository
@@ -41,6 +43,9 @@ data class AudioShelfState(
     val importError: String? = null,
     val transcriptRevision: Int = 0,
     val transcriptError: String? = null,
+    val sttModelReady: Boolean = false,
+    val sttBusy: Boolean = false,
+    val sttMessage: String? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -50,6 +55,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         AudioShelfState(
             library = store.books(),
             repositories = repositoryStore.repositories(),
+            sttModelReady = OfflineSpeechModel(application).isInstalled(),
         )
     )
     val state: StateFlow<AudioShelfState> = _state.asStateFlow()
@@ -170,6 +176,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             select(book)
         }.onFailure {
             _state.value = _state.value.copy(importError = it.importMessage())
+        }
+    }
+
+
+    /** Explicit, opt-in download; audio is processed offline. */
+    fun downloadSttModel() {
+        if (_state.value.sttModelReady || _state.value.sttBusy) return
+        _state.value = _state.value.copy(sttBusy = true,
+            sttMessage = "Downloading free offline English model (~40 MB)…")
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { OfflineSpeechModel(getApplication()).ensureInstalled() }
+                .onSuccess {
+                    _state.value = _state.value.copy(sttBusy = false, sttModelReady = true,
+                        sttMessage = "Offline speech recognition is ready.")
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(sttBusy = false,
+                        sttMessage = it.message ?: "Could not download the speech model.")
+                }
+        }
+    }
+
+    /** Caches 30 seconds of word-aligned captions for local audio. */
+    fun transcribeNearby(book: AudioBook, chapterIndex: Int, absolutePositionMs: Long) {
+        if (book.sourceId != "local_files" || !_state.value.sttModelReady || _state.value.sttBusy) return
+        val startMs = (absolutePositionMs.coerceAtLeast(0) / 30_000L) * 30_000L
+        val app = getApplication<Application>()
+        val captions = TimedCaptionStore(app)
+        if (captions.isRecognizedWindow(book, chapterIndex, startMs)) return
+        _state.value = _state.value.copy(sttBusy = true,
+            sttMessage = "Recognizing 30 seconds of speech offline…")
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val words = OnDeviceTranscriber(app).transcribe(Uri.parse(book.id), startMs, 30_000L) { partial ->
+                    captions.saveRecognizedWords(book, chapterIndex, partial)
+                    _state.value = _state.value.copy(
+                        transcriptRevision = _state.value.transcriptRevision + 1)
+                }
+                captions.saveRecognizedWords(book, chapterIndex, words)
+                captions.markRecognizedWindow(book, chapterIndex, startMs)
+                words.size
+            }.onSuccess { count ->
+                _state.value = _state.value.copy(sttBusy = false,
+                    transcriptRevision = _state.value.transcriptRevision + 1,
+                    sttMessage = if (count > 0) "Generated " + count + " timed words."
+                        else "No speech detected in this section.")
+            }.onFailure {
+                _state.value = _state.value.copy(sttBusy = false,
+                    sttMessage = it.message ?: "Speech recognition failed.")
+            }
         }
     }
 

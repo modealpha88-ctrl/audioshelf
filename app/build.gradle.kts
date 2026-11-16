@@ -76,6 +76,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.compose.animation:animation")
+    implementation("com.alphacephei:vosk-android:0.3.75")
     implementation("androidx.media3:media3-common:1.5.1")
     implementation("com.google.guava:guava:33.4.0-android")
     implementation("org.jsoup:jsoup:1.18.3")

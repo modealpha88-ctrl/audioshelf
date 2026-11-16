@@ -95,11 +95,17 @@ internal fun StoryMode(
     onClose: () -> Unit,
     onPickTranscript: (Int) -> Unit,
     onPickVideo: () -> Unit,
+    sttBusy: Boolean,
+    sttModelReady: Boolean,
+    sttMessage: String?,
+    onDownloadSttModel: () -> Unit,
+    onTranscribeNearby: (Int, Long) -> Unit,
     onProgress: (Int, Long) -> Unit,
 ) {
     val context = LocalContext.current
     var style by rememberSaveable { mutableStateOf("Parkour") }
     var absoluteM4bTime by rememberSaveable { mutableStateOf(true) }
+    var autoTranscribe by rememberSaveable(book.id) { mutableStateOf(false) }
     var chapterIndex by remember { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
     var position by remember { mutableLongStateOf(controller.currentPosition.coerceAtLeast(0)) }
     var playing by remember { mutableStateOf(controller.isPlaying) }
@@ -127,6 +133,14 @@ internal fun StoryMode(
     val filePositionMs = position + (if (embedded && absoluteM4bTime) chapters.getOrNull(safeIndex)?.startMs ?: 0 else 0)
     val cue = TimedCaptionParser.active(subtitleCues, filePositionMs)
     val displayWord = cue?.let { TimedCaptionParser.wordAt(it, filePositionMs).first }.orEmpty()
+    val absoluteAudioMs = position + if (embedded) chapters.getOrNull(safeIndex)?.startMs ?: 0L else 0L
+    LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex, absoluteAudioMs / 1000L) {
+        if (autoTranscribe && sttModelReady && !sttBusy &&
+            book.sourceId == "local_files" && chapters.isNotEmpty()) {
+            // Generate captions a little ahead of playback in short windows.
+            onTranscribeNearby(safeIndex, absoluteAudioMs + 12_000L)
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050A18))) {
         when (style) {
@@ -204,6 +218,32 @@ internal fun StoryMode(
                         IconButton(onClick = { controller.seekToNextMediaItem() }) {
                             Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
                         }
+                    }
+                    if (book.sourceId == "local_files") {
+                        if (!sttModelReady) {
+                            OutlinedButton(
+                                onClick = onDownloadSttModel, enabled = !sttBusy,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text("Download free offline speech model (~40 MB)") }
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.Switch(
+                                    checked = autoTranscribe,
+                                    onCheckedChange = { autoTranscribe = it },
+                                )
+                                Text("  Auto-transcribe as you listen", color = Color.White,
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                            OutlinedButton(
+                                onClick = { onTranscribeNearby(safeIndex, absoluteAudioMs) },
+                                enabled = !sttBusy, modifier = Modifier.fillMaxWidth(),
+                            ) { Text("Generate next 30 seconds of captions") }
+                        }
+                        if (sttBusy) androidx.compose.material3.LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth())
+                        if (!sttMessage.isNullOrBlank()) Text(sttMessage,
+                            color = Color(0xFFDBF7E9),
+                            style = MaterialTheme.typography.bodySmall)
                     }
                     Button(onClick = { onPickTranscript(safeIndex) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.ClosedCaption, null)

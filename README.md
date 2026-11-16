@@ -63,6 +63,14 @@ clip silently behind the captions. The app does not ship or scrape gameplay
 from TikTok or Minecraft. Captions and video references remain on the device.
 M4B users can switch between full-book and chapter-relative timestamps.
 
+**Free offline speech-to-text:** AudioShelf now supports opt-in Vosk transcription for
+locally imported MP3/M4B files, using a small English model (about 40 MB, downloaded
+once from the Vosk project). Enable **Auto-transcribe as you listen** to generate
+word-aligned captions in 30-second windows without sending recordings to servers.
+Generated captions are cached privately, and user-imported captions take priority.
+Transcription is not yet available for remote streams and is not equivalent to
+text-to-speech. Long books may require significant processing time.
+
 ## Build
 
 Requirements: JDK 17+, Android SDK 35, and Gradle 8.10+.

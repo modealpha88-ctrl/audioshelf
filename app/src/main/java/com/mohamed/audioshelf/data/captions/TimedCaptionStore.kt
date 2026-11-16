@@ -17,9 +17,62 @@ class TimedCaptionStore(private val context: Context) {
         return File(File(context.filesDir, "captions"), hash + ".txt")
     }
 
-    fun load(book: AudioBook, chapterIndex: Int): List<TimedCue> =
-        runCatching { TimedCaptionParser.parse(path(book, chapterIndex).readText()) }
-            .getOrDefault(emptyList())
+    private fun autoPath(book: AudioBook, chapterIndex: Int): File {
+        val original = path(book, chapterIndex)
+        return File(original.parentFile, "auto_" + original.name)
+    }
+
+    fun load(book: AudioBook, chapterIndex: Int): List<TimedCue> {
+        val manual = runCatching {
+            TimedCaptionParser.parse(path(book, chapterIndex).readText())
+        }.getOrDefault(emptyList())
+        if (manual.isNotEmpty()) return manual
+        return runCatching {
+            TimedCaptionParser.parse(autoPath(book, chapterIndex).readText())
+        }.getOrDefault(emptyList())
+    }
+
+    private fun timecode(ms: Long): String {
+        val safe = ms.coerceAtLeast(0)
+        val h = safe / 3600000
+        val m = safe / 60000 % 60
+        val sec = safe / 1000 % 60
+        return "%02d:%02d:%02d.%03d".format(java.util.Locale.US, h, m, sec, safe % 1000)
+    }
+
+    fun saveRecognizedWords(book: AudioBook, chapterIndex: Int, words: List<TimedCue>) {
+        if (words.isEmpty()) return
+        val file = autoPath(book, chapterIndex)
+        val existing = runCatching { TimedCaptionParser.parse(file.readText()) }.getOrDefault(emptyList())
+        val merged = (existing + words).filter { it.endMs > it.startMs }
+            .distinctBy { it.startMs to it.text }.sortedBy { it.startMs }.take(120000)
+        file.parentFile?.mkdirs()
+        // Atomic-ish replace so a failed transcription cannot truncate older captions.
+        val temp = File(file.parentFile, file.name + ".part")
+        temp.writeText(buildString {
+            append("WEBVTT\n\n")
+            merged.forEach { cue ->
+                append(timecode(cue.startMs)).append(" --> ").append(timecode(cue.endMs)).append('\n')
+                append(cue.text).append("\n\n")
+            }
+        }, Charsets.UTF_8)
+        if (!temp.renameTo(file)) {
+            file.delete()
+            check(temp.renameTo(file)) { "Could not save captions." }
+        }
+    }
+
+    private fun windowKey(book: AudioBook, chapterIndex: Int, startMs: Long): String =
+        autoPath(book, chapterIndex).name + ":" + startMs
+
+    fun isRecognizedWindow(book: AudioBook, chapterIndex: Int, startMs: Long): Boolean =
+        context.getSharedPreferences("audio_shelf_stt_windows", Context.MODE_PRIVATE)
+            .getBoolean(windowKey(book, chapterIndex, startMs), false)
+
+    fun markRecognizedWindow(book: AudioBook, chapterIndex: Int, startMs: Long) {
+        context.getSharedPreferences("audio_shelf_stt_windows", Context.MODE_PRIVATE)
+            .edit().putBoolean(windowKey(book, chapterIndex, startMs), true).apply()
+    }
 
     fun import(book: AudioBook, chapterIndex: Int, uri: Uri): Int {
         require(chapterIndex >= 0) { "Choose a chapter first." }
