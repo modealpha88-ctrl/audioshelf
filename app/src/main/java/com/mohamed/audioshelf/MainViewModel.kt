@@ -33,6 +33,8 @@ data class AudioShelfState(
     val repositories: List<SourceRepository> = emptyList(),
     val repositoryBusy: Boolean = false,
     val repositoryError: String? = null,
+    val importBusy: Boolean = false,
+    val importError: String? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -82,6 +84,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _state.value = _state.value.copy(
                         repositoryBusy = false,
                         repositoryError = it.repositoryMessage(),
+                    )
+                }
+        }
+    }
+
+    fun importWebsiteBook(url: String) {
+        if (_state.value.importBusy) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(importBusy = true, importError = null)
+            runCatching { SourceRegistry.websiteImporter().importUrl(url) }
+                .onSuccess { book ->
+                    if (!store.contains(book)) store.toggle(book)
+                    _state.value = _state.value.copy(
+                        importBusy = false,
+                        library = store.books(),
+                    )
+                    select(book)
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(
+                        importBusy = false,
+                        importError = it.repositoryMessage(),
                     )
                 }
         }
@@ -175,6 +199,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun Throwable.friendlyMessage(): String = when (this) {
+        is IllegalArgumentException -> message ?: "Invalid audiobook page."
         is java.net.UnknownHostException -> "No internet connection. Check your network and try again."
         is java.net.SocketTimeoutException -> "The audiobook service took too long to respond. Try again shortly."
         is java.io.IOException -> "Could not reach the audiobook service. Try again shortly."
