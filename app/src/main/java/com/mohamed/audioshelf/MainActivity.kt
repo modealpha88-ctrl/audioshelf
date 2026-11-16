@@ -59,20 +59,34 @@ import kotlin.math.roundToLong
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val localAudioPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            runCatching {
+                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            viewModel.importLocalAudio(it)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        setContent { AudioShelfTheme { AudioShelfApp(viewModel) } }
+        setContent {
+            AudioShelfTheme {
+                AudioShelfApp(viewModel, onPickLocalAudio = {
+                    localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream"))
+                })
+            }
+        }
     }
 }
 
 private enum class HomeTab { Browse, Library, Sources }
 
 @Composable
-private fun AudioShelfApp(viewModel: MainViewModel) {
+private fun AudioShelfApp(viewModel: MainViewModel, onPickLocalAudio: () -> Unit) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
@@ -139,6 +153,8 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                     isInstalled = viewModel::isProviderInstalled,
                     onAdd = viewModel::addRepository,
                     onImport = viewModel::importWebsiteBook,
+                    onImportFeed = viewModel::importRssFeed,
+                    onPickLocalAudio = onPickLocalAudio,
                     onRefresh = viewModel::refreshRepository,
                     onRemove = viewModel::removeRepository,
                     onToggleProvider = viewModel::toggleProvider,
@@ -217,12 +233,15 @@ private fun SourcesScreen(
     isInstalled: (SourceProviderDefinition) -> Boolean,
     onAdd: (String) -> Unit,
     onImport: (String) -> Unit,
+    onImportFeed: (String) -> Unit,
+    onPickLocalAudio: () -> Unit,
     onRefresh: (SourceRepository) -> Unit,
     onRemove: (SourceRepository) -> Unit,
     onToggleProvider: (SourceProviderDefinition) -> Unit,
 ) {
     var repositoryUrl by rememberSaveable { mutableStateOf("") }
     var bookUrl by rememberSaveable { mutableStateOf("") }
+    var podcastUrl by rememberSaveable { mutableStateOf("") }
     var hasRights by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val canOpenWebsite = runCatching {
@@ -327,6 +346,42 @@ private fun SourcesScreen(
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Open website in browser")
+                }
+                HorizontalDivider(Modifier.padding(vertical = 14.dp))
+                Text("Import free podcast audiobook", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Paste the public HTTPS RSS feed for a free Podiobooks or other openly distributed audiobook podcast. Only publisher-provided audio enclosures are used.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = podcastUrl,
+                    onValueChange = { podcastUrl = it },
+                    label = { Text("Public audiobook RSS URL") },
+                    placeholder = { Text("https://example.org/audiobook/feed.xml") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Button(
+                    onClick = { onImportFeed(podcastUrl.trim()) },
+                    enabled = podcastUrl.startsWith("https://") && !state.importBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.Podcasts, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (state.importBusy) "Importing…" else "Import RSS audiobook")
+                }
+                HorizontalDivider(Modifier.padding(vertical = 14.dp))
+                Text("Import DRM-free audio from device", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Choose a purchased Libro.fm MP3 or M4B file (or another audio file you are allowed to play). Files stay on your device.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = onPickLocalAudio, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.FolderOpen, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Choose MP3 or M4B file")
                 }
                 state.importError?.let {
                     Spacer(Modifier.height(8.dp))
