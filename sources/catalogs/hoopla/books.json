@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Hoopla library audiobooks",
+      "authors": [
+        "Hoopla Digital"
+      ],
+      "description": "Borrow audiobooks using an eligible library card and listen in Hoopla. Full media playback requires a library-partner integration and cannot be streamed directly in AudioShelf.",
+      "externalUrl": "https://www.hoopladigital.com/audiobook",
+      "language": "English"
+    }
+  ]
+}
