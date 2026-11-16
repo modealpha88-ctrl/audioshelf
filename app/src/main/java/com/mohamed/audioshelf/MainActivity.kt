@@ -5,7 +5,9 @@ package com.mohamed.audioshelf
 import android.Manifest
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -111,6 +113,7 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                         playBook(context, controller, selected, state.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
                     },
                     onDownload = { OfflineDownloads(context).downloadBook(selected, state.chapters) },
+                    onTorrent = { openArchiveTorrent(context, selected) },
                     onProgress = { index, position -> viewModel.saveProgress(selected, index, position) },
                     onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
                 )
@@ -261,6 +264,7 @@ private fun BookScreen(
     onToggleSaved: () -> Unit,
     onPlay: (Int) -> Unit,
     onDownload: () -> Unit,
+    onTorrent: () -> Unit,
     onProgress: (Int, Long) -> Unit,
     onSleep: (Int) -> Unit,
 ) {
@@ -286,6 +290,14 @@ private fun BookScreen(
                         }
                         OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
                             Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
+                        }
+                        if (book.sourceId == "internet_archive") {
+                            OutlinedButton(onClick = onTorrent) {
+                                Icon(Icons.Default.CloudDownload, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Open torrent")
+                            }
+                            Text("Open/public-domain item", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -394,6 +406,14 @@ private fun playBook(context: Context, controller: MediaController?, book: Audio
     controller.setMediaItems(mediaItems, index.coerceIn(chapters.indices), positionMs.coerceAtLeast(0))
     controller.prepare()
     controller.play()
+}
+
+private fun openArchiveTorrent(context: Context, book: AudioBook) {
+    if (book.sourceId != "internet_archive") return
+    val identifier = Uri.encode(book.id)
+    val torrent = Uri.parse("https://archive.org/download/$identifier/${identifier}_archive.torrent")
+    val intent = Intent(Intent.ACTION_VIEW, torrent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
 
 private fun formatTime(ms: Long): String {

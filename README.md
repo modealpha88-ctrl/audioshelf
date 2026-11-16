@@ -12,6 +12,7 @@ its API, licence, or written permission allows third-party clients.
 
 - Debounced live search across all enabled catalogues
 - Browse LibriVox and open/public-domain Internet Archive audiobooks
+- Open Internet Archive item torrents in an installed torrent client
 - Book details and RSS-based chapter discovery
 - Local library and listening-progress persistence
 - Media3 background playback and notification controls
@@ -43,6 +44,10 @@ be added only if the operator provides an official API or written authorization.
 
 AudioShelf also does not integrate AudioBookBay torrent automation. Users should
 only import or play recordings they are legally permitted to access.
+
+Debug builds use the repository's dedicated debug certificate so future APKs can
+update one another. This key is intentionally public and must never be used for a
+production Play Store release.
 
 ## Licence
 
