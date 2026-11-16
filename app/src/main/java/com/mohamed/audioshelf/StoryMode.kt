@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,7 +83,10 @@ import com.mohamed.audioshelf.data.captions.TimedCaptionParser
 import com.mohamed.audioshelf.data.captions.TimedCaptionStore
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.sin
 
 /**
@@ -119,6 +123,18 @@ internal fun StoryMode(
     val fullStore = remember(context) { FullBookSubtitleStore(context) }
     var fullProgress by remember(book.id) { mutableStateOf(fullStore.progress(book.id)) }
     var fullError by remember(book.id) { mutableStateOf<String?>(null) }
+    var exporting by remember(book.id) { mutableStateOf(false) }
+    val exportScope = rememberCoroutineScope()
+    fun exportTo(target: Uri?, format: String) {
+        if (target == null || exporting) return
+        exporting = true
+        exportScope.launch {
+            runCatching { withContext(Dispatchers.IO) { fullStore.export(book.id, target, format) } }
+                .onSuccess { fullError = null }
+                .onFailure { fullError = it.message }
+            exporting = false
+        }
+    }
     var fullExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
     LaunchedEffect(book.id) {
         while (true) {
@@ -129,14 +145,12 @@ internal fun StoryMode(
     val exportSrt = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/x-subrip")
     ) { target ->
-        if (target != null) runCatching { fullStore.export(book.id, target, "srt") }
-            .onFailure { fullError = it.message }
+        exportTo(target, "srt")
     }
     val exportVtt = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/vtt")
     ) { target ->
-        if (target != null) runCatching { fullStore.export(book.id, target, "vtt") }
-            .onFailure { fullError = it.message }
+        exportTo(target, "vtt")
     }
     val videoUri = remember(videoRevision) {
         context.getSharedPreferences("audio_shelf_story", 0)
@@ -328,16 +342,18 @@ internal fun StoryMode(
                             Row(Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
-                                    enabled = fullProgress.completedMs > 0L,
+                                    enabled = fullProgress.completedMs > 0L && !exporting,
                                     onClick = { exportSrt.launch("AudioShelf-transcript.srt") },
                                     modifier = Modifier.weight(1f)
                                 ) { Text("Export SRT") }
                                 OutlinedButton(
-                                    enabled = fullProgress.completedMs > 0L,
+                                    enabled = fullProgress.completedMs > 0L && !exporting,
                                     onClick = { exportVtt.launch("AudioShelf-transcript.vtt") },
                                     modifier = Modifier.weight(1f)
                                 ) { Text("Export VTT") }
                             }
+                            if (exporting) Text("Writing subtitle file…",
+                                color = Color.White, style = MaterialTheme.typography.bodySmall)
                             if (!sttModelReady) Text(
                                 "Download the offline speech model above before starting.",
                                 color = Color.White, style = MaterialTheme.typography.bodySmall)
