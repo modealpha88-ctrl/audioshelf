@@ -61,7 +61,7 @@ class FullBookTranscriptionWorker(
         return NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_app)
             .setContentTitle("AudioShelf · Offline transcription")
-            .setContentText("Processed \${progress.percent}% of this audiobook")
+            .setContentText("Processed ${progress.percent}% of this audiobook")
             .setProgress(100, progress.percent, progress.durationMs == 0L)
             .setOngoing(!progress.finished)
             .setOnlyAlertOnce(true)
