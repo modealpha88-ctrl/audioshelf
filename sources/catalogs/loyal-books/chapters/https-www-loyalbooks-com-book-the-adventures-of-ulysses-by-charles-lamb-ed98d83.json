@@ -1,0 +1,59 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "00 Preface",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_00_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "01 The Cicons. The Fruit of the Lotus-tree. Polyphemus and the Cyclops. The Kingdom of the Winds, and God Aeolus’s Fatal Present. The Laestrygonian Man-eaters.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_01_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "02 The House of Circe. Men changed into Beasts. The Voyage to Hell. The Banquet of the Dead.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_02_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "03 The Song of the Sirens. Scylla and Charybdis. The Oxen of the Sun. The Judgment. The Crew Killed by Lightning.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_03_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "04 The Island of Calypso. Immortality Refused.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_04_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "05 The Tempest. The Sea-bird’s Gift. The Escape by Swimming. The Sleep in the Woods.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_05_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "06 The Princess Nausicaa. The Washing. The Game with the Ball. The Court of Phaeacia and King Alcinous.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_06_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "07 The Songs of Demodocus. The Convoy Home. The Manners. Transformed to Stone. The Young Shepherd.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_07_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "08 The Change from a King to a Beggar. Eumaeus and the Herdsmen. Telemachus.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_08_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "09 The Queen’s Suitors. The Battle of the Beggars. The Armour Taken Down. The Meeting with Penelope.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_09_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "10 The Madness from Above. The Bow of Ulysses. The Slaughter. The Conclusion.",
+      "audioUrl": "https://www.archive.org/download/ulysses_lamb_rd_librivox/ulysses_10_lamb_64kb.mp3"
+    }
+  ]
+}

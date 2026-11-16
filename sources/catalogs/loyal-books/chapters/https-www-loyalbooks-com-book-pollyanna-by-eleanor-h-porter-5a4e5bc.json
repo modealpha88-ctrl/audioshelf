@@ -1,0 +1,164 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "01 - MISS POLLY",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_01_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "02 - OLD TOM AND NANCY",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_02_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "03 - THE COMING OF POLLYANNA",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_03_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "04 - THE LITTLE ATTIC ROOM",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_04_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "05 - THE GAME",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_05_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "06 - A QUESTION OF DUTY",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_06_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "07 - POLLYANNA AND PUNISHMENTS",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_07_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "08 - POLLYANNA PAYS A VISIT",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_08_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "09 - WHICH TELLS OF THE MAN",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_09_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "10 - A SURPRISE FOR MRS. SNOW",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_10_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "11 - INTRODUCING JIMMY",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_11_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "12 - BEFORE THE LADIES' AID",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_12_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "13 - IN PENDLETON WOODS",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_13_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "14 - JUST A MATTER OF JELLY",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_14_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "15 - DR. CHILTON",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_15_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-16",
+      "title": "16 - A RED ROSE AND A LACE SHAWL",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_16_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-17",
+      "title": "17 - JUST LIKE A BOOK",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_17_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-18",
+      "title": "18 - PRISMS",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_18_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-19",
+      "title": "19 - WHICH IS SOMEWHAT SURPRISING",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_19_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-20",
+      "title": "20 - WHICH IS MORE SURPRISING",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_20_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-21",
+      "title": "21 - A QUESTION ANSWERED",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_21_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-22",
+      "title": "22 - SERMONS AND WOODBOXES",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_22_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-23",
+      "title": "23 -AN ACCIDENT",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_23_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-24",
+      "title": "24 - JOHN PENDLETON",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_24_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-25",
+      "title": "25 - A WAITING GAME",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_25_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-26",
+      "title": "26 - A DOOR AJAR",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_26_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-27",
+      "title": "27 - TWO VISITS",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_27_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-28",
+      "title": "28 - THE GAME AND ITS PLAYERS",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_28_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-29",
+      "title": "29 - THROUGH AN OPEN WINDOW",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_29_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-30",
+      "title": "30 - JIMMY TAKES THE HELM",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_30_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-31",
+      "title": "31 - A NEW UNCLE",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_31_porter_64kb.mp3"
+    },
+    {
+      "id": "chapter-32",
+      "title": "32 - WHICH IS A LETTER FROM POLLYANNA",
+      "audioUrl": "https://www.archive.org/download/pollyanna-1_pc_librivox/pollyanna_32_porter_64kb.mp3"
+    }
+  ]
+}

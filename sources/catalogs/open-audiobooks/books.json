@@ -1,16 +1,244 @@
 {
   "books": [
     {
+      "id": "a-farewell-to-arms",
+      "title": "A Farewell to Arms",
+      "authors": [
+        "Ernest Hemingway"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/a-farewell-to-arms/cover_hu_91b3726328bce37c.jpg",
+      "description": "Frederic Henry is an American lieutenant of an ambulance corps serving in the Italian front of World War I. During his service he meets Catherine Barkley, an English nurse who goes on to work closely …"
+    },
+    {
+      "id": "around-the-world-in-eighty-days",
+      "title": "Around the World in Eighty Days",
+      "authors": [
+        "Jules Verne"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/around-the-world-in-eighty-days/cover_hu_125f718670bb0276.jpg",
+      "description": "Jules Verne’s most-acclaimed novel remains a cultural cornerstone to this day. The story of Phileas Fogg’s spectacular journey by then-novel technologies is a fast-paced, colorful, and thoroughly …"
+    },
+    {
+      "id": "crime-and-punishment",
+      "title": "Crime and Punishment",
+      "authors": [
+        "Fyodor Dostoevsky"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/crime-and-punishment/cover_hu_d2b553fe435f4774.jpg",
+      "description": "Crime and Punishment tells the story of Rodion Raskolnikov, an ex-student who plans to murder a pawnbroker to test his theory of personality. Having accomplished the deed, Raskolnikov struggles with …"
+    },
+    {
+      "id": "dracula",
+      "title": "Dracula",
+      "authors": [
+        "Bram Stoker"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/dracula/cover_hu_fdf419e4c0552d06.jpg",
+      "description": "Dracula is one of the most famous horror novels, responsible not just for introducing the eponymous Count Dracula, but for laying the foundations for many of the common tropes we see in modern horror …"
+    },
+    {
+      "id": "frankenstein",
+      "title": "Frankenstein",
+      "authors": [
+        "Mary Shelley"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/frankenstein/cover_hu_5e2fb6009513b397.jpg",
+      "description": "Mary Shelley (then Godwin) and Percy Bysshe Shelley were visiting their friend Lord Byron in Geneva one rainy summer. With the weather against them, they decided to spend their time writing ghost …"
+    },
+    {
+      "id": "jane-eyre",
+      "title": "Jane Eyre",
+      "authors": [
+        "Charlotte Brontë"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/jane-eyre/cover_hu_7fb2ad8c072621a7.jpg",
+      "description": "Jane Eyre experienced abuse at a young age, not only from her aunt—who raised her after both her parents died—but also from the headmaster of Lowood Institution, where she is sent away to. After ten …"
+    },
+    {
+      "id": "journey-to-the-center-of-the-earth",
+      "title": "Journey to the Center of the Earth",
+      "authors": [
+        "Jules Verne"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/journey-to-the-center-of-the-earth/cover_hu_56ef48c5479994e6.jpg",
+      "description": "A classic science fiction novel by French writer Jules Verne, this work is one of the most well-known subterranean fictions to this day. It inspired many similar works and adaptations. First published …"
+    },
+    {
+      "id": "meditations",
+      "title": "Meditations",
+      "authors": [
+        "Marcus Aurelius"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/meditations/cover_hu_5ddd425e2eabad6b.jpg",
+      "description": "Roman Emperor Marcus Aurelius Antoninus Augustus was the model of what we call a philosopher-king. Though his rule was troubled by war and conflict, he remained a thoughtful and even-handed ruler."
+    },
+    {
+      "id": "moral-letters-to-lucilius",
+      "title": "Moral Letters to Lucilius",
+      "authors": [
+        "Seneca"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/moral-letters-to-lucilius/cover_hu_d916cac9f8ab9ad1.jpg",
+      "description": "Seneca was a Stoic philosopher and statesman in Rome’s early post-Augustan era. He was Nero’s tutor, and then his advisor when Nero became emperor in 54 CE. After Seneca retired from public life, he …"
+    },
+    {
+      "id": "new-hampshire",
+      "title": "New Hampshire",
+      "authors": [
+        "Robert Frost"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/new-hampshire/cover_hu_5c80bdc28a13dfa4.jpg",
+      "description": "Robert Frost published New Hampshire, his fourth book of poetry, in 1923. The centerpiece is the long poem “New Hampshire,” an ode to the state. Endnotes on its lines point to shorter poems in the …"
+    },
+    {
+      "id": "north-of-boston",
+      "title": "North of Boston",
+      "authors": [
+        "Robert Frost"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/north-of-boston/cover_hu_efa66c5e4929e32e.jpg",
+      "description": "North of Boston is Robert Frost’s second collection of poetry. It includes some of his more famous poems, like “Mending Wall,” “Home Burial,” and “After Apple-Picking.”"
+    },
+    {
+      "id": "pride-and-prejudice",
+      "title": "Pride and Prejudice",
+      "authors": [
+        "Jane Austen"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/pride-and-prejudice/cover_hu_e914300bbabc6d84.jpg",
+      "description": "Pride and Prejudice may today be one of Jane Austen’s most enduring novels, having been widely adapted to stage, screen, and other media since its publication in 1813. The novel tells the tale of five …"
+    },
+    {
+      "id": "sir-gawain-and-the-green-knight",
+      "title": "Sir Gawain and the Green Knight",
+      "authors": [
+        "Anonymous"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/sir-gawain-and-the-green-knight/cover_hu_aca47efadf1ca44a.jpg",
+      "description": "King Arthur’s court is celebrating a New Year’s feast when a mysterious knight suddenly appears at their table. His skin, hair, clothing, and even his horse are entirely green, and he carries a holly …"
+    },
+    {
+      "id": "the-adventures-of-sherlock-holmes",
+      "title": "The Adventures of Sherlock Holmes",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-adventures-of-sherlock-holmes/cover_hu_cde9c187c7a285cb.jpg",
+      "description": "The Adventures of Sherlock Holmes was the first collection of Sherlock Holmes short stories Conan Doyle published in book form, following the popular success of the novels A Study in Scarlet and The …"
+    },
+    {
+      "id": "the-art-of-war",
+      "title": "The Art of War",
+      "authors": [
+        "Sun Tzu"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-art-of-war/cover_hu_3cb06687e164bacb.jpg",
+      "description": "Sun Tzu’s ancient treatise on the art of war has exerted enormous influence over both Asian and Western soldiers, covering subjects ranging from morale and discipline to the correct use of spies. …"
+    },
+    {
+      "id": "the-cherry-orchard",
+      "title": "The Cherry Orchard",
+      "authors": [
+        "Anton Chekhov"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-cherry-orchard/cover_hu_cde6de6513237.jpg",
+      "description": "The Cherry Orchard is Chekhov’s final play. The plot revolves around a heavily indebted landowner, Madame Lyubov Andreyevna Ranevsky, and her brother, Leonid Andreyevitch Gaev, as they attempt to save …"
+    },
+    {
+      "id": "the-final-count",
+      "title": "The Final Count",
+      "authors": [
+        "H. C. McNeile"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-final-count/cover_hu_4ca2b016af6e59e6.jpg",
+      "description": "Chemist Robin Gaunt believes he’s discovered the key to lasting world peace—in the form of the horrific poison gas he’s just perfected. Gaunt is certain that once the British government has the …"
+    },
+    {
+      "id": "the-great-gatsby",
+      "title": "The Great Gatsby",
+      "authors": [
+        "F. Scott Fitzgerald"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-great-gatsby/cover_hu_75c26590513a43e1.jpg",
+      "description": "The Great Gatsby is a novel that needs no introduction for a certain generation of American readers. Long taught as required reading in American schools, critics have consistently held it up alongside …"
+    },
+    {
+      "id": "the-invisible-man",
+      "title": "The Invisible Man",
+      "authors": [
+        "H. G. Wells"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-invisible-man/cover_hu_59b2e745c81c2909.jpg",
+      "description": "Griffin, a scientist, has devoted his life to the study of optics. As his work progresses, he invents a method of making a person invisible. After testing the experiment on himself, he comes to …"
+    },
+    {
+      "id": "the-island-of-doctor-moreau",
+      "title": "The Island of Doctor Moreau",
+      "authors": [
+        "H. G. Wells"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-island-of-doctor-moreau/cover_hu_75e9f30b160ca040.jpg",
+      "description": "The Island of Doctor Moreau is the narration of Edward Prendick, a shipwrecked man who finds himself on a mysterious island full of humanoid animal creatures. He comes to find that these creatures are …"
+    },
+    {
+      "id": "the-picture-of-dorian-gray",
+      "title": "The Picture of Dorian Gray",
+      "authors": [
+        "Oscar Wilde"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-picture-of-dorian-gray/cover_hu_d54919abe2571f17.jpg",
+      "description": "The Picture of Dorian Gray was first published as a serial in Lippencott’s Monthly Magazine, and the publishers thought it would so offend readers that they removed nearly 500 words without Wilde’s …"
+    },
+    {
+      "id": "the-strange-case-of-dr-jekyll-and-mr-hyde",
+      "title": "The Strange Case of Dr. Jekyll and Mr. Hyde",
+      "authors": [
+        "Robert Louis Stevenson"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-strange-case-of-dr-jekyll-and-mr-hyde/cover_hu_1325f9a2a0c9f9bc.jpg",
+      "description": "The Strange Case of Dr. Jekyll and Mr. Hyde is the classic novella of split personality. Stevenson wrote it in just a few days while sick and bedridden, and famously burned the first draft after his …"
+    },
+    {
+      "id": "the-sun-also-rises",
+      "title": "The Sun Also Rises",
+      "authors": [
+        "Ernest Hemingway"
+      ],
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-sun-also-rises/cover_hu_84e0d4cbfcccc596.jpg",
+      "description": "The Sun Also Rises was Ernest Hemingway’s first published novel, and the novel that introduced the term “Lost Generation” to describe the generation that came to adulthood during World War I."
+    },
+    {
       "id": "the-time-machine",
       "title": "The Time Machine",
       "authors": [
         "H. G. Wells"
       ],
-      "narrators": [
-        "Synthetic narration: Charon"
-      ],
-      "description": "CC0-licensed audiobook from Open Audiobooks, generated from a Standard Ebooks public-domain edition.",
-      "language": "English"
+      "language": "English",
+      "coverUrl": "https://openaudiobooks.org/books/the-time-machine/cover_hu_fd7640de4f01a4ac.jpg",
+      "description": "The Time Machine is the novel that gave us the concept of—and even the word for—a “time machine.” While it’s not Wells’ first story involving time travel, it is the one that most fully fleshes out the …"
     }
   ]
 }

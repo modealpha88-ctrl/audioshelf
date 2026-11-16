@@ -1,0 +1,124 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Book 01",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_01_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "Book 02",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_02_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "Book 03",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_03_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "Book 04",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_04_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "Book 05",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_05_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "Book 06",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_06_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "Book 07",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_07_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "Book 08",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_08_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "Book 09",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_09_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "Book 10",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_10_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "Book 11",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_11_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "Book 12",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_12_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "Book 13",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_13_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "Book 14",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_14_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "Book 15",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_15_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-16",
+      "title": "Book 16",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_16_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-17",
+      "title": "Book 17",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_17_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-18",
+      "title": "Book 18",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_18_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-19",
+      "title": "Book 19",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_19_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-20",
+      "title": "Book 20",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_20_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-21",
+      "title": "Book 21",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_21_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-22",
+      "title": "Book 22",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_22_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-23",
+      "title": "Book 23",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_23_homer_butler_64kb.mp3"
+    },
+    {
+      "id": "chapter-24",
+      "title": "Book 24",
+      "audioUrl": "https://www.archive.org/download/odyssey_butler_librivox/odyssey_24_homer_butler_64kb.mp3"
+    }
+  ]
+}

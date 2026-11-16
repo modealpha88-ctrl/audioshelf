@@ -1,0 +1,54 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "00 – Introduction",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_00_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "01 – Dreams Have a Meaning",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_01_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "02 – The Dream Mechanism",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_02_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "03 – Why the Dream Disguises the Desires",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_03_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "04 – Dream Analysis",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_04_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "05 – Sex in Dreams",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_05_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "06 – The Wish in Dreams",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_06_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "07 – The Function of the Dream",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_07_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "08 – The Primary and Secondary Process – Regression",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_08_sigmundfreud_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "09 – The Unconscious and Consiousness – Reality",
+      "audioUrl": "https://www.archive.org/download/dream_psychology_librivox/dreampsychology_09_sigmundfreud_64kb.mp3"
+    }
+  ]
+}

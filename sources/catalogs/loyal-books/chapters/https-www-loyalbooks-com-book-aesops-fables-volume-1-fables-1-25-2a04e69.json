@@ -1,0 +1,134 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Introduction by GK Chesterton",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_00_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "The Fox and The Grapes",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_01_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "The Goose That Laid The Golden Eggs",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_02_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "The Cat and the Mice",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_03_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "The Mischievous Dog",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_04_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "The Charcoal-Burner and The Fuller",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_05_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "The Mice in Council",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_06_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "The Bat And The Weasels",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_07_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "The Dog and The Sow",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_08_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "The Fox And The Crow",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_09_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "The Horse and the Groom",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_10_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "The Wolf and the Lamb",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_11_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "The Peacock And The Crane",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_12_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "The Cat And The Birds",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_13_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "The Spendthrift and the Swallow",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_14_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-16",
+      "title": "The Old Woman and the Doctor",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_15_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-17",
+      "title": "The Moon and her Mother",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_16_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-18",
+      "title": "Mercury and the Woodman",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_17_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-19",
+      "title": "The Ass, The Fox, and The Lion",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_18_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-20",
+      "title": "The Lion And The Mouse",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_19_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-21",
+      "title": "The Crow And The Pitcher",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_20_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-22",
+      "title": "The Boys and The Frogs",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_21_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-23",
+      "title": "The North Wind and The Sun",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_22_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-24",
+      "title": "The Mistress and Her Servants",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_23_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-25",
+      "title": "The Goods and The Ills",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_24_aesop_64kb.mp3"
+    },
+    {
+      "id": "chapter-26",
+      "title": "The Hares and The Frogs",
+      "audioUrl": "https://www.archive.org/download/aesop_fables_volume_one_librivox/fables_01_25_aesop_64kb.mp3"
+    }
+  ]
+}

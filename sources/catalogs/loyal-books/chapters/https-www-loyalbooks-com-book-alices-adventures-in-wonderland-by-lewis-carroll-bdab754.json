@@ -1,0 +1,69 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "00 - Dramatis Personae",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_00_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "01 - Down the Rabbit-Hole",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_01_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "02 - The Pool of Tears",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_02_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "03 - A Caucus-Race and a Long Tale",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_03_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "04 - The Rabbit Sends in a Little Bill",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_04_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "05 - Advice From a Caterpillar",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_05_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "06 - Pig and Pepper",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_06_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "07 - The Mad Tea-Party",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_07_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "08 - The Queen's Croquet-Ground",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_08_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "09 - The Mock Turtle's Story",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_09_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "10 - The Lobster Quadrille",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_10_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "11 - Who Stole the Tarts?",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_11_carroll_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "12 - Alice's Evidence",
+      "audioUrl": "https://www.archive.org/download/aliceinwonderland_1102_librivox/aliceinwonderland_12_carroll_64kb.mp3"
+    }
+  ]
+}

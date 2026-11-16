@@ -1,1 +1,544 @@
-{"books":[]}
+{
+  "books": [
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-notes-and-queries-number-176-march-36e4fa9",
+      "title": "Notes and Queries, Number 176, March 12, 1853",
+      "authors": [
+        "Various"
+      ],
+      "language": "English",
+      "description": "Notes and Queries, Number 176, March 12, 1853\nA Medium of Inter-communication for Literary Men, Artists, Antiquaries, Genealogists, etc."
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-old-french-fairy-tales-by-segur-0da2de6",
+      "title": "Old French Fairy Tales by Ségur",
+      "authors": [
+        "Ségur, Sophie, comtesse de, 1799-1874"
+      ],
+      "language": "English",
+      "description": "Old French Fairy Tales"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-egyptian-conception-of-immorta-e68d510",
+      "title": "The Egyptian Conception of Immortality by Reisner",
+      "authors": [
+        "Reisner, George Andrew, 1867-1942"
+      ],
+      "language": "English",
+      "description": "The Egyptian Conception of Immortality\nThe Ingersoll Lecture, 1911"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-swept-out-to-sea-by-w-bert-foster-033be4d",
+      "title": "Swept Out to Sea by W. Bert  Foster",
+      "authors": [
+        "Foster, W. Bert (Walter Bertram), 1869-"
+      ],
+      "language": "English",
+      "description": "Swept Out to Sea\nOr, Clint Webb Among the Whalers"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-inspector-general-by-nikolai-v-d082276",
+      "title": "The Inspector-General by Nikolai Vasilevich Gogol",
+      "authors": [
+        "Gogol, Nikolai Vasilevich, 1809-1852"
+      ],
+      "language": "English",
+      "description": "The Inspector-General"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-rover-boys-down-east-by-edward-984b4f1",
+      "title": "The Rover Boys Down East by Edward Stratemeyer",
+      "authors": [
+        "Stratemeyer, Edward, 1862-1930"
+      ],
+      "language": "English",
+      "description": "The Rover Boys Down East\nor, The Struggle for the Stanhope Fortune"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-devil-worship-in-france-by-arthur--2a1ef1a",
+      "title": "Devil-Worship in France by Arthur Edward Waite",
+      "authors": [
+        "Waite, Arthur Edward, 1857-1942"
+      ],
+      "language": "English",
+      "description": "Devil-Worship in France\nor The Question of Lucifer"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-southerly-busters-by-g-h-gibson-064e905",
+      "title": "Southerly Busters by G. H. Gibson",
+      "authors": [
+        "Gibson, (AKA Ironbark) G. H."
+      ],
+      "language": "English",
+      "description": "Southerly Busters"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-rivers-to-the-sea-by-sara-teasdale-8caed3e",
+      "title": "Rivers to the Sea by Sara Teasdale",
+      "authors": [
+        "Teasdale, Sara, 1884-1933"
+      ],
+      "language": "English",
+      "description": "Rivers to the Sea"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-poems-by-walt-whitman-by-walt-whit-7821a38",
+      "title": "Poems By Walt Whitman by Walt Whitman",
+      "authors": [
+        "Whitman, Walt, 1819-1892"
+      ],
+      "language": "English",
+      "description": "Poems By Walt Whitman"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-levels-of-living-by-henry-frederic-f77da7d",
+      "title": "Levels of Living by Henry Frederick Cope",
+      "authors": [
+        "Cope, Henry Frederick, 1870-1923"
+      ],
+      "language": "English",
+      "description": "Levels of Living\nEssays on Everyday Ideals"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-doctor-therne-by-h-rider-haggard-c9d5237",
+      "title": "Doctor Therne by H. Rider  Haggard",
+      "authors": [
+        "Haggard, H. Rider (Henry Rider), 1856-1925"
+      ],
+      "language": "English",
+      "description": "Doctor Therne"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-among-the-tibetans-by-isabella-l-b-b0e19ed",
+      "title": "Among the Tibetans by Isabella L.  Bird",
+      "authors": [
+        "Bird, Isabella L. (Isabella Lucy), 1831-1904"
+      ],
+      "language": "English",
+      "description": "Among the Tibetans"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-historic-papers-on-the-causes-of-t-73c0a05",
+      "title": "Historic Papers on the Causes of the Civil War",
+      "authors": [
+        "Potts, Eugenia Dunlap"
+      ],
+      "language": "English",
+      "description": "Historic Papers on the Causes of the Civil War"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-elsie-venner-by-oliver-wendell-hol-14d0217",
+      "title": "Elsie Venner by Oliver Wendell Holmes",
+      "authors": [
+        "Holmes, Oliver Wendell, 1809-1894"
+      ],
+      "language": "English",
+      "description": "Elsie Venner"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-a-history-of-science-volume-2-by-w-37ad9c4",
+      "title": "A History of Science — Volume 2 by Williams",
+      "authors": [
+        "Nc57e15de105e4e578570b7814affdffc"
+      ],
+      "language": "English",
+      "description": "A History of Science — Volume 2"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-complete-works-of-brann-the-ic-24fe6a7",
+      "title": "The Complete Works of Brann, the Iconoclast — Vo",
+      "authors": [
+        "Brann, William Cowper, 1855-1898"
+      ],
+      "language": "English",
+      "description": "The Complete Works of Brann, the Iconoclast — Volume 10"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-liberty-boys-running-the-block-f264a61",
+      "title": "The Liberty Boys Running the Blockade by Moore",
+      "authors": [
+        "Moore, Harry"
+      ],
+      "language": "English",
+      "description": "The Liberty Boys Running the Blockade\nor, Getting Out of New York"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-shadow-of-the-east-by-e-m-hull-e47b242",
+      "title": "The Shadow of the East by E. M.  Hull",
+      "authors": [
+        "Hull, E. M. (Edith Maude), -1947"
+      ],
+      "language": "English",
+      "description": "The Shadow of the East"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-gardening-indoors-and-under-glass--6445889",
+      "title": "Gardening Indoors and Under Glass by Rockwell",
+      "authors": [
+        "Rockwell, F. F. (Frederick Frye), 1884-1976"
+      ],
+      "language": "English",
+      "description": "Gardening Indoors and Under Glass\nA Practical Guide to the Planting, Care and Propagation of House Plants, and to the Construction and Management of Hotbed, Coldframe and Small Greenhouse"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-mayor-s-wife-by-anna-katharine-9ee3805",
+      "title": "The Mayor's Wife by Anna Katharine Green",
+      "authors": [
+        "Green, Anna Katharine, 1846-1935"
+      ],
+      "language": "English",
+      "description": "The Mayor's Wife"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-ladies-on-horseback-by-nannie-lamb-529c8cc",
+      "title": "Ladies on Horseback by Nannie Lambert",
+      "authors": [
+        "Lambert, Nannie"
+      ],
+      "language": "English",
+      "description": "Ladies on Horseback\nLearning, Park-Riding, and Hunting, with Hints upon Costume,\nand Numerous Anecdotes"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-illustrious-gaudissart-by-hono-61d89fd",
+      "title": "The Illustrious Gaudissart by Honoré de Balzac",
+      "authors": [
+        "Balzac, Honoré de, 1799-1850"
+      ],
+      "language": "English",
+      "description": "The Illustrious Gaudissart"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-gaspar-ruiz-by-joseph-conrad-d753429",
+      "title": "Gaspar Ruiz by Joseph Conrad",
+      "authors": [
+        "Conrad, Joseph, 1857-1924"
+      ],
+      "language": "English",
+      "description": "Gaspar Ruiz"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-a-texas-matchmaker-by-andy-adams-7dd9427",
+      "title": "A Texas Matchmaker by Andy Adams",
+      "authors": [
+        "Adams, Andy, 1859-1935"
+      ],
+      "language": "English",
+      "description": "A Texas Matchmaker"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-sea-power-and-other-studies-by-sir-9798e21",
+      "title": "Sea-Power and Other Studies by Sir Cyprian Bridge",
+      "authors": [
+        "Bridge, Cyprian, Sir, 1839-1924"
+      ],
+      "language": "English",
+      "description": "Sea-Power and Other Studies"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-interest-of-america-in-sea-pow-8659f15",
+      "title": "The Interest of America in Sea Power, Present and",
+      "authors": [
+        "Mahan, A. T. (Alfred Thayer), 1840-1914"
+      ],
+      "language": "English",
+      "description": "The Interest of America in Sea Power, Present and Future"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-fighting-shepherdess-by-caroli-0c45fa7",
+      "title": "The Fighting Shepherdess by Caroline Lockhart",
+      "authors": [
+        "Lockhart, Caroline, 1870-1962"
+      ],
+      "language": "English",
+      "description": "The Fighting Shepherdess"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-rossmoyne-by-duchess-8cd7bfd",
+      "title": "Rossmoyne by Duchess",
+      "authors": [
+        "Duchess, 1855?-1897"
+      ],
+      "language": "English",
+      "description": "Rossmoyne"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-northern-iron-by-george-a-birm-b7964be",
+      "title": "The Northern Iron by George A. Birmingham",
+      "authors": [
+        "Birmingham, George A., 1865-1950"
+      ],
+      "language": "English",
+      "description": "The Northern Iron"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-aeroplane-boys-on-the-wing-by--e2d511a",
+      "title": "The Aeroplane Boys on the Wing by Langworthy",
+      "authors": [
+        "Langworthy, John Luther"
+      ],
+      "language": "English",
+      "description": "The Aeroplane Boys on the Wing\nOr, Aeroplane Chums in the Tropics"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-country-housewife-and-lady-s-d-9560255",
+      "title": "The Country Housewife and Lady's Director in the M",
+      "authors": [
+        "Bradley, Richard, 1688-1732"
+      ],
+      "language": "English",
+      "description": "The Country Housewife and Lady's Director in the Management of a House, and the Delights and Profits of a Farm"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-grand-canyon-of-arizona-how-to-bfca430",
+      "title": "The Grand Canyon of Arizona: How to See It",
+      "authors": [
+        "James, George Wharton, 1858-1923"
+      ],
+      "language": "English",
+      "description": "The Grand Canyon of Arizona: How to See It"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-daisy-miller-a-study-by-henry-jame-5c6dceb",
+      "title": "Daisy Miller: A Study by Henry James",
+      "authors": [
+        "James, Henry, 1843-1916"
+      ],
+      "language": "English",
+      "description": "Daisy Miller: A Study"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-promise-of-air-by-algernon-bla-38a70e6",
+      "title": "The Promise of Air by Algernon Blackwood",
+      "authors": [
+        "Blackwood, Algernon, 1869-1951"
+      ],
+      "language": "English",
+      "description": "The Promise of Air"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-ebrietatis-encomium-by-albert-henr-b393afe",
+      "title": "Ebrietatis Encomium by Albert-Henri de Sallengre",
+      "authors": [
+        "Sallengre, Albert-Henri de, 1694-1723"
+      ],
+      "language": "English",
+      "description": "Ebrietatis Encomium\nor, the Praise of Drunkenness"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-rudder-grange-by-frank-richard-sto-a6c5aa7",
+      "title": "Rudder Grange by Frank Richard Stockton",
+      "authors": [
+        "Stockton, Frank Richard, 1834-1902"
+      ],
+      "language": "English",
+      "description": "Rudder Grange"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-clarion-by-samuel-hopkins-adam-512df59",
+      "title": "The Clarion by Samuel Hopkins Adams",
+      "authors": [
+        "Adams, Samuel Hopkins, 1871-1958"
+      ],
+      "language": "English",
+      "description": "The Clarion"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-macbeth-by-william-shakespeare-def1312",
+      "title": "Macbeth by William Shakespeare",
+      "authors": [
+        "Shakespeare, William, 1564-1616"
+      ],
+      "language": "English",
+      "description": "Macbeth"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-radio-boys-first-wireless-or-w-9be289a",
+      "title": "The Radio Boys' First Wireless; Or, Winning the Fe",
+      "authors": [
+        "Chapman, Allen"
+      ],
+      "language": "English",
+      "description": "The Radio Boys' First Wireless; Or, Winning the Ferberton Prize"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-twin-cousins-by-sophie-may-e1c993c",
+      "title": "The Twin Cousins by Sophie May",
+      "authors": [
+        "May, Sophie, 1833-1906"
+      ],
+      "language": "English",
+      "description": "The Twin Cousins"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-oh-susannah-by-mark-ambient-5d6205e",
+      "title": "Oh! Susannah! by Mark Ambient",
+      "authors": [
+        "Ambient, Mark, 1860-1937"
+      ],
+      "language": "English",
+      "description": "Oh! Susannah!\nA Farcical Comedy in Three Acts"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-for-the-honor-of-france-by-thomas--0745408",
+      "title": "For The Honor Of France by Thomas A.  Janvier",
+      "authors": [
+        "Janvier, Thomas A. (Thomas Allibone), 1849-1913"
+      ],
+      "language": "English",
+      "description": "For The Honor Of France\n1891"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-indiscretions-of-archie-by-p-g-wod-7a3025a",
+      "title": "Indiscretions of Archie by P. G.  Wodehouse",
+      "authors": [
+        "Wodehouse, P. G. (Pelham Grenville), 1881-1975"
+      ],
+      "language": "English",
+      "description": "Indiscretions of Archie"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-money-moon-a-romance-by-jeffer-8a7939e",
+      "title": "The Money Moon: A Romance by Jeffery Farnol",
+      "authors": [
+        "Farnol, Jeffery, 1878-1952"
+      ],
+      "language": "English",
+      "description": "The Money Moon: A Romance"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-kentucky-ranger-by-edward-t-cu-cae2676",
+      "title": "The Kentucky Ranger by Edward T. Curnick",
+      "authors": [
+        "Curnick, Edward T."
+      ],
+      "language": "English",
+      "description": "The Kentucky Ranger"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-head-voice-and-other-problems--eb67da0",
+      "title": "The Head Voice and Other Problems: Practical Talks",
+      "authors": [
+        "Clippinger, D. A. (David Alva), 1860-1938"
+      ],
+      "language": "English",
+      "description": "The Head Voice and Other Problems: Practical Talks on Singing"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-heavenly-footman-or-a-descript-98d758c",
+      "title": "The Heavenly Footman; Or, A Description of the Man",
+      "authors": [
+        "Bunyan, John, 1628-1688"
+      ],
+      "language": "English",
+      "description": "The Heavenly Footman; Or, A Description of the Man That Gets to Heaven\nWith Directions How to Run So as to Obtain"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-captain-paul-558266e",
+      "title": "Captain Paul",
+      "authors": [
+        "nan"
+      ],
+      "language": "English",
+      "description": "Captain Paul"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-guardian-angel-by-oliver-wende-84468ef",
+      "title": "The Guardian Angel by Oliver Wendell Holmes",
+      "authors": [
+        "Holmes, Oliver Wendell, 1809-1894"
+      ],
+      "language": "English",
+      "description": "The Guardian Angel"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-eeldrop-and-appleplex-by-t-s-eliot-54cef8b",
+      "title": "Eeldrop and Appleplex by T. S.  Eliot",
+      "authors": [
+        "Eliot, T. S. (Thomas Stearns), 1888-1965"
+      ],
+      "language": "English",
+      "description": "Eeldrop and Appleplex"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-landloper-the-romance-of-a-man-d72cbd7",
+      "title": "The Landloper: The Romance of a Man on Foot by Day",
+      "authors": [
+        "Day, Holman, 1865-1935"
+      ],
+      "language": "English",
+      "description": "The Landloper: The Romance of a Man on Foot"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-woman-s-bible-by-elizabeth-cad-5f698cb",
+      "title": "The Woman's Bible by Elizabeth Cady Stanton",
+      "authors": [
+        "Stanton, Elizabeth Cady, 1815-1902"
+      ],
+      "language": "English",
+      "description": "The Woman's Bible"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-trial-of-c-b-reynolds-for-blasphem-d3bf269",
+      "title": "Trial of C. B. Reynolds For Blasphemy by Ingersoll",
+      "authors": [
+        "Ingersoll, Robert Green, 1833-1899"
+      ],
+      "language": "English",
+      "description": "Trial of C. B. Reynolds For Blasphemy\nDefence by Robert G. Ingersoll, at Morristown, N. J., May 1887"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-divers-women-by-mrs-c-m-livingston-0ce6682",
+      "title": "Divers Women by Mrs. C. M. Livingston and Pansy",
+      "authors": [
+        "N703a529d79104e5286baa63566a59acc"
+      ],
+      "language": "English",
+      "description": "Divers Women"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-the-cook-s-wedding-and-other-stori-2f6ec61",
+      "title": "The Cook's Wedding and Other Stories by Chekhov",
+      "authors": [
+        "Chekhov, Anton Pavlovich, 1860-1904"
+      ],
+      "language": "English",
+      "description": "The Cook's Wedding and Other Stories"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-sunzi-bing-fa-english-by-sunzi-c6d2cc1",
+      "title": "Sunzi bing fa. English by Sunzi",
+      "authors": [
+        "Sunzi, active 6th century B.C."
+      ],
+      "language": "English",
+      "description": "[]"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-memories-and-anecdotes-by-kate-san-311b27e",
+      "title": "Memories and Anecdotes by Kate Sanborn",
+      "authors": [
+        "Sanborn, Kate, 1839-1917"
+      ],
+      "language": "English",
+      "description": "Memories and Anecdotes"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-pierre-et-jean-english-by-guy-de-m-2c30cae",
+      "title": "Pierre et Jean. English by Guy de Maupassant",
+      "authors": [
+        "Maupassant, Guy de, 1850-1893"
+      ],
+      "language": "English",
+      "description": "[]"
+    },
+    {
+      "id": "https-archive-org-details-synapseml-gutenberg-once-upon-a-time-and-other-child-v-1587d3f",
+      "title": "Once Upon a Time and Other Child-Verses by Freeman",
+      "authors": [
+        "Freeman, Mary Eleanor Wilkins, 1852-1930"
+      ],
+      "language": "English",
+      "description": "Once Upon a Time and Other Child-Verses"
+    }
+  ]
+}

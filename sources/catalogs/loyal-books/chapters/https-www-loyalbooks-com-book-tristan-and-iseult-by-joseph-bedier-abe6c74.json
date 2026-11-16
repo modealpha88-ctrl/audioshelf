@@ -1,0 +1,79 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "The Childhood of Tristan",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_1_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "The Morholt Out of Ireland",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_2_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "The Quest of the Lady with the Hair of Gold",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_3_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "The Philtre",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_4_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "The Tall Pine-Tree",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_5_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "The Discovery",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_6_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "The Chantry Leap",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_1_7_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "The Wood of Morois",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_2_1_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "Ogrin the Hermit",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_2_2_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "The Ford",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_2_3_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "The Ordeal by Iron",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_2_4_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "The Little Fairy Bell",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_3_1_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "Iseult of the White Hands",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_3_2_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "The Madness of Tristan",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_3_3_bedier_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "The Death of Tristan",
+      "audioUrl": "https://www.archive.org/download/tristan_iseult_librivox/tristaniseult_3_4_bedier_64kb.mp3"
+    }
+  ]
+}

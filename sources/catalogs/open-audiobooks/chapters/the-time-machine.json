@@ -1,10 +1,9 @@
 {
   "chapters": [
     {
-      "id": "the-time-machine-complete",
-      "title": "Full audiobook (M4B)",
-      "audioUrl": "https://files.openaudiobooks.org/the-time-machine/the-time-machine-male-56ed2d8d.m4b",
-      "durationMs": 12480000
+      "id": "the-time-machine-whole",
+      "title": "Complete audiobook (M4B)",
+      "audioUrl": "https://files.openaudiobooks.org/the-time-machine/the-time-machine-male-56ed2d8d.m4b"
     }
   ]
 }
