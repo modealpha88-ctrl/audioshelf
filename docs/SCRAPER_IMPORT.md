@@ -1,39 +1,38 @@
-# Website scraper URL import
+# Universal audiobook URL importer
 
-AudioShelf uses the publicly visible HTML extraction strategies from
-[aviiciii/audiobook-downloader](https://github.com/aviiciii/audiobook-downloader/tree/main/scrapers).
-The upstream project is written in Python; AudioShelf's importer is a native Kotlin/Jsoup
-adaptation, not a Python runtime or a Tachiyomi extension.
+AudioShelf provides a user-initiated single-page importer based on HTML extraction patterns
+from [aviiciii/audiobook-downloader](https://github.com/aviiciii/audiobook-downloader/tree/main/scrapers).
+The original Python project is MIT-licensed; this is a native Kotlin / Jsoup adaptation.
 
-## How it works
+## Usage
 
-In **Sources → Import audiobook by URL**, paste a *specific book page* and confirm you
-have permission to play its recording. AudioShelf extracts a title, optional author and
-cover, and direct audio chapter URLs, then saves the book in your library. Opening the
-book refreshes the chapter list from its page. No site-wide crawling or credentials are
-collected. Installed JSON catalogue repositories continue to work separately.
+Open **Sources → Import audiobook by URL**, paste a full public HTTPS page URL or direct audio
+file URL, confirm that you have permission to access and play the recording, and tap
+**Import into library**. AudioShelf extracts a title, cover, and chapter URLs and adds the
+book to your library. The library refreshes chapters from the saved page when opened.
 
-| Site | Adapted pattern | Status |
-| --- | --- | --- |
-| zaudiobooks.com | JavaScript `tracks` /`chapter_link_dropbox` entries | User-provided book URLs |
-| fulllengthaudiobooks.net | `.entry` MP3 source tags | User-provided book URLs |
-| hdaudiobooks.net | `.entry` /`.entry-box` MP3 source tags | User-provided book URLs |
-| bigaudiobooks.net | `.post-single` MP3 source tags | User-provided book URLs |
-| goldenaudiobook.net / goldenaudiobook.com | `audio.wp-audio-shortcode` sources | User-provided book URLs |
-| tokybook.com | Authenticated token-based HLS playlists | Not supported by direct import |
+## Supported input formats
 
-TokyBook's Python implementation requests a post-detail token and a stream token,
-then uses per-request authorization headers for HLS. These media requests cannot be
-played by AudioShelf's current standard MP3 playback path. The importer detects and
-reports this instead of adding a broken book.
+- **Any public HTTPS site** that includes direct audio URLs in HTML5 `<audio>`,
+  `<source>`, audio links, Open Graph audio tags, or simple static player scripts
+- **Direct audio URLs** ending in .mp3, .m4a, .mp4, .aac, .ogg, .opus, .flac, .wav or .m3u8
+- **Public HLS .m3u8 streams** playable by Media3 (stream only, no offline playlist download)
+- HTML chapter extraction patterns used by ZAudiobooks, Full Length Audiobooks,
+  HD Audiobooks, Big Audiobooks, and Golden Audiobook
 
-Book URLs must use HTTPS and belong to one of the listed hosts. HTML layouts can
-change at any time; the importer does not bypass logins, DRM, payments or access
-controls. A successful import does **not** establish that the recording is licensed
-for redistribution. Use only recordings you are allowed to access and download.
+This does **not** mean every website can be imported. Sites whose media are assembled
+in JavaScript, accessed only after logging in, hidden behind payment/DRM, or require
+temporary streaming tokens or special headers may not expose usable chapter links.
+AudioShelf does not run arbitrary third-party script code, crawl entire websites,
+or defeat access controls. Plain HTTP and local/private-network hosts are rejected,
+including during page redirects; cross-domain public HTTPS redirects are allowed.
+
+An HTML import can contain external audio URLs, and the site may change or remove
+them. The importer cannot verify licenses: use only content you have permission to
+stream or download and comply with applicable terms.
 
 ## Attribution
 
-HTML patterns adapted from the MIT-licensed
-[aviiciii/audiobook-downloader](https://github.com/aviiciii/audiobook-downloader)
-(Copyright © 2025 aviiciii). See [third-party notice](THIRD_PARTY_NOTICES.md).
+The HTML patterns are adapted from the MIT-licensed
+[aviiciii/audiobook-downloader](https://github.com/aviiciii/audiobook-downloader).
+Copyright © 2025 aviiciii. See [third-party notices](THIRD_PARTY_NOTICES.md).
