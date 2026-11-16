@@ -22,6 +22,29 @@ its API, licence, or written permission allows third-party clients.
 - Add provider repositories by HTTPS URL, browse their providers, and install or remove them
 - Import from any public HTTPS audiobook page exposing audio links, or a direct audio file/HLS URL (requires permission to access the recording)
 
+## New sources and personal audio import (v0.5.0)
+
+The optional GitHub provider repository contains 12 provider entries:
+four existing open/public-domain and official-edition providers, plus
+**Scribl/Podiobooks, Libro.fm, Digitalbook.io, LearnOutLoud, Lit2Go,
+Hoopla, Everand and Spotify Audiobooks**. The eight new entries are
+clearly labeled **official external discovery links** rather than fake
+in-app chapter streams. No credentials, subscription cookies, or DRM
+workarounds are collected.
+
+In **Sources**, you can also import a purchased DRM-free MP3/M4B audio
+file using Android's document picker (with retained local URI access),
+or paste a public podcast RSS feed for chapter playback. Podcast feeds
+must contain publisher-distributed HTTPS audio enclosures. This allows
+compatible free Scribl/Podiobooks podcasts to play inside AudioShelf
+without scraping Scribl's protected player.
+
+Repository URL:
+`https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/manifest.json`
+
+See [provider setup](sources/README.md) for access limitations and
+how to import locally owned audio.
+
 ## Build
 
 Requirements: JDK 17+, Android SDK 35, and Gradle 8.10+.
