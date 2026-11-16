@@ -10,6 +10,7 @@ data class AudioBook(
     val coverUrl: String = "",
     val feedUrl: String = "",
     val language: String = "",
+    val externalUrl: String = "",
 )
 
 data class AudioChapter(
