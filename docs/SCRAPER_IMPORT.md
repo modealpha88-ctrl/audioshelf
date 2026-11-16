@@ -20,6 +20,13 @@ book to your library. The library refreshes chapters from the saved page when op
 - HTML chapter extraction patterns used by ZAudiobooks, Full Length Audiobooks,
   HD Audiobooks, Big Audiobooks, and Golden Audiobook
 
+When a homepage contains no directly playable audio, AudioShelf asks for a specific book page.
+Use **Open website in browser** for sites that are not compatible with importing.
+
+MistbornAudio.com explicitly prohibits automated scraping and third-party downloads in its
+[Terms of Use](https://mistbornaudio.com/eula/), so it is not a supported import source.
+It can still be opened in the browser.
+
 This does **not** mean every website can be imported. Sites whose media are assembled
 in JavaScript, accessed only after logging in, hidden behind payment/DRM, or require
 temporary streaming tokens or special headers may not expose usable chapter links.
