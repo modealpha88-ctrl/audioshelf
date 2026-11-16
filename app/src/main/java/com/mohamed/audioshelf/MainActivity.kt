@@ -219,6 +219,11 @@ private fun SourcesScreen(
     var repositoryUrl by rememberSaveable { mutableStateOf("") }
     var bookUrl by rememberSaveable { mutableStateOf("") }
     var hasRights by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val canOpenWebsite = runCatching {
+        val uri = Uri.parse(bookUrl.trim())
+        uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()
+    }.getOrDefault(false)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -272,7 +277,7 @@ private fun SourcesScreen(
                 HorizontalDivider(Modifier.padding(vertical = 18.dp))
                 Text("Import audiobook by URL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Paste any public HTTPS audiobook page or direct audio file URL. AudioShelf finds chapter links in standard HTML players and metadata. Sites requiring logins, JavaScript, or protected streaming may not work.",
+                    "Paste an individual audiobook page or direct audio URL, not a website homepage. Only sites allowing third-party access are supported.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -302,6 +307,21 @@ private fun SourcesScreen(
                         Spacer(Modifier.width(8.dp))
                     }
                     Text(if (state.importBusy) "Importing…" else "Import into library")
+                }
+                TextButton(
+                    onClick = {
+                        if (canOpenWebsite) {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(bookUrl.trim())))
+                            }
+                        }
+                    },
+                    enabled = canOpenWebsite,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Open website in browser")
                 }
                 state.importError?.let {
                     Spacer(Modifier.height(8.dp))
