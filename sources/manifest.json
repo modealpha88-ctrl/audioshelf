@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "name": "AudioShelf Open Audiobook Providers",
+  "description": "Open and public-domain audiobook catalogues, published as native AudioShelf JSON providers. Source-specific license checks apply.",
+  "providers": [
+    {
+      "id": "open-audiobooks",
+      "name": "Open Audiobooks",
+      "description": "CC0 public-domain classic recordings (single M4B per book)",
+      "attribution": "Audio: Open Audiobooks (CC0); source texts: Standard Ebooks",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/open-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/open-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "loyal-books",
+      "name": "Loyal Books",
+      "description": "Public-domain volunteer narrated books with chapter audio RSS feeds",
+      "attribution": "Loyal Books / underlying public-domain narrators",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/loyal-books/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/loyal-books/chapters/{id}.json"
+    },
+    {
+      "id": "gutenberg-open-audio",
+      "name": "Project Gutenberg Open Audiobooks",
+      "description": "Free neural narrated classic audiobooks from Microsoft, MIT and Project Gutenberg",
+      "attribution": "Project Gutenberg Open Audiobook Collection (Microsoft / MIT collaboration)",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/gutenberg-open-audio/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/gutenberg-open-audio/chapters/{id}.json"
+    }
+  ]
+}
