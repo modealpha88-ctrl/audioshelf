@@ -24,6 +24,7 @@ def main():
     assert len(providers) >= 2
     ids = set()
     book_count = 0
+    external_count = 0
     for provider in providers:
         id = provider["id"]
         assert id not in ids
@@ -46,6 +47,11 @@ def main():
             chapters_file = catalog_dir / "chapters" / (book_id + ".json")
             assert chapters_file.is_file(), str(chapters_file)
             chapters = read(chapters_file)["chapters"]
+            if book.get("externalUrl"):
+                check_https(book["externalUrl"])
+                assert not chapters, "External-only book must not pretend to expose media chapters"
+                external_count += 1
+                continue
             assert chapters
             for chapter in chapters:
                 assert chapter["id"] and chapter["title"]
@@ -53,7 +59,7 @@ def main():
             book_count += 1
         print(f"Provider {id}: {len(books)} indexed books")
     assert book_count > 0, "At least one tested, real audiobook must be present"
-    print(f"Validated {len(providers)} providers, {book_count} audiobooks")
+    print(f"Validated {len(providers)} providers, {book_count} directly playable audiobooks and {external_count} official external listings")
 
 
 if __name__ == "__main__":
