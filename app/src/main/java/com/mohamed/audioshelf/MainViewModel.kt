@@ -137,6 +137,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val displayName = app.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst()) c.getString(0) else null
             }.orEmpty()
+            val type = app.contentResolver.getType(uri).orEmpty().lowercase()
+            val extension = displayName.substringAfterLast('.', "").lowercase()
+            require(extension in setOf("mp3", "m4a", "m4b", "mp4", "aac", "ogg", "opus", "flac", "wav") ||
+                type.startsWith("audio/")) { "Select a supported MP3, M4B, M4A or other audio file." }
             val name = displayName.substringBeforeLast('.', displayName).ifBlank { "Imported audiobook" }
             val retriever = MediaMetadataRetriever()
             val metadata = try {
