@@ -15,6 +15,7 @@ class OfflineDownloads(private val context: Context) {
     fun downloadBook(book: AudioBook, chapters: List<AudioChapter>): Int {
         var queued = 0
         chapters.forEachIndexed { index, chapter ->
+            if (!chapter.audioUrl.startsWith("https://", ignoreCase = true)) return@forEachIndexed
             if (Uri.parse(chapter.audioUrl).path.orEmpty().endsWith(".m3u8", ignoreCase = true)) return@forEachIndexed
             val target = file(book, index, chapter.audioUrl)
             if (!target.exists() || target.length() == 0L) {
