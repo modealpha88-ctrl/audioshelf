@@ -1,0 +1,56 @@
+{
+  "books": [
+    {
+      "id": "mistborn-final-empire-libby",
+      "title": "Mistborn: The Final Empire — Library edition",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "narrators": [
+        "Michael Kramer"
+      ],
+      "language": "English",
+      "description": "Full unabridged edition from Macmillan Audio, listed on OverDrive. Open the official page to borrow through a participating Libby library; a qualifying library card and availability are required. External listening only.",
+      "externalUrl": "https://www.overdrive.com/media/251230/the-final-empire"
+    },
+    {
+      "id": "mistborn-final-empire-google-play",
+      "title": "Mistborn: The Final Empire — Google Play",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "narrators": [
+        "Michael Kramer"
+      ],
+      "language": "English",
+      "description": "Complete unabridged Macmillan Audio audiobook, including a free preview through Google Play. Purchase or eligible access required for the full book. Not directly playable in AudioShelf.",
+      "externalUrl": "https://play.google.com/store/audiobooks/details?id=AQAAAICgSX_JzM"
+    },
+    {
+      "id": "mistborn-final-empire-graphicaudio",
+      "title": "Mistborn 1: The Final Empire — GraphicAudio, Part 1 of 3",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "narrators": [
+        "Full cast"
+      ],
+      "language": "English",
+      "description": "Official dramatized adaptation, part 1 of 3, with a free sample at the provider. Purchase or provider entitlement required for the full audio. Open GraphicAudio for listening and format options.",
+      "externalUrl": "https://www.graphicaudio.net/mistborn-1-the-final-empire-1-of-3.html"
+    },
+    {
+      "id": "mistborn-series-graphicaudio",
+      "title": "Mistborn — Complete GraphicAudio Series Catalogue",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "narrators": [
+        "Full cast"
+      ],
+      "language": "English",
+      "description": "Official GraphicAudio catalogue of Mistborn dramatizations (Era 1 and Era 2). Each full audiobook is licensed and may require separate purchase; this is a series catalogue, not a playable audiobook file.",
+      "externalUrl": "https://www.graphicaudio.net/our-productions/genres/fantasy/mistborn-fantasy.html"
+    }
+  ]
+}
