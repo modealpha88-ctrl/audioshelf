@@ -41,10 +41,12 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.google.common.util.concurrent.MoreExecutors
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
 import com.mohamed.audioshelf.data.OfflineDownloads
+import com.mohamed.audioshelf.data.source.SourceRegistry
 import com.mohamed.audioshelf.player.PlaybackService
 import kotlinx.coroutines.delay
 import kotlin.math.roundToLong
@@ -113,7 +115,7 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                     onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
                 )
             } else when (tab) {
-                HomeTab.Browse -> BrowseScreen(state, viewModel::search, viewModel::browse, viewModel::select)
+                HomeTab.Browse -> BrowseScreen(state, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
                 HomeTab.Library -> LibraryScreen(state.library, viewModel::select)
             }
         }
@@ -121,8 +123,14 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onRetry: () -> Unit, onBook: (AudioBook) -> Unit) {
+private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onSource: (String) -> Unit, onRetry: () -> Unit, onBook: (AudioBook) -> Unit) {
     var query by rememberSaveable { mutableStateOf(state.query) }
+
+    LaunchedEffect(query) {
+        delay(400)
+        if (query != state.query) onSearch(query)
+    }
+
     Column(Modifier.fillMaxSize()) {
         LargeTopAppBar(title = { Column { Text("AudioShelf"); Text("Public-domain audiobooks", style = MaterialTheme.typography.labelMedium) } })
         SearchBar(
@@ -130,11 +138,18 @@ private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onR
                 SearchBarDefaults.InputField(
                     query = query,
                     onQueryChange = { query = it },
-                    onSearch = { onSearch(query) },
+                    onSearch = {
+                        query = it
+                        onSearch(it)
+                    },
                     expanded = false,
                     onExpandedChange = {},
                     placeholder = { Text("Search LibriVox titles") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    leadingIcon = {
+                        IconButton(onClick = { onSearch(query) }) {
+                            Icon(Icons.Default.Search, "Search")
+                        }
+                    },
                     trailingIcon = { if (query.isNotEmpty()) IconButton({ query = ""; onSearch("") }) { Icon(Icons.Default.Close, null) } },
                 )
             },
@@ -142,27 +157,47 @@ private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onR
             onExpandedChange = {},
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         ) {}
-        SourceBanner()
-        ContentList(state.browse, state.loading, state.error, onRetry, onBook)
+        SourceSelector(state.sourceId, onSource)
+        ContentList(state.browse, state.loading, state.error, query, onRetry, onBook)
     }
 }
 
 @Composable
-private fun SourceBanner() {
+private fun SourceSelector(selectedId: String, onSource: (String) -> Unit) {
+    val options = remember { listOf("all" to "All sources") + SourceRegistry.all().map { it.id to it.name } }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Public, null)
-            Spacer(Modifier.width(12.dp))
-            Column { Text("LibriVox", fontWeight = FontWeight.Bold); Text("Public-domain recordings by volunteers", style = MaterialTheme.typography.bodySmall) }
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Public, null)
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(options.first { it.first == selectedId }.second, fontWeight = FontWeight.Bold)
+                    Text("Authorized open and public-domain catalogues", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                options.forEach { (id, label) ->
+                    FilterChip(selected = selectedId == id, onClick = { onSource(id) }, label = { Text(label) })
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ContentList(books: List<AudioBook>, loading: Boolean, error: String?, onRetry: () -> Unit, onBook: (AudioBook) -> Unit) {
+private fun ContentList(books: List<AudioBook>, loading: Boolean, error: String?, query: String, onRetry: () -> Unit, onBook: (AudioBook) -> Unit) {
     when {
         loading && books.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         error != null && books.isEmpty() -> ErrorState(error, onRetry)
+        !loading && query.isNotBlank() && books.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.SearchOff, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(12.dp))
+                Text("No audiobooks found", style = MaterialTheme.typography.titleMedium)
+                Text("Try another title or author", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
         else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(books.size, key = { "${books[it].sourceId}:${books[it].id}" }) { BookRow(books[it], onBook) }
         }
@@ -189,7 +224,14 @@ private fun LibraryScreen(books: List<AudioBook>, onBook: (AudioBook) -> Unit) {
 private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
     ElevatedCard(onClick = { onBook(book) }, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(book.coverUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
+            SubcomposeAsyncImage(
+                model = book.coverUrl,
+                contentDescription = "${book.title} cover",
+                contentScale = ContentScale.Crop,
+                loading = { CoverFallback() },
+                error = { CoverFallback() },
+                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+            )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -199,6 +241,11 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
             Icon(Icons.Default.ChevronRight, null)
         }
     }
+}
+
+@Composable
+private fun CoverFallback() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Icon(Icons.Default.Headphones, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

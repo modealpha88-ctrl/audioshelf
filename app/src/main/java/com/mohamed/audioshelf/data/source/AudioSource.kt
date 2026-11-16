@@ -13,7 +13,10 @@ interface AudioSource {
 }
 
 object SourceRegistry {
-    private val sources: Map<String, AudioSource> = listOf(LibriVoxSource()).associateBy { it.id }
+    private val sources: Map<String, AudioSource> = listOf(
+        LibriVoxSource(),
+        InternetArchiveSource(),
+    ).associateBy { it.id }
     fun all(): List<AudioSource> = sources.values.toList()
     fun get(id: String): AudioSource = requireNotNull(sources[id]) { "Unknown source: $id" }
 }

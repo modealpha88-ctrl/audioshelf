@@ -4,13 +4,14 @@ AudioShelf is a Tachiyomi-inspired Android audiobook reader: browse modular sour
 save books to a local library, stream chapter audio, resume progress, change speed,
 and use a sleep timer.
 
-The bundled source is **LibriVox**, whose catalogue is made up of public-domain
-recordings. Source adapters are deliberately opt-in: only integrate a website when
+The bundled sources are **LibriVox** and open/public-domain audio from the
+**Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
 ## Current MVP
 
-- Browse and search the LibriVox catalogue
+- Debounced live search across all enabled catalogues
+- Browse LibriVox and open/public-domain Internet Archive audiobooks
 - Book details and RSS-based chapter discovery
 - Local library and listening-progress persistence
 - Media3 background playback and notification controls
@@ -39,6 +40,9 @@ chapter list whose audio URLs are permitted for third-party playback.
 AudioShelf does not ship a scraper for `mistbornaudio.com`. Its published terms
 prohibit automated scraping, data extraction, and third-party downloading. It can
 be added only if the operator provides an official API or written authorization.
+
+AudioShelf also does not integrate AudioBookBay torrent automation. Users should
+only import or play recordings they are legally permitted to access.
 
 ## Licence
 
