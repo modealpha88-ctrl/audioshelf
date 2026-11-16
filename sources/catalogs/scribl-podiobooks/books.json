@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Scribl audiobooks and free Podiobooks",
+      "authors": [
+        "Scribl / Podiobooks"
+      ],
+      "description": "Free serialized Podiobooks are offered as podcasts. Open Scribl for titles; if the publisher provides an RSS feed, paste it into AudioShelf's public RSS importer. Paid audiobooks remain on Scribl.",
+      "externalUrl": "https://scribl.com/info/podiobooks-now-scribl",
+      "language": "English"
+    }
+  ]
+}
