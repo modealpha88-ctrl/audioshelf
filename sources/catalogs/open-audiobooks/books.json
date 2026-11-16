@@ -1,0 +1,16 @@
+{
+  "books": [
+    {
+      "id": "the-time-machine",
+      "title": "The Time Machine",
+      "authors": [
+        "H. G. Wells"
+      ],
+      "narrators": [
+        "Synthetic narration: Charon"
+      ],
+      "description": "CC0-licensed audiobook from Open Audiobooks, generated from a Standard Ebooks public-domain edition.",
+      "language": "English"
+    }
+  ]
+}
