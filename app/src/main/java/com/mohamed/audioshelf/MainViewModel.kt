@@ -7,6 +7,7 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.LibraryStore
+import com.mohamed.audioshelf.data.captions.TimedCaptionStore
 import com.mohamed.audioshelf.data.source.ProviderRepositoryStore
 import com.mohamed.audioshelf.data.source.SourceProviderDefinition
 import com.mohamed.audioshelf.data.source.SourceRepository
@@ -38,6 +39,8 @@ data class AudioShelfState(
     val repositoryError: String? = null,
     val importBusy: Boolean = false,
     val importError: String? = null,
+    val transcriptRevision: Int = 0,
+    val transcriptError: String? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -167,6 +170,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             select(book)
         }.onFailure {
             _state.value = _state.value.copy(importError = it.importMessage())
+        }
+    }
+
+    fun importTimedCaptions(book: AudioBook, chapterIndex: Int, uri: Uri) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { TimedCaptionStore(getApplication()).import(book, chapterIndex, uri) }
+                .onSuccess {
+                    _state.value = _state.value.copy(
+                        transcriptRevision = _state.value.transcriptRevision + 1,
+                        transcriptError = null,
+                    )
+                }.onFailure {
+                    _state.value = _state.value.copy(
+                        transcriptError = it.message ?: "Unable to import captions.",
+                    )
+                }
         }
     }
 

@@ -49,6 +49,20 @@ Repository URL:
 See [provider setup](sources/README.md) for access limitations and
 how to import locally owned audio.
 
+## Story Mode: word captions + animated backgrounds
+
+On an audiobook details screen, tap **Story mode** to view large, pop-up
+words over a moving background. Use **Import SRT / VTT / LRC captions** to
+synchronize the text with narration; the app does not yet transcribe speech
+itself. A subtitle cue containing several words is divided evenly over its
+time span (an approximation unless individual words are timestamped).
+
+Original offline procedural backgrounds: **Parkour**, **Starfield**, **Orbs**.
+Choose **My video** to loop a user-selected, properly licensed gameplay/video
+clip silently behind the captions. The app does not ship or scrape gameplay
+from TikTok or Minecraft. Captions and video references remain on the device.
+M4B users can switch between full-book and chapter-relative timestamps.
+
 ## Build
 
 Requirements: JDK 17+, Android SDK 35, and Gradle 8.10+.

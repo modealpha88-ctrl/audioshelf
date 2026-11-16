@@ -58,6 +58,22 @@ import kotlin.math.roundToLong
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
+    private var captionTarget: Pair<AudioBook, Int>? = null
+    private var videoRevision by mutableIntStateOf(0)
+    private val captionPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) captionTarget?.let { (book, index) ->
+            viewModel.importTimedCaptions(book, index, uri)
+        }
+        captionTarget = null
+    }
+    private val videoPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            runCatching { contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            getSharedPreferences("audio_shelf_story", Context.MODE_PRIVATE)
+                .edit().putString("video_uri", it.toString()).apply()
+            videoRevision++
+        }
+    }
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val localAudioPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
@@ -75,9 +91,16 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             AudioShelfTheme {
-                AudioShelfApp(viewModel, onPickLocalAudio = {
-                    localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream"))
-                })
+                AudioShelfApp(
+                    viewModel,
+                    onPickLocalAudio = { localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream")) },
+                    onPickTranscript = { book, index ->
+                        captionTarget = book to index
+                        captionPicker.launch(arrayOf("*/*"))
+                    },
+                    onPickVideo = { videoPicker.launch(arrayOf("video/*")) },
+                    videoRevision = videoRevision,
+                )
             }
         }
     }
@@ -86,7 +109,13 @@ class MainActivity : ComponentActivity() {
 private enum class HomeTab { Browse, Library, Sources }
 
 @Composable
-private fun AudioShelfApp(viewModel: MainViewModel, onPickLocalAudio: () -> Unit) {
+private fun AudioShelfApp(
+    viewModel: MainViewModel,
+    onPickLocalAudio: () -> Unit,
+    onPickTranscript: (AudioBook, Int) -> Unit,
+    onPickVideo: () -> Unit,
+    videoRevision: Int,
+) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
@@ -129,6 +158,11 @@ private fun AudioShelfApp(viewModel: MainViewModel, onPickLocalAudio: () -> Unit
                     saved = viewModel.isSaved(selected),
                     controller = controller,
                     sleepEndsAt = state.sleepEndsAt,
+                    transcriptRevision = state.transcriptRevision,
+                    transcriptError = state.transcriptError,
+                    videoRevision = videoRevision,
+                    onPickTranscript = { index -> onPickTranscript(selected, index) },
+                    onPickVideo = onPickVideo,
                     onBack = viewModel::closeBook,
                     onToggleSaved = { viewModel.toggleLibrary(selected) },
                     onOpenExternal = {
@@ -540,6 +574,11 @@ private fun BookScreen(
     saved: Boolean,
     controller: MediaController?,
     sleepEndsAt: Long?,
+    transcriptRevision: Int,
+    transcriptError: String?,
+    videoRevision: Int,
+    onPickTranscript: (Int) -> Unit,
+    onPickVideo: () -> Unit,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
     onOpenExternal: () -> Unit,
@@ -551,6 +590,22 @@ private fun BookScreen(
     onSleep: (Int) -> Unit,
 ) {
     var showPlayer by remember { mutableStateOf(false) }
+    var storyOpen by remember(book.id) { mutableStateOf(false) }
+    if (storyOpen && controller != null) {
+        StoryMode(
+            book = book,
+            chapters = chapters,
+            controller = controller,
+            transcriptRevision = transcriptRevision,
+            transcriptError = transcriptError,
+            videoRevision = videoRevision,
+            onClose = { storyOpen = false },
+            onPickTranscript = onPickTranscript,
+            onPickVideo = onPickVideo,
+            onProgress = onProgress,
+        )
+        return
+    }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -580,6 +635,15 @@ private fun BookScreen(
                         } else {
                             Button(onClick = { if (chapters.isNotEmpty()) { onResume(); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
                                 Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = { onResume(); storyOpen = true },
+                                enabled = chapters.isNotEmpty() && controller != null,
+                            ) {
+                                Icon(Icons.Default.ClosedCaption, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Story mode")
                             }
                         }
                         if (book.externalUrl.isBlank()) {
