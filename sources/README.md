@@ -14,6 +14,42 @@ It uses version-1 JSON manifests supported by AudioShelf v0.3+.
 4. Install the providers you want.
 5. Switch to **Browse** and select the installed source or **All sources**.
 
+## Additional audiobook services (AudioShelf v0.5.0+)
+
+The same repository now includes eight official discovery providers. These are
+**external-only catalogue entries**: they open the service website, and they
+never substitute fake "playable" chapter URLs for copyrighted recordings.
+
+| Provider | Access in AudioShelf |
+| --- | --- |
+| Scribl / Podiobooks | Official discovery link; you may separately import a freely published podcast RSS feed |
+| Libro.fm | Official bookstore; select a purchased DRM-free MP3 or M4B using the Android file picker |
+| Digitalbook.io | Official free/paid audiobook catalogue link |
+| LearnOutLoud | Official free educational audiobook directory |
+| Lit2Go | Official university learning archive; follow FCIT reuse limits |
+| Hoopla | Official library-borrowing site; library entitlement required |
+| Everand | Official subscription catalogue; playback remains in provider app |
+| Spotify | Official service; catalogue and eligibility depend on your region |
+
+### Import your own DRM-free audio
+
+From **Sources**, choose **Choose MP3 or M4B file**. Pick a real audio file
+with Android's document picker. AudioShelf retains only the file's document URI
+permission and stores the audiobook locally in your library, with listening
+progress. It does **not** download, capture, decrypt, or copy audio from a
+subscription app. A Libro.fm purchase can be downloaded from
+[Libro.fm Library](https://libro.fm/user/library) as a DRM-free M4B or
+as MP3 tracks, then imported from your device. Single-file import is supported;
+there is no automatic multi-file chapter grouping yet.
+
+### Import an authorized serialized podcast
+
+From **Sources**, paste a publicly offered HTTPS RSS URL into
+**Public audiobook RSS URL**. AudioShelf loads direct HTTPS `<enclosure>`
+links for audiobook episodes; only publicly supplied feeds are supported.
+This works for compatible free Scribl/Podiobooks RSS feeds where published.
+The app never logs into Scribl or fetches a paid audiobook from a player.
+
 ## Providers
 
 **Mistborn is not a public-domain audiobook.** Its entries are external listening links, not free full-book downloads. Use the Open official provider button in AudioShelf v0.4.2+ to access licensed retail purchases, authorized previews, or library loans. Availability varies by country and library.
