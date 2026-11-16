@@ -17,6 +17,7 @@ object SourceRegistry {
         LibriVoxSource(),
         InternetArchiveSource(),
     ).associateBy { it.id }
+    private val websiteImporter = ImportedWebsiteSource()
     @Volatile private var installed: Map<String, AudioSource> = emptyMap()
 
     fun replaceInstalled(providers: List<SourceProviderDefinition>) {
@@ -24,6 +25,9 @@ object SourceRegistry {
     }
 
     fun all(): List<AudioSource> = builtIn.values + installed.values
-    fun get(id: String): AudioSource = requireNotNull(builtIn[id] ?: installed[id]) { "Unknown source: $id" }
-    fun contains(id: String): Boolean = id in builtIn || id in installed
+    fun get(id: String): AudioSource = requireNotNull(
+        if (id == websiteImporter.id) websiteImporter else builtIn[id] ?: installed[id]
+    ) { "Unknown source: $id" }
+    fun websiteImporter(): ImportedWebsiteSource = websiteImporter
+    fun contains(id: String): Boolean = id == websiteImporter.id || id in builtIn || id in installed
 }
