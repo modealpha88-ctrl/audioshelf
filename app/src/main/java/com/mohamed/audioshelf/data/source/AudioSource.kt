@@ -27,7 +27,7 @@ object SourceRegistry {
         installed = providers.map(::RepositoryAudioSource).associateBy { it.id }
     }
 
-    fun all(): List<AudioSource> = builtIn.values + installed.values
+    fun all(): List<AudioSource> = builtIn.values.filterNot { it.id == "local_files" || it.id == "public_rss" } + installed.values
     fun get(id: String): AudioSource = requireNotNull(
         if (id == websiteImporter.id) websiteImporter else builtIn[id] ?: installed[id]
     ) { "Unknown source: $id" }
