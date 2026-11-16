@@ -521,8 +521,10 @@ private fun BookScreen(
                                 Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
                             }
                         }
-                        OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty() && book.externalUrl.isBlank()) {
-                            Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
+                        if (book.externalUrl.isBlank()) {
+                            OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
+                                Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
+                            }
                         }
                         if (book.sourceId == "internet_archive") {
                             OutlinedButton(onClick = onTorrent) {
