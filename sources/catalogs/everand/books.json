@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Everand audiobooks",
+      "authors": [
+        "Everand"
+      ],
+      "description": "Access licensed audiobooks with an Everand subscription or offer. Playback and offline access stay inside Everand.",
+      "externalUrl": "https://www.everand.com/audiobooks",
+      "language": "English"
+    }
+  ]
+}
