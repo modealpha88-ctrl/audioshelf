@@ -105,7 +105,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 .onFailure {
                     _state.value = _state.value.copy(
                         importBusy = false,
-                        importError = it.repositoryMessage(),
+                        importError = it.importMessage(),
                     )
                 }
         }
@@ -204,6 +204,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         is java.net.SocketTimeoutException -> "The audiobook service took too long to respond. Try again shortly."
         is java.io.IOException -> "Could not reach the audiobook service. Try again shortly."
         else -> "Could not load this content. Try again."
+    }
+
+    private fun Throwable.importMessage(): String = when (this) {
+        is IllegalArgumentException -> message ?: "Invalid audiobook page."
+        is java.net.UnknownHostException -> "Could not find the audiobook website."
+        is java.net.SocketTimeoutException -> "The audiobook page took too long to respond."
+        is java.io.IOException -> "Could not read the audiobook page. Check the link and site access."
+        else -> "Unable to import audiobook chapters from this page."
     }
 
     private fun Throwable.repositoryMessage(): String = when (this) {
