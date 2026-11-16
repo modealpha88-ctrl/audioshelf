@@ -169,11 +169,14 @@ internal fun StoryMode(
     }
 
     val safeIndex = chapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
-    val subtitleCues = remember(book.id, book.sourceId, safeIndex, transcriptRevision) {
-        TimedCaptionStore(context).load(book, safeIndex)
-    }
     val embedded = book.sourceId == "local_files" && chapters.size > 1
     val filePositionMs = position + (if (embedded && absoluteM4bTime) chapters.getOrNull(safeIndex)?.startMs ?: 0 else 0)
+    val captionBucket = filePositionMs.coerceAtLeast(0) / TimedCaptionStore.INDEX_SPAN_MS
+    val captionSourceIndex = if (book.sourceId == "local_files") 0 else safeIndex
+    val subtitleCues = remember(book.id, book.sourceId, captionSourceIndex,
+        captionBucket, transcriptRevision, absoluteM4bTime) {
+        TimedCaptionStore(context).loadNear(book, safeIndex, filePositionMs)
+    }
     val fullCues = remember(book.id, filePositionMs / FullBookSubtitleStore.WINDOW_MS,
         fullProgress.completedMs) {
         fullStore.loadMinute(book.id, filePositionMs)

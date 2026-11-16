@@ -56,6 +56,73 @@ object TimedCaptionParser {
         }
     }
 
+    /**
+     * Streaming SRT / WebVTT / LRC parser. Does not materialize the full audiobook
+     * subtitle file; callbacks are delivered as each timed cue is completed.
+     * Unlike parse(), exceeding the guard limit throws instead of truncating.
+     */
+    fun parseStream(reader: java.io.BufferedReader, accept: (TimedCue) -> Unit): Int {
+        var count = 0
+        var start: Long? = null
+        var end: Long? = null
+        val caption = StringBuilder()
+        var pendingLrc: Pair<Long, String>? = null
+
+        fun emit(cue: TimedCue) {
+            if (cue.endMs <= cue.startMs || cue.text.isBlank()) return
+            require(count < 300_000) { "Subtitle file contains more than 300,000 captions." }
+            accept(cue)
+            count++
+        }
+        fun flushCue() {
+            val a = start
+            val b = end
+            if (a != null && b != null) {
+                val text = cleanCaption(caption.toString())
+                emit(TimedCue(a, b, text))
+            }
+            start = null
+            end = null
+            caption.setLength(0)
+        }
+        reader.forEachLine { raw ->
+            require(raw.length <= 100_000) { "Subtitle line is too long." }
+            val line = raw.trim()
+            val match = lrc.matchEntire(line)
+            if (match != null) {
+                flushCue()
+                val (mins, secs, fraction, phrase) = match.destructured
+                val stamp = mins + ":" + secs + (if (fraction.isNotBlank()) "." + fraction else "")
+                val whenMs = timeMs(stamp)
+                if (whenMs != null) {
+                    pendingLrc?.let { (previous, value) ->
+                        emit(TimedCue(previous, whenMs.coerceAtLeast(previous + 1), value))
+                    }
+                    pendingLrc = whenMs to cleanCaption(phrase)
+                }
+            } else if (line.contains("-->")) {
+                flushCue()
+                val stamps = line.split("-->", limit = 2)
+                val a = timeMs(stamps[0])
+                val b = timeMs(stamps[1].trim().substringBefore(' '))
+                if (a != null && b != null && b > a) {
+                    start = a
+                    end = b
+                }
+            } else if (line.isBlank()) {
+                flushCue()
+            } else if (start != null) {
+                if (caption.isNotEmpty()) caption.append(' ')
+                caption.append(line)
+            }
+        }
+        flushCue()
+        pendingLrc?.let { (whenMs, value) ->
+            emit(TimedCue(whenMs, whenMs + 4_000, value))
+        }
+        return count
+    }
+
     fun active(cues: List<TimedCue>, positionMs: Long): TimedCue? {
         if (cues.isEmpty()) return null
         var lo = 0

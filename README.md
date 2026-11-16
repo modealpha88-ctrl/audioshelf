@@ -94,6 +94,20 @@ partially finished, exports contain only completed sections. Speech recognition
 can mishear names and invented vocabulary; the generated file is not an
 official audiobook transcript.
 
+## Full-length subtitle import
+
+**Story Mode → Import SRT / VTT / LRC** accepts subtitle files up to 64 MiB
+and as many as 300,000 timestamped cues, rather than rejecting files over 2 MB.
+It builds a private, on-disk five-minute index while importing. Playback reads
+only the index portion around the current audio position; no whole-book
+subtitle parse occurs on chapter changes. Caption files and existing library
+data are preserved if a new import fails. Full-length M4B subtitles use the
+**M4B transcript uses full-book timestamps** setting by default.
+
+An EPUB or estimated subtitle file does not guarantee accurate Michael Kramer
+word timing; for precise synchronization, align the transcript to the actual
+narration. Importing text as subtitles does not transcribe audio automatically.
+
 ## Build
 
 Requirements: JDK 17+, Android SDK 35, and Gradle 8.10+.
