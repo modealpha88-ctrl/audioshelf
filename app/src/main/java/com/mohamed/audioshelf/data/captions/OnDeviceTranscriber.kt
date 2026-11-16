@@ -36,7 +36,7 @@ class OnDeviceTranscriber(private val context: Context) {
         require(audioUri.scheme == "content" || audioUri.scheme == "file") {
             "On-device transcription currently requires a locally stored MP3/M4B file."
         }
-        require(windowStartMs >= 0 && windowLengthMs in 1000..60_000) {
+        require(windowStartMs >= 0 && windowLengthMs in 1..60_000) {
             "Invalid transcription window."
         }
 
