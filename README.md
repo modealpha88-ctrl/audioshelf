@@ -20,6 +20,7 @@ its API, licence, or written permission allows third-party clients.
 - Material 3 light/dark UI
 - Source interface ready for additional authorized providers
 - Add provider repositories by HTTPS URL, browse their providers, and install or remove them
+- Import a single audiobook by its HTTPS page URL using adapted HTML scraper patterns (requires permission to access the recording)
 
 ## Build
 
@@ -44,6 +45,14 @@ chapter list whose audio URLs are permitted for third-party playback.
 AudioShelf also supports declarative provider repositories. Open **Sources**, paste an HTTPS
 repository URL, then install any provider listed by that repository. See
 [`docs/PROVIDER_REPOSITORIES.md`](docs/PROVIDER_REPOSITORIES.md) for the JSON format.
+
+For user-initiated single-book imports, open **Sources → Import audiobook by URL** and paste a
+supported book page (not a repository URL). This adapts the HTML extraction patterns from the
+MIT-licensed `aviiciii/audiobook-downloader` Python scrapers. The feature currently supports
+ZAudiobooks, Full Length Audiobooks, HD Audiobooks, Big Audiobooks and Golden Audiobook pages.
+TokyBook's token-protected HLS streaming is **not** supported by the standard playback path.
+See [scraper import instructions](docs/SCRAPER_IMPORT.md) and
+[third-party notices](docs/THIRD_PARTY_NOTICES.md).
 
 ## Legal note
 
