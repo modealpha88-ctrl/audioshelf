@@ -117,6 +117,11 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                     sleepEndsAt = state.sleepEndsAt,
                     onBack = viewModel::closeBook,
                     onToggleSaved = { viewModel.toggleLibrary(selected) },
+                    onOpenExternal = {
+                        if (selected.externalUrl.startsWith("https://")) {
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
+                        }
+                    },
                     onPlay = { index ->
                         val progress = viewModel.progress(selected)
                         playBook(context, controller, selected, state.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
@@ -454,6 +459,7 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
                 Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(book.authors, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (book.language.isNotBlank()) Text(book.language, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                if (book.externalUrl.isNotBlank()) Text("External listening · Purchase or borrow", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
             Icon(Icons.Default.ChevronRight, null)
         }
@@ -476,6 +482,7 @@ private fun BookScreen(
     sleepEndsAt: Long?,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
+    onOpenExternal: () -> Unit,
     onPlay: (Int) -> Unit,
     onDownload: () -> Unit,
     onTorrent: () -> Unit,
@@ -499,10 +506,22 @@ private fun BookScreen(
                         Spacer(Modifier.height(6.dp)); Text(book.authors)
                         if (book.language.isNotBlank()) Text(book.language, color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(14.dp))
-                        Button(onClick = { if (chapters.isNotEmpty()) { onPlay(0); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
-                            Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
+                        if (book.externalUrl.isNotBlank()) {
+                            Button(onClick = onOpenExternal) {
+                                Icon(Icons.Default.OpenInBrowser, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Open official provider")
+                            }
+                            Text(
+                                "Purchase or borrow using the provider's app or website. The full audiobook is not streamed by AudioShelf.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        } else {
+                            Button(onClick = { if (chapters.isNotEmpty()) { onPlay(0); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
+                                Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
+                            }
                         }
-                        OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
+                        OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty() && book.externalUrl.isBlank()) {
                             Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
                         }
                         if (book.sourceId == "internet_archive") {
@@ -516,7 +535,7 @@ private fun BookScreen(
                     }
                 }
                 if (book.description.isNotBlank()) Text(book.description, Modifier.padding(horizontal = 20.dp), maxLines = 6, overflow = TextOverflow.Ellipsis)
-                Text("Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
+                if (book.externalUrl.isBlank()) Text("Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
             }
             if (loading) item { Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             if (error != null) item { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp)) }
