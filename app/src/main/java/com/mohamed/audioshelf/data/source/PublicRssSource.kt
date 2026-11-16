@@ -59,7 +59,7 @@ class PublicRssSource : AudioSource {
         require(response.statusCode() in 200..299) { "RSS feed returned HTTP " + response.statusCode() }
         val doc = Jsoup.parse(response.body(), "", Parser.xmlParser())
         val channel = doc.selectFirst("channel") ?: throw IllegalArgumentException("Enter a podcast RSS 2.0 feed URL.")
-        val title = channel.selectFirst("> title")?.text()?.trim().orEmpty()
+        val title = channel.selectFirst("title")?.text()?.trim().orEmpty()
         require(title.isNotBlank()) { "The RSS feed has no title." }
         val coverRaw = channel.selectFirst("image > url")?.text().orEmpty().ifBlank {
             channel.selectFirst("itunes|image")?.attr("href").orEmpty()
