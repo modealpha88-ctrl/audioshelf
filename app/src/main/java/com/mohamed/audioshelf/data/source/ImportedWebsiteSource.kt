@@ -246,6 +246,6 @@ class ImportedWebsiteSource : AudioSource {
     private companion object {
         const val MAX_CHAPTERS = 500
         const val MAX_REDIRECTS = 4
-        val AUDIO_EXTENSIONS = setOf("mp3", "m4a", "mp4", "aac", "ogg", "opus", "flac", "wav", "m3u8")
+        val AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "mp4", "aac", "ogg", "opus", "flac", "wav", "m3u8")
     }
 }
