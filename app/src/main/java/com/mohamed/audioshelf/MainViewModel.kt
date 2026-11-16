@@ -46,6 +46,7 @@ data class AudioShelfState(
     val sttModelReady: Boolean = false,
     val sttBusy: Boolean = false,
     val sttMessage: String? = null,
+    val sttNativeUnavailable: Boolean = false,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -200,7 +201,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Caches 30 seconds of word-aligned captions for local audio. */
     fun transcribeNearby(book: AudioBook, chapterIndex: Int, absolutePositionMs: Long) {
-        if (book.sourceId != "local_files" || !_state.value.sttModelReady || _state.value.sttBusy) return
+        if (book.sourceId != "local_files" || !_state.value.sttModelReady ||
+            _state.value.sttBusy || _state.value.sttNativeUnavailable) return
         val startMs = (absolutePositionMs.coerceAtLeast(0) / 30_000L) * 30_000L
         val app = getApplication<Application>()
         val captions = TimedCaptionStore(app)
@@ -222,9 +224,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     transcriptRevision = _state.value.transcriptRevision + 1,
                     sttMessage = if (count > 0) "Generated " + count + " timed words."
                         else "No speech detected in this section.")
-            }.onFailure {
-                _state.value = _state.value.copy(sttBusy = false,
-                    sttMessage = it.message ?: "Speech recognition failed.")
+            }.onFailure { error ->
+                // JNI/JNA loader failures surface in signed releases, often as
+                // NoClassDefFoundError: org.vosk.LibVosk.
+                val chain = generateSequence(error) { it.cause }.take(10).toList()
+                val nativeFailure = chain.any {
+                    it is LinkageError || it.javaClass.name.contains("Jna", ignoreCase = true)
+                }
+                _state.value = _state.value.copy(
+                    sttBusy = false,
+                    sttNativeUnavailable = nativeFailure,
+                    sttMessage = if (nativeFailure)
+                        "Offline speech engine could not load. Update AudioShelf to a native-library-compatible build."
+                    else error.message ?: "Speech recognition failed.",
+                )
             }
         }
     }

@@ -163,6 +163,7 @@ private fun AudioShelfApp(
                     sttBusy = state.sttBusy,
                     sttModelReady = state.sttModelReady,
                     sttMessage = state.sttMessage,
+                    sttNativeUnavailable = state.sttNativeUnavailable,
                     onDownloadSttModel = viewModel::downloadSttModel,
                     onTranscribeNearby = { index, ms -> viewModel.transcribeNearby(selected, index, ms) },
                     videoRevision = videoRevision,

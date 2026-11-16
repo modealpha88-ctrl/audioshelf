@@ -68,6 +68,8 @@ locally imported MP3/M4B files, using a small English model (about 40 MB, downlo
 once from the Vosk project). Enable **Auto-transcribe as you listen** to generate
 word-aligned captions in 30-second windows without sending recordings to servers.
 Generated captions are cached privately, and user-imported captions take priority.
+The release APK includes Vosk and JNA Android native libraries, while release
+R8 keep rules protect their reflection and native method declarations.
 Transcription is not yet available for remote streams and is not equivalent to
 text-to-speech. Long books may require significant processing time.
 

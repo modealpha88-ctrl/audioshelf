@@ -98,6 +98,7 @@ internal fun StoryMode(
     sttBusy: Boolean,
     sttModelReady: Boolean,
     sttMessage: String?,
+    sttNativeUnavailable: Boolean,
     onDownloadSttModel: () -> Unit,
     onTranscribeNearby: (Int, Long) -> Unit,
     onProgress: (Int, Long) -> Unit,
@@ -135,7 +136,7 @@ internal fun StoryMode(
     val displayWord = cue?.let { TimedCaptionParser.wordAt(it, filePositionMs).first }.orEmpty()
     val absoluteAudioMs = position + if (embedded) chapters.getOrNull(safeIndex)?.startMs ?: 0L else 0L
     LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex, absoluteAudioMs / 1000L) {
-        if (autoTranscribe && sttModelReady && !sttBusy &&
+        if (autoTranscribe && sttModelReady && !sttBusy && !sttNativeUnavailable &&
             book.sourceId == "local_files" && chapters.isNotEmpty()) {
             // Generate captions a little ahead of playback in short windows.
             onTranscribeNearby(safeIndex, absoluteAudioMs + 12_000L)
@@ -230,13 +231,14 @@ internal fun StoryMode(
                                 androidx.compose.material3.Switch(
                                     checked = autoTranscribe,
                                     onCheckedChange = { autoTranscribe = it },
+                                    enabled = !sttNativeUnavailable,
                                 )
                                 Text("  Auto-transcribe as you listen", color = Color.White,
                                     style = MaterialTheme.typography.bodySmall)
                             }
                             OutlinedButton(
                                 onClick = { onTranscribeNearby(safeIndex, absoluteAudioMs) },
-                                enabled = !sttBusy, modifier = Modifier.fillMaxWidth(),
+                                enabled = !sttBusy && !sttNativeUnavailable, modifier = Modifier.fillMaxWidth(),
                             ) { Text("Generate next 30 seconds of captions") }
                         }
                         if (sttBusy) androidx.compose.material3.LinearProgressIndicator(
@@ -262,7 +264,7 @@ internal fun StoryMode(
                     if (transcriptError != null) Text(transcriptError,
                         color = Color(0xFFFFB8AF), style = MaterialTheme.typography.bodySmall)
                     if (subtitleCues.isEmpty()) Text(
-                        "Captions come from your timed subtitle file; automatic speech-to-text is not yet available.",
+                        "Turn on offline auto-transcription or import an SRT/VTT/LRC subtitle file.",
                         color = Color(0xFFD3E3EF), textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
                     ) else Text(
