@@ -94,6 +94,16 @@ partially finished, exports contain only completed sections. Speech recognition
 can mishear names and invented vocabulary; the generated file is not an
 official audiobook transcript.
 
+## Story Mode controls and caption display
+
+Story Mode keeps audiobook playback controls and an always-accessible **Import/Replace
+captions** action in a compact, opaque bottom card. Offline speech recognition,
+full-book background transcription, export and M4B timing options are under
+**Tools**, collapsed by default. The introductory caption instruction appears
+only before any captions have been imported or generated; once captions exist
+it never overlays the animation during normal gaps between spoken lines.
+Changing subtitle files does not clear library data or playback progress.
+
 ## Full-length subtitle import
 
 **Story Mode → Import SRT / VTT / LRC** accepts subtitle files up to 64 MiB

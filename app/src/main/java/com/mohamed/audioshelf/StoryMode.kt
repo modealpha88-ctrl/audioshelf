@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Tune
 import com.mohamed.audioshelf.data.captions.FullBookSubtitleStore
 import com.mohamed.audioshelf.data.captions.FullBookTranscriptionWorker
+import com.mohamed.audioshelf.data.captions.CaptionOverlayPolicy
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledIconButton
@@ -263,8 +264,12 @@ internal fun StoryMode(
                             ),
                         )
                     }
-                } else if (!captionsAvailable && !captionsHaveShown && !autoTranscribe &&
-                    !sttBusy && (fullProgress.paused || fullProgress.finished)) {
+                } else if (CaptionOverlayPolicy.showSetupHint(
+                    hasSavedCaptions = captionsAvailable,
+                    hasEverShownCue = captionsHaveShown,
+                    autoTranscribing = autoTranscribe || sttBusy,
+                    fullBookRunning = !fullProgress.paused && !fullProgress.finished,
+                )) {
                     // This is a first-time setup hint only, not an overlay between cues.
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.ClosedCaption, null, tint = Color(0xFFDFE9F5),
