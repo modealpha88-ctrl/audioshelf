@@ -19,6 +19,7 @@ its API, licence, or written permission allows third-party clients.
 - Chapter navigation, seek, 0.5x–2.0x speed, and sleep timer
 - Material 3 light/dark UI
 - Source interface ready for additional authorized providers
+- Add provider repositories by HTTPS URL, browse their providers, and install or remove them
 
 ## Build
 
@@ -39,6 +40,10 @@ and published with a SHA-256 checksum.
 Implement `AudioSource` in `app/src/main/java/com/mohamed/audioshelf/data/source/`,
 then register it in `SourceRegistry`. A source must provide catalogue search and a
 chapter list whose audio URLs are permitted for third-party playback.
+
+AudioShelf also supports declarative provider repositories. Open **Sources**, paste an HTTPS
+repository URL, then install any provider listed by that repository. See
+[`docs/PROVIDER_REPOSITORIES.md`](docs/PROVIDER_REPOSITORIES.md) for the JSON format.
 
 ## Legal note
 

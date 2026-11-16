@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.LibraryStore
+import com.mohamed.audioshelf.data.source.ProviderRepositoryStore
+import com.mohamed.audioshelf.data.source.SourceProviderDefinition
+import com.mohamed.audioshelf.data.source.SourceRepository
 import com.mohamed.audioshelf.data.source.SourceRegistry
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
@@ -27,16 +30,28 @@ data class AudioShelfState(
     val loading: Boolean = false,
     val error: String? = null,
     val sleepEndsAt: Long? = null,
+    val repositories: List<SourceRepository> = emptyList(),
+    val repositoryBusy: Boolean = false,
+    val repositoryError: String? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val store = LibraryStore(application)
-    private val _state = MutableStateFlow(AudioShelfState(library = store.books()))
+    private val repositoryStore = ProviderRepositoryStore(application)
+    private val _state = MutableStateFlow(
+        AudioShelfState(
+            library = store.books(),
+            repositories = repositoryStore.repositories(),
+        )
+    )
     val state: StateFlow<AudioShelfState> = _state.asStateFlow()
     private var sleepJob: Job? = null
     private var browseJob: Job? = null
 
-    init { browse() }
+    init {
+        syncInstalledSources()
+        browse()
+    }
 
     fun browse() = loadBooks { loadFromSources("") }
 
@@ -49,6 +64,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (sourceId == _state.value.sourceId) return
         _state.value = _state.value.copy(sourceId = sourceId)
         loadBooks { loadFromSources(_state.value.query) }
+    }
+
+    fun addRepository(url: String) {
+        if (_state.value.repositoryBusy) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(repositoryBusy = true, repositoryError = null)
+            runCatching { repositoryStore.addOrRefresh(url) }
+                .onSuccess {
+                    syncInstalledSources()
+                    _state.value = _state.value.copy(
+                        repositories = repositoryStore.repositories(),
+                        repositoryBusy = false,
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(
+                        repositoryBusy = false,
+                        repositoryError = it.repositoryMessage(),
+                    )
+                }
+        }
+    }
+
+    fun refreshRepository(repository: SourceRepository) = addRepository(repository.url)
+
+    fun removeRepository(repository: SourceRepository) {
+        repositoryStore.remove(repository)
+        syncInstalledSources()
+        val selected = _state.value.sourceId
+        _state.value = _state.value.copy(
+            repositories = repositoryStore.repositories(),
+            sourceId = if (selected != "all" && !SourceRegistry.contains(selected)) "all" else selected,
+            repositoryError = null,
+        )
+        browse()
+    }
+
+    fun toggleProvider(provider: SourceProviderDefinition) {
+        repositoryStore.setInstalled(provider, !repositoryStore.isInstalled(provider))
+        syncInstalledSources()
+        val selected = _state.value.sourceId
+        _state.value = _state.value.copy(
+            repositories = repositoryStore.repositories(),
+            sourceId = if (selected != "all" && !SourceRegistry.contains(selected)) "all" else selected,
+            repositoryError = null,
+        )
+        browse()
+    }
+
+    fun isProviderInstalled(provider: SourceProviderDefinition): Boolean = repositoryStore.isInstalled(provider)
+
+    private fun syncInstalledSources() {
+        SourceRegistry.replaceInstalled(repositoryStore.installedProviders())
     }
 
     private suspend fun loadFromSources(query: String): List<AudioBook> = coroutineScope {
@@ -111,5 +179,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         is java.net.SocketTimeoutException -> "The audiobook service took too long to respond. Try again shortly."
         is java.io.IOException -> "Could not reach the audiobook service. Try again shortly."
         else -> "Could not load this content. Try again."
+    }
+
+    private fun Throwable.repositoryMessage(): String = when (this) {
+        is IllegalArgumentException -> message ?: "The repository is invalid."
+        is org.json.JSONException -> "The repository does not contain valid provider JSON."
+        is java.net.UnknownHostException -> "Could not find the repository host."
+        is java.net.SocketTimeoutException -> "The repository took too long to respond."
+        is java.io.IOException -> message ?: "Could not download the repository."
+        else -> "Could not add this repository."
     }
 }

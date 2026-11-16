@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,6 +50,8 @@ import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
 import com.mohamed.audioshelf.data.OfflineDownloads
 import com.mohamed.audioshelf.data.source.SourceRegistry
+import com.mohamed.audioshelf.data.source.SourceProviderDefinition
+import com.mohamed.audioshelf.data.source.SourceRepository
 import com.mohamed.audioshelf.player.PlaybackService
 import kotlinx.coroutines.delay
 import kotlin.math.roundToLong
@@ -66,7 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class HomeTab { Browse, Library }
+private enum class HomeTab { Browse, Library, Sources }
 
 @Composable
 private fun AudioShelfApp(viewModel: MainViewModel) {
@@ -90,6 +93,12 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                         onClick = { tab = HomeTab.Library },
                         icon = { Icon(Icons.Default.LibraryBooks, null) },
                         label = { Text("Library") },
+                    )
+                    NavigationBarItem(
+                        selected = tab == HomeTab.Sources,
+                        onClick = { tab = HomeTab.Sources },
+                        icon = { Icon(Icons.Default.Extension, null) },
+                        label = { Text("Sources") },
                     )
                 }
             }
@@ -120,6 +129,14 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
             } else when (tab) {
                 HomeTab.Browse -> BrowseScreen(state, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
                 HomeTab.Library -> LibraryScreen(state.library, viewModel::select)
+                HomeTab.Sources -> SourcesScreen(
+                    state = state,
+                    isInstalled = viewModel::isProviderInstalled,
+                    onAdd = viewModel::addRepository,
+                    onRefresh = viewModel::refreshRepository,
+                    onRemove = viewModel::removeRepository,
+                    onToggleProvider = viewModel::toggleProvider,
+                )
             }
         }
     }
@@ -167,7 +184,7 @@ private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onS
 
 @Composable
 private fun SourceSelector(selectedId: String, onSource: (String) -> Unit) {
-    val options = remember { listOf("all" to "All sources") + SourceRegistry.all().map { it.id to it.name } }
+    val options = listOf("all" to "All sources") + SourceRegistry.all().map { it.id to it.name }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(16.dp).fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -179,10 +196,145 @@ private fun SourceSelector(selectedId: String, onSource: (String) -> Unit) {
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                options.forEach { (id, label) ->
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(options, key = { it.first }) { (id, label) ->
                     FilterChip(selected = selectedId == id, onClick = { onSource(id) }, label = { Text(label) })
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SourcesScreen(
+    state: AudioShelfState,
+    isInstalled: (SourceProviderDefinition) -> Boolean,
+    onAdd: (String) -> Unit,
+    onRefresh: (SourceRepository) -> Unit,
+    onRemove: (SourceRepository) -> Unit,
+    onToggleProvider: (SourceProviderDefinition) -> Unit,
+) {
+    var repositoryUrl by rememberSaveable { mutableStateOf("") }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text("Source repositories")
+                        Text("Add and install audiobook providers", style = MaterialTheme.typography.labelMedium)
+                    }
+                },
+            )
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                OutlinedTextField(
+                    value = repositoryUrl,
+                    onValueChange = { repositoryUrl = it },
+                    label = { Text("Repository URL") },
+                    placeholder = { Text("https://example.org/audioshelf-repo.json") },
+                    leadingIcon = { Icon(Icons.Default.Link, null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { onAdd(repositoryUrl.trim()) },
+                    enabled = repositoryUrl.isNotBlank() && !state.repositoryBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.repositoryBusy) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Icon(Icons.Default.AddLink, null)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (state.repositoryBusy) "Loading repository…" else "Add repository")
+                }
+                state.repositoryError?.let {
+                    Spacer(Modifier.height(10.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Only add repositories you trust. AudioShelf accepts HTTPS JSON provider definitions; it does not install executable APK extensions.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (state.repositories.isEmpty()) {
+            item {
+                Box(Modifier.fillParentMaxHeight(.55f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                        Icon(Icons.Default.ExtensionOff, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(12.dp))
+                        Text("No repositories added", style = MaterialTheme.typography.titleMedium)
+                        Text("Paste a compatible repository URL above", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        }
+
+        items(state.repositories, key = SourceRepository::url) { repository ->
+            RepositoryCard(repository, isInstalled, onRefresh, onRemove, onToggleProvider)
+        }
+    }
+}
+
+@Composable
+private fun RepositoryCard(
+    repository: SourceRepository,
+    isInstalled: (SourceProviderDefinition) -> Boolean,
+    onRefresh: (SourceRepository) -> Unit,
+    onRemove: (SourceRepository) -> Unit,
+    onToggleProvider: (SourceProviderDefinition) -> Unit,
+) {
+    ElevatedCard(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(Icons.Default.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(repository.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (repository.description.isNotBlank()) Text(repository.description, style = MaterialTheme.typography.bodySmall)
+                    Text(repository.url, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                IconButton({ onRefresh(repository) }) { Icon(Icons.Default.Refresh, "Refresh repository") }
+                IconButton({ onRemove(repository) }) { Icon(Icons.Default.DeleteOutline, "Remove repository") }
+            }
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            repository.providers.forEachIndexed { index, provider ->
+                val installed = isInstalled(provider)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.size(44.dp),
+                    ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Headphones, null) } }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(provider.name, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            provider.description.ifBlank { provider.attribution.ifBlank { "Audiobook source provider" } },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    if (installed) {
+                        OutlinedButton({ onToggleProvider(provider) }) { Text("Remove") }
+                    } else {
+                        Button({ onToggleProvider(provider) }) { Text("Install") }
+                    }
+                }
+                if (index != repository.providers.lastIndex) HorizontalDivider(Modifier.padding(vertical = 12.dp))
             }
         }
     }

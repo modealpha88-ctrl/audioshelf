@@ -13,10 +13,17 @@ interface AudioSource {
 }
 
 object SourceRegistry {
-    private val sources: Map<String, AudioSource> = listOf(
+    private val builtIn: Map<String, AudioSource> = listOf(
         LibriVoxSource(),
         InternetArchiveSource(),
     ).associateBy { it.id }
-    fun all(): List<AudioSource> = sources.values.toList()
-    fun get(id: String): AudioSource = requireNotNull(sources[id]) { "Unknown source: $id" }
+    @Volatile private var installed: Map<String, AudioSource> = emptyMap()
+
+    fun replaceInstalled(providers: List<SourceProviderDefinition>) {
+        installed = providers.map(::RepositoryAudioSource).associateBy { it.id }
+    }
+
+    fun all(): List<AudioSource> = builtIn.values + installed.values
+    fun get(id: String): AudioSource = requireNotNull(builtIn[id] ?: installed[id]) { "Unknown source: $id" }
+    fun contains(id: String): Boolean = id in builtIn || id in installed
 }
