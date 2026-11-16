@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Browse Libro.fm DRM-free audiobooks",
+      "authors": [
+        "Libro.fm"
+      ],
+      "description": "Purchase DRM-free audiobooks from Libro.fm. Download MP3 or M4B files from your Libro.fm library, then use AudioShelf's Choose MP3 or M4B file button. No account login or automated extraction.",
+      "externalUrl": "https://libro.fm/",
+      "language": "English"
+    }
+  ]
+}
