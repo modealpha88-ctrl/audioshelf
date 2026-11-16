@@ -1,6 +1,9 @@
 package com.mohamed.audioshelf
 
 import android.app.Application
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.LibraryStore
@@ -108,6 +111,57 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         importError = it.importMessage(),
                     )
                 }
+        }
+    }
+
+    fun importRssFeed(rawUrl: String) {
+        if (_state.value.importBusy) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(importBusy = true, importError = null)
+            runCatching { SourceRegistry.rssImporter().importFeed(rawUrl) }
+                .onSuccess { book ->
+                    if (!store.contains(book)) store.toggle(book)
+                    _state.value = _state.value.copy(importBusy = false, library = store.books())
+                    select(book)
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(importBusy = false, importError = it.importMessage())
+                }
+        }
+    }
+
+    fun importLocalAudio(uri: Uri) {
+        val app = getApplication<Application>()
+        runCatching {
+            require(uri.scheme == "content") { "Select an audio file using the Android file picker." }
+            val displayName = app.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            }.orEmpty()
+            val name = displayName.substringBeforeLast('.', displayName).ifBlank { "Imported audiobook" }
+            val retriever = MediaMetadataRetriever()
+            val metadata = try {
+                retriever.setDataSource(app, uri)
+                Pair(
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE).orEmpty(),
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST).orEmpty(),
+                )
+            } catch (_: Exception) {
+                Pair("", "")
+            } finally {
+                retriever.release()
+            }
+            val book = AudioBook(
+                id = uri.toString(),
+                sourceId = "local_files",
+                title = metadata.first.ifBlank { name },
+                authors = metadata.second.ifBlank { "Local audiobook" },
+                description = "DRM-free audio file selected from your device. AudioShelf retains permission to play it locally.",
+            )
+            if (!store.contains(book)) store.toggle(book)
+            _state.value = _state.value.copy(library = store.books(), importError = null)
+            select(book)
+        }.onFailure {
+            _state.value = _state.value.copy(importError = it.importMessage())
         }
     }
 
