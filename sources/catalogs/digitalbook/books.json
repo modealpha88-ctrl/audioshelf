@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Digitalbook.io audiobooks",
+      "authors": [
+        "Digitalbook.io"
+      ],
+      "description": "Find free and paid audiobooks on the official site. Third-party catalogue scraping or protected streaming is not provided; play licensed content using Digitalbook.",
+      "externalUrl": "https://www.digitalbook.io/",
+      "language": "English"
+    }
+  ]
+}
