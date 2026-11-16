@@ -133,6 +133,7 @@ private fun AudioShelfApp(viewModel: MainViewModel) {
                     state = state,
                     isInstalled = viewModel::isProviderInstalled,
                     onAdd = viewModel::addRepository,
+                    onImport = viewModel::importWebsiteBook,
                     onRefresh = viewModel::refreshRepository,
                     onRemove = viewModel::removeRepository,
                     onToggleProvider = viewModel::toggleProvider,
@@ -210,11 +211,14 @@ private fun SourcesScreen(
     state: AudioShelfState,
     isInstalled: (SourceProviderDefinition) -> Boolean,
     onAdd: (String) -> Unit,
+    onImport: (String) -> Unit,
     onRefresh: (SourceRepository) -> Unit,
     onRemove: (SourceRepository) -> Unit,
     onToggleProvider: (SourceProviderDefinition) -> Unit,
 ) {
     var repositoryUrl by rememberSaveable { mutableStateOf("") }
+    var bookUrl by rememberSaveable { mutableStateOf("") }
+    var hasRights by rememberSaveable { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -265,6 +269,44 @@ private fun SourcesScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                HorizontalDivider(Modifier.padding(vertical = 18.dp))
+                Text("Import audiobook by URL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Use a supported audiobook page link. The site scrapers extract its public HTML audio chapters; they are not source-repository URLs.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = bookUrl,
+                    onValueChange = { bookUrl = it },
+                    label = { Text("Audiobook page URL") },
+                    placeholder = { Text("https://site.example/book-title/") },
+                    leadingIcon = { Icon(Icons.Default.Link, null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = hasRights, onCheckedChange = { hasRights = it })
+                    Text("I have permission to access and play this recording.", style = MaterialTheme.typography.bodySmall)
+                }
+                Button(
+                    onClick = { onImport(bookUrl.trim()) },
+                    enabled = bookUrl.isNotBlank() && hasRights && !state.importBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.importBusy) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Icon(Icons.Default.LibraryAdd, null)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (state.importBusy) "Importing…" else "Import into library")
+                }
+                state.importError?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
 
