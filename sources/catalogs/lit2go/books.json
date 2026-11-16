@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Browse Lit2Go audio literature",
+      "authors": [
+        "Lit2Go"
+      ],
+      "description": "Educational MP3 recordings from the University of South Florida. The service's license limits use; AudioShelf links to the original catalogue instead of mirroring or bulk indexing files.",
+      "externalUrl": "https://etc.usf.edu/lit2go/",
+      "language": "English"
+    }
+  ]
+}
