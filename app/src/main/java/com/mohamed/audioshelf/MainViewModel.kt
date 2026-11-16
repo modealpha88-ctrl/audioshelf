@@ -164,6 +164,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun select(book: AudioBook) {
+        if (book.externalUrl.isNotBlank()) {
+            _state.value = _state.value.copy(selectedBook = book, chapters = emptyList(), loading = false, error = null)
+            return
+        }
         _state.value = _state.value.copy(selectedBook = book, chapters = emptyList(), loading = true, error = null)
         viewModelScope.launch {
             runCatching { SourceRegistry.get(book.sourceId).chapters(book) }
