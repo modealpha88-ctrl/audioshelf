@@ -61,6 +61,32 @@ The browse and search endpoints may return an array directly, or an object conta
 `id` and `title` are required. `authors` and `narrators` can be strings or arrays. Relative cover
 URLs are resolved against the response URL, but the final URL must use HTTPS.
 
+## Licensed external-listening entries (AudioShelf v0.4.2+)
+
+If a book is not legally available for public MP3 streaming, a provider may include an
+`externalUrl` property in its book object. This URL must be HTTPS and lead to an
+official purchase, library-loan, or authorized listening page. The app displays an
+**Open official provider** button rather than claiming the book can be played or
+downloaded directly.
+
+For external-only entries, the corresponding chapters JSON may be
+`{"chapters":[]}`. Preserve the difference between public-domain media and
+copyrighted books available only through licensed providers.
+
+Example:
+
+```json
+{
+  "books": [{
+    "id": "licensed-book-1",
+    "title": "Example licensed audiobook",
+    "authors": ["Example Author"],
+    "externalUrl": "https://licensed-provider.example.org/book/123",
+    "description": "External purchase or library loan required."
+  }]
+}
+```
+
 ## Chapter response
 
 The chapters endpoint may return an array directly, or an object containing a `chapters`, `items`,
