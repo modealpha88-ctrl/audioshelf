@@ -27,10 +27,14 @@ class ImportedWebsiteSource : AudioSource {
     override suspend fun search(query: String, page: Int): List<AudioBook> = emptyList()
 
     suspend fun importUrl(rawUrl: String): AudioBook = withContext(Dispatchers.IO) {
-        val pageUrl = validatePublicHttpsUrl(rawUrl)
+        val pageUrl = validateImportPage(rawUrl)
         val parsed = parse(pageUrl)
         require(parsed.chapters.isNotEmpty()) {
-            "No public audio files or streams were found. This page may require JavaScript, a login, or an unsupported player."
+            if (URI(pageUrl).path.orEmpty().trim('/').isBlank()) {
+                "This is a website homepage. Paste an individual audiobook page or a direct audio-file link."
+            } else {
+                "No playable audio links were found. This site may need JavaScript, sign-in, or a supported player."
+            }
         }
         AudioBook(
             id = pageUrl,
@@ -43,7 +47,7 @@ class ImportedWebsiteSource : AudioSource {
     }
 
     override suspend fun chapters(book: AudioBook): List<AudioChapter> = withContext(Dispatchers.IO) {
-        parse(validatePublicHttpsUrl(book.id)).chapters
+        parse(validateImportPage(book.id)).chapters
     }
 
     private data class Parsed(
@@ -200,6 +204,15 @@ class ImportedWebsiteSource : AudioSource {
         val candidate = URI(base).resolve(normalized).toString()
         validatePublicHttpsUrl(candidate)
     }.getOrNull()
+
+    private fun validateImportPage(raw: String): String {
+        val publicUrl = validatePublicHttpsUrl(raw)
+        val host = URI(publicUrl).host.lowercase().trimEnd('.').removePrefix("www.")
+        require(host != "mistbornaudio.com") {
+            "This website's terms prohibit automated scraping and third-party downloading. Use Open website to visit it in your browser."
+        }
+        return publicUrl
+    }
 
     private fun validatePublicHttpsUrl(raw: String): String {
         val uri = URI(raw.trim()).normalize()
