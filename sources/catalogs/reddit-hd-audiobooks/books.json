@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore HD Audio Books",
+      "authors": [
+        "HD Audio Books"
+      ],
+      "description": "External audiobook website; embedded playback permissions are unverified. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://hdaudiobooks.com/",
+      "language": "English"
+    }
+  ]
+}

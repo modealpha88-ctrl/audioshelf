@@ -1,0 +1,137 @@
+{
+  "source": "https://www.reddit.com/r/Piracy/wiki/megathread/books/",
+  "snapshotDate": "2026-11-16",
+  "description": "Audiobook-related sources selected from the Reddit Books megathread; non-audio ebook/manga/course links intentionally excluded. Listing a URL is not a license to redistribute, download or embed recordings.",
+  "entries": [
+    {
+      "name": "Academic Torrents",
+      "url": "https://academictorrents.com/",
+      "status": "reference-only-not-an-audiobook-catalogue",
+      "category": "torrent"
+    },
+    {
+      "name": "AppAudioBooks",
+      "url": "https://appaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-appaudiobooks",
+      "notes": "External audiobook website. Third-party audio rights have not been verified."
+    },
+    {
+      "name": "AudioAZ",
+      "url": "https://audioaz.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-audioaz",
+      "notes": "External audiobook site; automated verification blocked. Rights and availability of individual recordings are unverified."
+    },
+    {
+      "name": "AudioBook Bay",
+      "url": "https://audiobookbay.lu/",
+      "status": "reference-only-no-torrent-automation",
+      "category": "torrent"
+    },
+    {
+      "name": "Audiobooks for Soul",
+      "url": "https://audiobooks4soul.com/home/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-audiobooks-for-soul",
+      "notes": "External catalogue and search; publishing rights for recordings have not been verified."
+    },
+    {
+      "name": "Big AudioBooks",
+      "url": "https://bigaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-big-audiobooks",
+      "notes": "External catalogue only; check rights and site reliability before listening or downloading."
+    },
+    {
+      "name": "Book Audiobooks",
+      "url": "https://bookaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-book-audiobooks",
+      "notes": "External listening website. Recordings are not licensed to AudioShelf for embedded playback."
+    },
+    {
+      "name": "Digitalbook.io",
+      "url": "https://www.digitalbook.io/",
+      "status": "already-in-manifest",
+      "category": "streaming"
+    },
+    {
+      "name": "Free Classic AudioBooks",
+      "url": "https://freeclassicaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-free-classic-audiobooks",
+      "notes": "Classic audiobook site with public-domain works; check local rights and individual recording terms."
+    },
+    {
+      "name": "FullLengthAudiobooks",
+      "url": "https://fulllengthaudiobooks.net/",
+      "status": "unavailable-redirects-to-example.com",
+      "category": "streaming"
+    },
+    {
+      "name": "GalaxyAudiobooks",
+      "url": "https://galaxyaudiobook.com/",
+      "status": "unavailable-http-521",
+      "category": "streaming"
+    },
+    {
+      "name": "GoldenAudiobook",
+      "url": "https://goldenaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-golden-audiobook",
+      "notes": "External audiobook website (redirected domain). Third-party streaming rights not verified."
+    },
+    {
+      "name": "HD Audio Books",
+      "url": "https://hdaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-hd-audiobooks",
+      "notes": "External audiobook website; embedded playback permissions are unverified."
+    },
+    {
+      "name": "Hot Audiobooks",
+      "url": "https://hotaudiobooks.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-hot-audiobooks",
+      "notes": "External audiobook website; check licensing and site reliability."
+    },
+    {
+      "name": "LibriVox",
+      "url": "https://librivox.org/",
+      "status": "built-in-playable",
+      "category": "streaming"
+    },
+    {
+      "name": "MyAnonamouse",
+      "url": "https://www.myanonamouse.net/",
+      "status": "reference-only-account-required",
+      "category": "torrent"
+    },
+    {
+      "name": "Rave Book Search",
+      "url": "https://ravebooksearch.com/",
+      "category": "search",
+      "status": "external-directory-only",
+      "providerId": "reddit-rave-book-search",
+      "notes": "Third-party ebook/audiobook search directory, not a licensed audio host. External discovery only."
+    },
+    {
+      "name": "Storynory",
+      "url": "https://www.storynory.com/",
+      "category": "streaming",
+      "status": "external-directory-only",
+      "providerId": "reddit-storynory",
+      "notes": "Free audio stories for children on the publisher's website. External playback only, respecting publisher terms."
+    }
+  ]
+}

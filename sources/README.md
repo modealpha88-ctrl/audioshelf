@@ -78,3 +78,13 @@ original providers, not AudioShelf. Do not try to bypass access controls or redi
 materials without checking rights. Audiobook/public-domain status may depend on jurisdiction.
 
 This repository does not package third-party APKs, executable extensions or torrents.
+
+## Imported audiobook references from Reddit Books megathread (2026-11-16)
+
+The [Reddit Books megathread](https://www.reddit.com/r/Piracy/wiki/megathread/books/) lists audiobook sites alongside unrelated book, manga and course sites. AudioShelf imports audiobook-relevant websites as **external-only providers**, not as unauthorized download or playback adapters.
+
+The repository now contains 23 installable provider definitions (12 original and 11 new external directory providers). New entries: AudioAZ, AppAudioBooks, Audiobooks for Soul, Big AudioBooks, Book Audiobooks, Free Classic AudioBooks, GoldenAudiobook, HD Audio Books, Hot Audiobooks, Storynory, Rave Book Search.
+
+**Unavailable or not suitable for in-app integration:** FullLengthAudiobooks currently redirects to example.com; GalaxyAudiobooks returned HTTP 521. AudioBook Bay, MyAnonamouse and Academic Torrents are recorded for provenance but not installed as automated torrent sources. Existing LibriVox and Digitalbook sources remain unchanged. See [`reddit-audiobook-directory.json`](reddit-audiobook-directory.json) for URLs and statuses.
+
+Existing installations: open **Sources**, refresh the AudioShelf repository, then install whichever newly listed sources you want. External catalogue entries open websites, not MP3 chapter streams. Bookmarks and installed providers are not reset.

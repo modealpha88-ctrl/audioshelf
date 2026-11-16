@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore GoldenAudiobook",
+      "authors": [
+        "GoldenAudiobook"
+      ],
+      "description": "External audiobook website (redirected domain). Third-party streaming rights not verified. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://goldenaudiobooks.com/",
+      "language": "English"
+    }
+  ]
+}

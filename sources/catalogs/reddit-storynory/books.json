@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Storynory",
+      "authors": [
+        "Storynory"
+      ],
+      "description": "Free audio stories for children on the publisher's website. External playback only, respecting publisher terms. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://www.storynory.com/",
+      "language": "English"
+    }
+  ]
+}

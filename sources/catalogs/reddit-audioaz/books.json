@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore AudioAZ",
+      "authors": [
+        "AudioAZ"
+      ],
+      "description": "External audiobook site; automated verification blocked. Rights and availability of individual recordings are unverified. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://audioaz.com/",
+      "language": "English"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Rave Book Search",
+      "authors": [
+        "Rave Book Search"
+      ],
+      "description": "Third-party ebook/audiobook search directory, not a licensed audio host. External discovery only. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://ravebooksearch.com/",
+      "language": "English"
+    }
+  ]
+}

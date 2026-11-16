@@ -565,10 +565,10 @@ private fun BookScreen(
                             Button(onClick = onOpenExternal) {
                                 Icon(Icons.Default.OpenInBrowser, null)
                                 Spacer(Modifier.width(6.dp))
-                                Text("Open official provider")
+                                Text("Open website")
                             }
                             Text(
-                                "Visit the provider's website or app. Free access, subscription, library eligibility or purchase terms depend on the provider.",
+                                "This opens a third-party website. AudioShelf does not verify ownership or provide its audio. Check licensing, availability, and any purchase or library terms before listening.",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         } else {

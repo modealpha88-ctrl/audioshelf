@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Book Audiobooks",
+      "authors": [
+        "Book Audiobooks"
+      ],
+      "description": "External listening website. Recordings are not licensed to AudioShelf for embedded playback. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://bookaudiobooks.com/",
+      "language": "English"
+    }
+  ]
+}

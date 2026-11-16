@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Audiobooks for Soul",
+      "authors": [
+        "Audiobooks for Soul"
+      ],
+      "description": "External catalogue and search; publishing rights for recordings have not been verified. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://audiobooks4soul.com/home/",
+      "language": "English"
+    }
+  ]
+}

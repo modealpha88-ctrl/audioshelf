@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Free Classic AudioBooks",
+      "authors": [
+        "Free Classic AudioBooks"
+      ],
+      "description": "Classic audiobook site with public-domain works; check local rights and individual recording terms. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://freeclassicaudiobooks.com/",
+      "language": "English"
+    }
+  ]
+}

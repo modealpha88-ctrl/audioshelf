@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "AudioShelf Audiobook Sources",
-  "description": "Public-domain audio and explicitly labeled official external audiobook services. Includes legal RSS and local DRM-free MP3/M4B import workflows in AudioShelf v0.5.",
+  "description": "Open and public-domain audio, official services and clearly identified external audiobook directories imported from Reddit. External listings do not imply streaming rights.",
   "providers": [
     {
       "id": "open-audiobooks",
@@ -98,6 +98,94 @@
       "attribution": "Spotify and audiobook publishers",
       "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/spotify-audiobooks/books.json",
       "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/spotify-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-audioaz",
+      "name": "AudioAZ",
+      "description": "External audiobook site; automated verification blocked. Rights and availability of individual recordings are unverified.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audioaz/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audioaz/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-appaudiobooks",
+      "name": "AppAudioBooks",
+      "description": "External audiobook website. Third-party audio rights have not been verified.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-appaudiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-appaudiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-audiobooks-for-soul",
+      "name": "Audiobooks for Soul",
+      "description": "External catalogue and search; publishing rights for recordings have not been verified.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audiobooks-for-soul/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audiobooks-for-soul/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-big-audiobooks",
+      "name": "Big AudioBooks",
+      "description": "External catalogue only; check rights and site reliability before listening or downloading.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-big-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-big-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-book-audiobooks",
+      "name": "Book Audiobooks",
+      "description": "External listening website. Recordings are not licensed to AudioShelf for embedded playback.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-book-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-book-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-free-classic-audiobooks",
+      "name": "Free Classic AudioBooks",
+      "description": "Classic audiobook site with public-domain works; check local rights and individual recording terms.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-free-classic-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-free-classic-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-golden-audiobook",
+      "name": "GoldenAudiobook",
+      "description": "External audiobook website (redirected domain). Third-party streaming rights not verified.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-golden-audiobook/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-golden-audiobook/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-hd-audiobooks",
+      "name": "HD Audio Books",
+      "description": "External audiobook website; embedded playback permissions are unverified.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-hd-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-hd-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-hot-audiobooks",
+      "name": "Hot Audiobooks",
+      "description": "External audiobook website; check licensing and site reliability.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-hot-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-hot-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-storynory",
+      "name": "Storynory",
+      "description": "Free audio stories for children on the publisher's website. External playback only, respecting publisher terms.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-storynory/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-storynory/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-rave-book-search",
+      "name": "Rave Book Search",
+      "description": "Third-party ebook/audiobook search directory, not a licensed audio host. External discovery only.",
+      "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-rave-book-search/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-rave-book-search/chapters/{id}.json"
     }
   ]
 }

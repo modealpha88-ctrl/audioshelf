@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore Big AudioBooks",
+      "authors": [
+        "Big AudioBooks"
+      ],
+      "description": "External catalogue only; check rights and site reliability before listening or downloading. Opening the website does not authorize copying or downloading copyrighted recordings. No audio streams are supplied by AudioShelf.",
+      "externalUrl": "https://bigaudiobooks.com/",
+      "language": "English"
+    }
+  ]
+}
