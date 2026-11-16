@@ -43,13 +43,13 @@ class LibraryStore(context: Context) {
     private fun AudioBook.toJson() = JSONObject()
         .put("id", id).put("sourceId", sourceId).put("title", title).put("authors", authors)
         .put("narrators", narrators).put("description", description).put("coverUrl", coverUrl)
-        .put("feedUrl", feedUrl).put("language", language)
+        .put("feedUrl", feedUrl).put("language", language).put("externalUrl", externalUrl)
 
     private fun JSONObject.toBook() = AudioBook(
         id = getString("id"), sourceId = getString("sourceId"), title = getString("title"),
         authors = optString("authors"), narrators = optString("narrators"),
         description = optString("description"), coverUrl = optString("coverUrl"),
-        feedUrl = optString("feedUrl"), language = optString("language"),
+        feedUrl = optString("feedUrl"), language = optString("language"), externalUrl = optString("externalUrl"),
     )
 
     private companion object {
