@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "AudioShelf Audiobook Sources",
-  "description": "Public-domain audiobooks and clearly labeled official external audiobook listening links. External titles require purchase or a library loan.",
+  "description": "Public-domain audio and explicitly labeled official external audiobook services. Includes legal RSS and local DRM-free MP3/M4B import workflows in AudioShelf v0.5.",
   "providers": [
     {
       "id": "open-audiobooks",
@@ -34,6 +34,70 @@
       "attribution": "Brandon Sanderson; Macmillan Audio; GraphicAudio; OverDrive",
       "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/mistborn-official/books.json",
       "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/mistborn-official/chapters/{id}.json"
+    },
+    {
+      "id": "scribl-podiobooks",
+      "name": "Scribl / Podiobooks",
+      "description": "Free serialized audiobook podcasts on Scribl; official discovery link; optionally import a public RSS feed",
+      "attribution": "Scribl and independent authors",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/scribl-podiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/scribl-podiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "libro-fm",
+      "name": "Libro.fm",
+      "description": "Official audiobook store; DRM-free MP3/M4B purchased files can be imported from device",
+      "attribution": "Libro.fm and recording publishers",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/libro-fm/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/libro-fm/chapters/{id}.json"
+    },
+    {
+      "id": "digitalbook",
+      "name": "Digitalbook.io",
+      "description": "Free and paid audiobooks; official external listening only",
+      "attribution": "Digitalbook Ltd",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/digitalbook/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/digitalbook/chapters/{id}.json"
+    },
+    {
+      "id": "learnoutloud",
+      "name": "LearnOutLoud",
+      "description": "Free audiobook directory and educational recordings; official external discovery only",
+      "attribution": "LearnOutLoud and original publishers",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/learnoutloud/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/learnoutloud/chapters/{id}.json"
+    },
+    {
+      "id": "lit2go",
+      "name": "Lit2Go",
+      "description": "University of South Florida literary audio; external links respect limited use license",
+      "attribution": "FCIT at University of South Florida",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/lit2go/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/lit2go/chapters/{id}.json"
+    },
+    {
+      "id": "hoopla",
+      "name": "Hoopla Digital",
+      "description": "Library-card audiobook borrowing and official app playback",
+      "attribution": "Hoopla Digital / Midwest Tape",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/hoopla/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/hoopla/chapters/{id}.json"
+    },
+    {
+      "id": "everand",
+      "name": "Everand",
+      "description": "Subscription audiobook catalogue and official external playback",
+      "attribution": "Everand and publishers",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/everand/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/everand/chapters/{id}.json"
+    },
+    {
+      "id": "spotify-audiobooks",
+      "name": "Spotify Audiobooks",
+      "description": "Discover audiobooks in Spotify; purchase, region and subscription restrictions apply",
+      "attribution": "Spotify and audiobook publishers",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/spotify-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/spotify-audiobooks/chapters/{id}.json"
     }
   ]
 }
