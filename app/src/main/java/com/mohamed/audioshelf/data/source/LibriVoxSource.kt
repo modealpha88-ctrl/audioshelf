@@ -64,7 +64,8 @@ class LibriVoxSource : AudioSource {
         val offset = (page.coerceAtLeast(1) - 1) * PAGE_SIZE
         val title = if (query.isBlank()) "" else "&title=${encode(query)}"
         val endpoint = "https://librivox.org/api/feed/audiobooks?format=json&extended=1&coverart=1&sort_order=desc&limit=$PAGE_SIZE&offset=$offset$title"
-        val root = JSONObject(open(endpoint).bufferedReader().use { it.readText() })
+        val response = read(endpoint) ?: return@withContext emptyList()
+        val root = JSONObject(response)
         val books = root.optJSONArray("books") ?: return@withContext emptyList()
         buildList {
             for (index in 0 until books.length()) {
@@ -101,6 +102,21 @@ class LibriVoxSource : AudioSource {
         instanceFollowRedirects = true
         setRequestProperty("User-Agent", "AudioShelf/0.1 (+Android; LibriVox client)")
         inputStream
+    }
+
+    private fun read(url: String): String? {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        return connection.run {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+            instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "AudioShelf/0.2 (+Android; LibriVox client)")
+            when (responseCode) {
+                HttpURLConnection.HTTP_NOT_FOUND, HttpURLConnection.HTTP_NO_CONTENT -> null
+                in 200..299 -> inputStream.bufferedReader().use { it.readText() }
+                else -> throw java.io.IOException("LibriVox returned HTTP $responseCode")
+            }
+        }.also { connection.disconnect() }
     }
 
     private fun encode(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString())

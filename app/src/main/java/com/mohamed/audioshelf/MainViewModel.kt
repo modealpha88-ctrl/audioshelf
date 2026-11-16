@@ -54,9 +54,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun loadFromSources(query: String): List<AudioBook> = coroutineScope {
         val selected = _state.value.sourceId
         val sources = if (selected == "all") SourceRegistry.all() else listOf(SourceRegistry.get(selected))
-        sources.map { source ->
-            async { if (query.isBlank()) source.browse() else source.search(query) }
-        }.awaitAll().flatten().distinctBy { "${it.sourceId}:${it.id}" }
+        val attempts = sources.map { source ->
+            async { runCatching { if (query.isBlank()) source.browse() else source.search(query) } }
+        }.awaitAll()
+        if (attempts.all { it.isFailure }) throw requireNotNull(attempts.firstNotNullOfOrNull { it.exceptionOrNull() })
+        attempts.flatMap { it.getOrDefault(emptyList()) }.distinctBy { "${it.sourceId}:${it.id}" }
     }
 
     private fun loadBooks(block: suspend () -> List<AudioBook>) {
@@ -104,5 +106,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun Throwable.friendlyMessage(): String = message?.takeIf { it.isNotBlank() } ?: "Could not load this content. Check your connection and try again."
+    private fun Throwable.friendlyMessage(): String = when (this) {
+        is java.net.UnknownHostException -> "No internet connection. Check your network and try again."
+        is java.net.SocketTimeoutException -> "The audiobook service took too long to respond. Try again shortly."
+        is java.io.IOException -> "Could not reach the audiobook service. Try again shortly."
+        else -> "Could not load this content. Try again."
+    }
 }
