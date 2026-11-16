@@ -9,7 +9,9 @@ import java.security.MessageDigest
 /** Private, offline caption storage, keyed by audiobook and chapter. */
 class TimedCaptionStore(private val context: Context) {
     private fun path(book: AudioBook, chapterIndex: Int): File {
-        val key = (book.sourceId + ":" + book.id + ":" + chapterIndex).toByteArray(Charsets.UTF_8)
+        // One local M4B file may contain many clipped chapters. Share its transcript.
+        val suffix = if (book.sourceId == "local_files") "whole-file" else chapterIndex.toString()
+        val key = (book.sourceId + ":" + book.id + ":" + suffix).toByteArray(Charsets.UTF_8)
         val hash = MessageDigest.getInstance("SHA-256").digest(key)
             .joinToString("") { "%02x".format(it) }
         return File(File(context.filesDir, "captions"), hash + ".txt")

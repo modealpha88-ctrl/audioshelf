@@ -109,11 +109,12 @@ internal fun StoryMode(
     }
 
     LaunchedEffect(controller) {
+        var pollCount = 0
         while (true) {
             playing = controller.isPlaying
             chapterIndex = controller.currentMediaItemIndex.coerceAtLeast(0)
             position = controller.currentPosition.coerceAtLeast(0L)
-            if (controller.mediaItemCount > 0) onProgress(chapterIndex, position)
+            if (controller.mediaItemCount > 0 && pollCount++ % 9 == 0) onProgress(chapterIndex, position)
             delay(120)
         }
     }
