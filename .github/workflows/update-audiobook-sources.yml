@@ -39,5 +39,6 @@ jobs:
           git add sources/catalogs
           if ! git diff --staged --quiet; then
             git commit -m "data(sources): refresh audiobook catalogues"
-            git push
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
