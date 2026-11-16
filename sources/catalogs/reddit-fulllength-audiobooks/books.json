@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "FullLengthAudiobooks — Unavailable site",
+      "authors": [
+        "FullLengthAudiobooks"
+      ],
+      "language": "English",
+      "description": "UNAVAILABLE on 2026-11-16: the listed domain redirects to example.com, not an audiobook service. Kept as a reference and link only. No playable media or automatic download capability is included. If a website is unavailable, its original URL may lead to an error or unrelated page.",
+      "externalUrl": "https://fulllengthaudiobooks.net/"
+    }
+  ]
+}

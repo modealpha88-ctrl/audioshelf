@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "AudioBook Bay — Open website",
+      "authors": [
+        "AudioBook Bay"
+      ],
+      "language": "English",
+      "description": "External torrent index. AudioShelf does not search, fetch, seed, or download torrents from this site. Verify that a recording is lawful to access. No playable media or automatic download capability is included. If a website is unavailable, its original URL may lead to an error or unrelated page.",
+      "externalUrl": "https://audiobookbay.lu/"
+    }
+  ]
+}

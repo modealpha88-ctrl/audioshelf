@@ -58,6 +58,22 @@ def main():
                 check_https(chapter["audioUrl"])
             book_count += 1
         print(f"Provider {id}: {len(books)} indexed books")
+    # Every provider imported from the Reddit directory must have an external-only
+    # catalogue entry with a matching recorded destination and no fake audio tracks.
+    directory = read(ROOT / "sources/reddit-audiobook-directory.json")
+    provider_ids = {provider["id"] for provider in providers}
+    for entry in directory["entries"]:
+        provider_id = entry.get("providerId")
+        if not provider_id:
+            continue
+        assert provider_id in provider_ids, f"Directory provider missing from manifest: {provider_id}"
+        assert entry["status"] == "external-directory-only", provider_id
+        books = read(ROOT / "sources/catalogs" / provider_id / "books.json")["books"]
+        assert len(books) == 1, provider_id
+        assert books[0].get("externalUrl") == entry["url"], provider_id
+        assert books[0].get("description"), provider_id
+        chapters = read(ROOT / "sources/catalogs" / provider_id / "chapters" / (books[0]["id"] + ".json"))["chapters"]
+        assert chapters == [], provider_id
     assert book_count > 0, "At least one tested, real audiobook must be present"
     print(f"Validated {len(providers)} providers, {book_count} directly playable audiobooks and {external_count} official external listings")
 

@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Academic Torrents — Open website",
+      "authors": [
+        "Academic Torrents"
+      ],
+      "language": "English",
+      "description": "Research dataset-sharing service, not a dedicated audiobook catalogue. External website only, with no torrent integration. No playable media or automatic download capability is included. If a website is unavailable, its original URL may lead to an error or unrelated page.",
+      "externalUrl": "https://academictorrents.com/"
+    }
+  ]
+}

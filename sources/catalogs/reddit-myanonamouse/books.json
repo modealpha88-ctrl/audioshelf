@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "MyAnonamouse — Open website",
+      "authors": [
+        "MyAnonamouse"
+      ],
+      "language": "English",
+      "description": "Private torrent tracker; account required. External website link only, without login, scraping or torrent integration. No playable media or automatic download capability is included. If a website is unavailable, its original URL may lead to an error or unrelated page.",
+      "externalUrl": "https://www.myanonamouse.net/"
+    }
+  ]
+}

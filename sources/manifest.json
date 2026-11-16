@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "AudioShelf Audiobook Sources",
-  "description": "Open and public-domain audio, official services and clearly identified external audiobook directories imported from Reddit. External listings do not imply streaming rights.",
+  "description": "AudioShelf open and public-domain audio, official services, and externally linked audiobook reference sites. Unsupported and unavailable sites are labeled; external listings do not grant streaming or download rights.",
   "providers": [
     {
       "id": "open-audiobooks",
@@ -186,6 +186,46 @@
       "attribution": "External site linked in r/Piracy Books Megathread; copyright/permissions not independently verified",
       "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-rave-book-search/books.json",
       "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-rave-book-search/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-audiobook-bay",
+      "name": "AudioBook Bay",
+      "description": "External torrent index. AudioShelf does not search, fetch, seed, or download torrents from this site. Verify that a recording is lawful to access.",
+      "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audiobook-bay/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-audiobook-bay/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-myanonamouse",
+      "name": "MyAnonamouse",
+      "description": "Private torrent tracker; account required. External website link only, without login, scraping or torrent integration.",
+      "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-myanonamouse/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-myanonamouse/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-academic-torrents",
+      "name": "Academic Torrents",
+      "description": "Research dataset-sharing service, not a dedicated audiobook catalogue. External website only, with no torrent integration.",
+      "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-academic-torrents/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-academic-torrents/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-fulllength-audiobooks",
+      "name": "FullLengthAudiobooks",
+      "description": "UNAVAILABLE on 2026-11-16: the listed domain redirects to example.com, not an audiobook service. Kept as a reference and link only.",
+      "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-fulllength-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-fulllength-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "reddit-galaxy-audiobooks",
+      "name": "GalaxyAudiobooks",
+      "description": "UNAVAILABLE on 2026-11-16: the listed site returned HTTP 521. Kept as a reference and link only.",
+      "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-galaxy-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-galaxy-audiobooks/chapters/{id}.json"
     }
   ]
 }

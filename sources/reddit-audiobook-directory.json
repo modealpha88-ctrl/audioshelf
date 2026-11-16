@@ -6,8 +6,11 @@
     {
       "name": "Academic Torrents",
       "url": "https://academictorrents.com/",
-      "status": "reference-only-not-an-audiobook-catalogue",
-      "category": "torrent"
+      "status": "external-directory-only",
+      "category": "torrent",
+      "providerId": "reddit-academic-torrents",
+      "notes": "Research dataset-sharing service, not a dedicated audiobook catalogue. External website only, with no torrent integration.",
+      "siteStatus": "external-only-no-torrent-integration"
     },
     {
       "name": "AppAudioBooks",
@@ -28,8 +31,11 @@
     {
       "name": "AudioBook Bay",
       "url": "https://audiobookbay.lu/",
-      "status": "reference-only-no-torrent-automation",
-      "category": "torrent"
+      "status": "external-directory-only",
+      "category": "torrent",
+      "providerId": "reddit-audiobook-bay",
+      "notes": "External torrent index. AudioShelf does not search, fetch, seed, or download torrents from this site. Verify that a recording is lawful to access.",
+      "siteStatus": "external-only-no-torrent-integration"
     },
     {
       "name": "Audiobooks for Soul",
@@ -72,14 +78,20 @@
     {
       "name": "FullLengthAudiobooks",
       "url": "https://fulllengthaudiobooks.net/",
-      "status": "unavailable-redirects-to-example.com",
-      "category": "streaming"
+      "status": "external-directory-only",
+      "category": "streaming",
+      "providerId": "reddit-fulllength-audiobooks",
+      "notes": "UNAVAILABLE on 2026-11-16: the listed domain redirects to example.com, not an audiobook service. Kept as a reference and link only.",
+      "siteStatus": "unavailable"
     },
     {
       "name": "GalaxyAudiobooks",
       "url": "https://galaxyaudiobook.com/",
-      "status": "unavailable-http-521",
-      "category": "streaming"
+      "status": "external-directory-only",
+      "category": "streaming",
+      "providerId": "reddit-galaxy-audiobooks",
+      "notes": "UNAVAILABLE on 2026-11-16: the listed site returned HTTP 521. Kept as a reference and link only.",
+      "siteStatus": "unavailable"
     },
     {
       "name": "GoldenAudiobook",
@@ -114,8 +126,11 @@
     {
       "name": "MyAnonamouse",
       "url": "https://www.myanonamouse.net/",
-      "status": "reference-only-account-required",
-      "category": "torrent"
+      "status": "external-directory-only",
+      "category": "torrent",
+      "providerId": "reddit-myanonamouse",
+      "notes": "Private torrent tracker; account required. External website link only, without login, scraping or torrent integration.",
+      "siteStatus": "external-only-no-torrent-integration"
     },
     {
       "name": "Rave Book Search",
