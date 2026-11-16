@@ -196,6 +196,7 @@ class RepositoryAudioSource(private val provider: SourceProviderDefinition) : Au
     }
 
     override suspend fun chapters(book: AudioBook): List<AudioChapter> = withContext(Dispatchers.IO) {
+        if (book.externalUrl.isNotBlank()) return@withContext emptyList()
         val endpoint = expand(provider.chaptersUrl, id = book.id)
         val root = readJson(endpoint)
         root.array("chapters", "items", "results").objects().mapIndexedNotNull { index, item ->
@@ -226,6 +227,7 @@ class RepositoryAudioSource(private val provider: SourceProviderDefinition) : Au
                 coverUrl = item.optString("coverUrl").takeIf(String::isNotBlank)?.let { absoluteSecureUrl(it, endpoint) }.orEmpty(),
                 feedUrl = item.optString("feedUrl"),
                 language = item.optString("language"),
+                externalUrl = item.optString("externalUrl").takeIf(String::isNotBlank)?.let { absoluteSecureUrl(it, endpoint) }.orEmpty(),
             )
         }
     }
