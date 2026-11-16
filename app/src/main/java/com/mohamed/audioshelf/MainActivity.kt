@@ -214,7 +214,7 @@ private fun SourceSelector(selectedId: String, onSource: (String) -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(options.first { it.first == selectedId }.second, fontWeight = FontWeight.Bold)
-                    Text("Authorized open and public-domain catalogues", style = MaterialTheme.typography.bodySmall)
+                    Text("Open audio and official audiobook services", style = MaterialTheme.typography.bodySmall)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -514,7 +514,7 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
                 Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(book.authors, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (book.language.isNotBlank()) Text(book.language, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                if (book.externalUrl.isNotBlank()) Text("External listening · Purchase or borrow", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                if (book.externalUrl.isNotBlank()) Text("Official website · External access", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
             Icon(Icons.Default.ChevronRight, null)
         }
@@ -568,7 +568,7 @@ private fun BookScreen(
                                 Text("Open official provider")
                             }
                             Text(
-                                "Purchase or borrow using the provider's app or website. The full audiobook is not streamed by AudioShelf.",
+                                "Visit the provider's website or app. Free access, subscription, library eligibility or purchase terms depend on the provider.",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         } else {
