@@ -1,5 +1,7 @@
 package com.mohamed.audioshelf.data.source
 
+import android.content.Context
+
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
 
@@ -25,6 +27,10 @@ object SourceRegistry {
 
     fun replaceInstalled(providers: List<SourceProviderDefinition>) {
         installed = providers.map(::RepositoryAudioSource).associateBy { it.id }
+    }
+
+    fun bindLocalFiles(context: Context) {
+        (builtIn.getValue("local_files") as LocalFilesSource).bind(context)
     }
 
     fun all(): List<AudioSource> = builtIn.values.filterNot { it.id == "local_files" || it.id == "public_rss" } + installed.values

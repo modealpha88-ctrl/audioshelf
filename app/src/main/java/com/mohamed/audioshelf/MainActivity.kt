@@ -140,6 +140,11 @@ private fun AudioShelfApp(viewModel: MainViewModel, onPickLocalAudio: () -> Unit
                         val progress = viewModel.progress(selected)
                         playBook(context, controller, selected, state.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
                     },
+                    onResume = {
+                        val progress = viewModel.progress(selected)
+                        val index = progress.chapterIndex.coerceIn(state.chapters.indices)
+                        playBook(context, controller, selected, state.chapters, index, progress.positionMs)
+                    },
                     onDownload = { OfflineDownloads(context).downloadBook(selected, state.chapters) },
                     onTorrent = { openArchiveTorrent(context, selected) },
                     onProgress = { index, position -> viewModel.saveProgress(selected, index, position) },
@@ -539,6 +544,7 @@ private fun BookScreen(
     onToggleSaved: () -> Unit,
     onOpenExternal: () -> Unit,
     onPlay: (Int) -> Unit,
+    onResume: () -> Unit,
     onDownload: () -> Unit,
     onTorrent: () -> Unit,
     onProgress: (Int, Long) -> Unit,
@@ -572,7 +578,7 @@ private fun BookScreen(
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         } else {
-                            Button(onClick = { if (chapters.isNotEmpty()) { onPlay(0); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
+                            Button(onClick = { if (chapters.isNotEmpty()) { onResume(); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
                                 Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
                             }
                         }
@@ -592,7 +598,7 @@ private fun BookScreen(
                     }
                 }
                 if (book.description.isNotBlank()) Text(book.description, Modifier.padding(horizontal = 20.dp), maxLines = 6, overflow = TextOverflow.Ellipsis)
-                if (book.externalUrl.isBlank()) Text("Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
+                if (book.externalUrl.isBlank()) Text(if (book.sourceId == "local_files" && chapters.size > 1) "Embedded chapters" else "Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
             }
             if (loading) item { Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             if (error != null) item { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp)) }
@@ -686,12 +692,20 @@ private fun rememberMediaController(): MediaController? {
 private fun playBook(context: Context, controller: MediaController?, book: AudioBook, chapters: List<AudioChapter>, index: Int, positionMs: Long) {
     if (controller == null || chapters.isEmpty()) return
     val downloads = OfflineDownloads(context)
+    val embeddedM4b = book.sourceId == "local_files" && chapters.size > 1
     val mediaItems = chapters.mapIndexed { chapterIndex, chapter ->
-        MediaItem.Builder()
+        val item = MediaItem.Builder()
             .setMediaId(chapter.id)
             .setUri(downloads.playableUri(book, chapterIndex, chapter.audioUrl))
             .setMediaMetadata(MediaMetadata.Builder().setTitle(chapter.title).setArtist(book.authors).setAlbumTitle(book.title).build())
-            .build()
+        if (embeddedM4b) {
+            // Clip each logical chapter out of the SAME local M4B URI: no copies are made.
+            val clip = MediaItem.ClippingConfiguration.Builder()
+                .setStartPositionMs(chapter.startMs)
+            if (chapter.durationMs > 0) clip.setEndPositionMs(chapter.startMs + chapter.durationMs)
+            item.setClippingConfiguration(clip.build())
+        }
+        item.build()
     }
     controller.setMediaItems(mediaItems, index.coerceIn(chapters.indices), positionMs.coerceAtLeast(0))
     controller.prepare()

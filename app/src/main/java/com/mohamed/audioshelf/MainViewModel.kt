@@ -54,6 +54,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var browseJob: Job? = null
 
     init {
+        SourceRegistry.bindLocalFiles(application)
         syncInstalledSources()
         browse()
     }
@@ -229,8 +230,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(selectedBook = book, chapters = emptyList(), loading = true, error = null)
         viewModelScope.launch {
             runCatching { SourceRegistry.get(book.sourceId).chapters(book) }
-                .onSuccess { _state.value = _state.value.copy(chapters = it, loading = false) }
-                .onFailure { _state.value = _state.value.copy(loading = false, error = it.friendlyMessage()) }
+                .onSuccess { chapters ->
+                    // Pre-chapter versions stored the absolute file position as chapter 0.
+                    // Convert that position to the corresponding clipped chapter once.
+                    if (book.sourceId == "local_files" && chapters.size > 1) {
+                        val old = store.progress(book)
+                        if (old.chapterIndex == 0 &&
+                            old.positionMs >= chapters.first().durationMs &&
+                            chapters.first().durationMs > 0) {
+                            val target = chapters.indexOfLast { it.startMs <= old.positionMs }
+                            if (target > 0) {
+                                store.saveProgress(book, target, old.positionMs - chapters[target].startMs)
+                            }
+                        }
+                    }
+                    if (_state.value.selectedBook?.id == book.id &&
+                        _state.value.selectedBook?.sourceId == book.sourceId) {
+                        _state.value = _state.value.copy(chapters = chapters, loading = false)
+                    }
+                }
+                .onFailure { if (_state.value.selectedBook?.id == book.id) {
+                    _state.value = _state.value.copy(loading = false, error = it.friendlyMessage())
+                } }
         }
     }
 

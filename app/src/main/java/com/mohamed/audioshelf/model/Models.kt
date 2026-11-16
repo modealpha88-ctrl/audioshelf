@@ -18,6 +18,8 @@ data class AudioChapter(
     val title: String,
     val audioUrl: String,
     val durationMs: Long = 0,
+    /** Offset into the underlying file for embedded M4B chapters, otherwise zero. */
+    val startMs: Long = 0,
 )
 
 data class ListeningProgress(

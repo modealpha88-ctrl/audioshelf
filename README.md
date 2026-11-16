@@ -33,8 +33,12 @@ in-app chapter streams. No credentials, subscription cookies, or DRM
 workarounds are collected.
 
 In **Sources**, you can also import a purchased DRM-free MP3/M4B audio
-file using Android's document picker (with retained local URI access),
-or paste a public podcast RSS feed for chapter playback. Podcast feeds
+file using Android's document picker (with retained local URI access). M4B files
+with embedded Nero or Apple/QuickTime chapter markers are now divided into
+named, seekable chapters while playing the original file without copying it.
+Existing single-track progress is migrated when chapter markers become available;
+files without supported chapter metadata continue to play as one track.
+You can also paste a public podcast RSS feed for chapter playback. Podcast feeds
 must contain publisher-distributed HTTPS audio enclosures. This allows
 compatible free Scribl/Podiobooks podcasts to play inside AudioShelf
 without scraping Scribl's protected player.
