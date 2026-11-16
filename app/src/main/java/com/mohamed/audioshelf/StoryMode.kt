@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Tune
 import com.mohamed.audioshelf.data.captions.FullBookSubtitleStore
 import com.mohamed.audioshelf.data.captions.FullBookTranscriptionWorker
 import androidx.compose.material3.Button
@@ -136,6 +138,12 @@ internal fun StoryMode(
         }
     }
     var fullExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
+    var toolsExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
+    var captionsHaveShown by rememberSaveable(book.id) { mutableStateOf(false) }
+    val captionStore = remember(context) { TimedCaptionStore(context) }
+    LaunchedEffect(transcriptError) {
+        if (transcriptError != null) toolsExpanded = true
+    }
     LaunchedEffect(book.id) {
         while (true) {
             fullProgress = fullStore.progress(book.id)
@@ -175,7 +183,7 @@ internal fun StoryMode(
     val captionSourceIndex = if (book.sourceId == "local_files") 0 else safeIndex
     val subtitleCues = remember(book.id, book.sourceId, captionSourceIndex,
         captionBucket, transcriptRevision, absoluteM4bTime) {
-        TimedCaptionStore(context).loadNear(book, safeIndex, filePositionMs)
+        captionStore.loadNear(book, safeIndex, filePositionMs)
     }
     val fullCues = remember(book.id, filePositionMs / FullBookSubtitleStore.WINDOW_MS,
         fullProgress.completedMs) {
@@ -184,6 +192,15 @@ internal fun StoryMode(
     val cue = TimedCaptionParser.active(subtitleCues, filePositionMs)
         ?: TimedCaptionParser.active(fullCues, filePositionMs)
     val displayWord = cue?.let { TimedCaptionParser.wordAt(it, filePositionMs).first }.orEmpty()
+    // The active cue can be null during intentional gaps between spoken lines.
+    // A saved transcript means the setup prompt must never reappear in those gaps.
+    val captionsAvailable = remember(book.id, safeIndex, transcriptRevision,
+        fullProgress.completedMs) {
+        captionStore.hasCaptions(book, safeIndex) || fullStore.hasCaptions(book.id)
+    }
+    LaunchedEffect(book.id, cue?.startMs) {
+        if (cue != null && displayWord.isNotBlank()) captionsHaveShown = true
+    }
     val absoluteAudioMs = position + if (embedded) chapters.getOrNull(safeIndex)?.startMs ?: 0L else 0L
     LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex,
         fullProgress.paused, fullProgress.finished, absoluteAudioMs / 1000L) {
@@ -227,46 +244,75 @@ internal fun StoryMode(
                     )
                 }
             }
-            Spacer(Modifier.weight(1f))
-            Box(Modifier.fillMaxWidth().height(230.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 if (cue != null && displayWord.isNotBlank()) {
-                    AnimatedContent(targetState = displayWord, label = "word caption") { word ->
-                        Text(word, textAlign = TextAlign.Center, maxLines = 3,
+                    AnimatedContent(targetState = displayWord, label = "spoken word") { word ->
+                        Text(
+                            word,
+                            textAlign = TextAlign.Center,
+                            maxLines = 3,
                             color = Color.White,
                             style = TextStyle(
-                                fontSize = 37.sp,
+                                fontSize = 38.sp,
                                 fontWeight = FontWeight.Black,
-                                lineHeight = 43.sp,
-                                shadow = Shadow(Color.Black, Offset(3f, 5f), 9f),
-                            ))
+                                lineHeight = 45.sp,
+                                shadow = Shadow(Color.Black, Offset(3f, 5f), 10f),
+                            ),
+                        )
                     }
-                } else {
+                } else if (!captionsAvailable && !captionsHaveShown && !autoTranscribe &&
+                    !sttBusy && (fullProgress.paused || fullProgress.finished)) {
+                    // This is a first-time setup hint only, not an overlay between cues.
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ClosedCaption, null, tint = Color.White, modifier = Modifier.size(36.dp))
+                        Icon(Icons.Default.ClosedCaption, null, tint = Color(0xFFDFE9F5),
+                            modifier = Modifier.size(28.dp))
                         Text(
-                            if (subtitleCues.isEmpty()) "Add timed captions to show spoken words"
-                            else "Captions appear here during spoken lines",
-                            modifier = Modifier.padding(top = 12.dp),
-                            color = Color.White, textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium,
+                            "Import captions to display spoken words",
+                            modifier = Modifier.padding(top = 8.dp),
+                            color = Color(0xFFDFE9F5),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
-            Surface(shape = RoundedCornerShape(20.dp), color = Color(0xCC061121)) {
-                Column(Modifier.padding(14.dp).heightIn(max = 375.dp)
-                    .verticalScroll(rememberScrollState()),
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = Color(0xF2081428),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(chapters.getOrNull(safeIndex)?.title.orEmpty(),
-                        color = Color.White, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.height(7.dp))
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            chapters.getOrNull(safeIndex)?.title.orEmpty(),
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        if (captionsAvailable || captionsHaveShown) {
+                            Text("CC READY", color = Color(0xFF80F0DA),
+                                style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
                         IconButton(onClick = { controller.seekToPreviousMediaItem() }) {
                             Icon(Icons.Default.SkipPrevious, "Previous chapter", tint = Color.White)
                         }
-                        FilledIconButton(onClick = { if (playing) controller.pause() else controller.play() }) {
+                        FilledIconButton(onClick = {
+                            if (playing) controller.pause() else controller.play()
+                        }) {
                             Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 if (playing) "Pause" else "Play")
                         }
@@ -274,6 +320,39 @@ internal fun StoryMode(
                             Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
                         }
                     }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = { onPickTranscript(safeIndex) },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.ClosedCaption, null,
+                                modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(if (captionsAvailable) "Replace captions" else "Import captions",
+                                maxLines = 1)
+                        }
+                        androidx.compose.material3.TextButton(
+                            onClick = { toolsExpanded = !toolsExpanded },
+                        ) {
+                            Icon(Icons.Default.Tune, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (toolsExpanded) "Close" else "Tools")
+                        }
+                    }
+                    if (toolsExpanded) {
+                        androidx.compose.material3.HorizontalDivider(
+                            color = Color(0x335B7795),
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                        Column(
+                            Modifier.fillMaxWidth().heightIn(max = 260.dp)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
                     if (book.sourceId == "local_files") {
                         if (!sttModelReady) {
                             OutlinedButton(
@@ -376,10 +455,7 @@ internal fun StoryMode(
                             }
                         }
                     }
-                    Button(onClick = { onPickTranscript(safeIndex) }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.ClosedCaption, null)
-                        Text("  Import SRT / VTT / LRC captions")
-                    }
+
                     if (embedded) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             androidx.compose.material3.Checkbox(
@@ -392,15 +468,17 @@ internal fun StoryMode(
                     }
                     if (transcriptError != null) Text(transcriptError,
                         color = Color(0xFFFFB8AF), style = MaterialTheme.typography.bodySmall)
-                    if (subtitleCues.isEmpty()) Text(
-                        "Turn on offline auto-transcription or import an SRT/VTT/LRC subtitle file.",
-                        color = Color(0xFFD3E3EF), textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                    ) else Text(
-                        "Words animate across each subtitle's duration. Word-level timing is approximate unless captions are word-timed.",
-                        color = Color(0xFFD3E3EF), textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+
+                            if (!captionsAvailable && !captionsHaveShown) {
+                                Text(
+                                    "Import SRT, VTT or LRC, or generate captions offline.",
+                                    color = Color(0xFFD3E3EF),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

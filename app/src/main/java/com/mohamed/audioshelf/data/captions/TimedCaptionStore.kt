@@ -44,6 +44,13 @@ class TimedCaptionStore(private val context: Context) {
         return File(file.parentFile, file.nameWithoutExtension + "_index")
     }
 
+    /** Metadata check: even when playback is in a silent gap or a missing index bucket,
+     * an imported subtitle file remains present and the empty-state overlay must stay hidden. */
+    fun hasCaptions(book: AudioBook, chapterIndex: Int): Boolean =
+        File(indexPath(book, chapterIndex), ".complete").isFile ||
+            path(book, chapterIndex).length() > 0L ||
+            autoPath(book, chapterIndex).length() > 0L
+
     /**
      * Prefer the latest imported index, fall back to old imported caption
      * files and automatically generated STT without migration or data loss.
