@@ -1,0 +1,43 @@
+name: Update public-domain audiobook provider catalogues
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/update_audiobook_catalogs.py'
+      - 'scripts/validate_audiobook_catalogs.py'
+      - '.github/workflows/update-audiobook-sources.yml'
+  schedule:
+    - cron: '21 4 * * 0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-audioshelf-audiobook-catalogues
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install catalogue dependencies
+        run: python -m pip install --disable-pip-version-check 'requests==2.32.3' 'beautifulsoup4==4.13.4' 'feedparser==6.0.12'
+      - name: Refresh permitted source catalogues
+        run: python scripts/update_audiobook_catalogs.py
+      - name: Validate AudioShelf provider JSON
+        run: python scripts/validate_audiobook_catalogs.py
+      - name: Commit catalogue updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sources/catalogs
+          if ! git diff --staged --quiet; then
+            git commit -m "data(sources): refresh audiobook catalogues"
+            git push
+          fi
