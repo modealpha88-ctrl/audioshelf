@@ -1,0 +1,39 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "1 - Into the Primitive",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_1_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "2 - The Law of Club and Fang",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_2_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "3 - The Dominant Primordial Beast",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_3_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "4 - Who  Has Won to Mastership",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_4_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "5 - The Toil of Trace and Trail",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_5_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "6 - For the Love of a Man",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_6_london_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "7 - The Sounding of the Call",
+      "audioUrl": "https://www.archive.org/download/callofthewild_tc_1010_librivox/callofthewild_7_london_64kb.mp3"
+    }
+  ]
+}

@@ -1,33 +1,33 @@
 {
   "books": [
     {
-      "id": "https-www-loyalbooks-com-book-anthem-by-ayn-rand-0186831",
-      "title": "Anthem by Ayn Rand",
+      "id": "https-www-loyalbooks-com-book-anne-of-green-gables-by-lucy-maud-montgomery-31bf01f",
+      "title": "Anne of Green Gables by Lucy Maud Montgomery",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Anthem.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Anne-of-Green-Gables.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-night-and-day-by-virginia-woolf-0fd99d3",
-      "title": "Night and Day by Virginia Woolf",
+      "id": "https-www-loyalbooks-com-book-the-count-of-monte-cristo-by-alexandre-dumas-396d3c0",
+      "title": "The Count of Monte Cristo by Alexandre Dumas",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Night-and-Day-.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/monte_cristo.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-treasure-island-by-robert-louis-stevenson-00ff682",
-      "title": "Treasure Island by Robert Louis Stevenson",
+      "id": "https-www-loyalbooks-com-book-aesops-fables-volume-1-fables-1-25-2a04e69",
+      "title": "Aesop's Fables by Aesop",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Treasure-Island.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Aesops-Fables.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
@@ -41,103 +41,53 @@
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-history-of-the-united-states-vol-i-by-charles-and--6c98ec2",
-      "title": "History of the United States: The Colonial Period Onwards by Charles Austin Beard",
+      "id": "https-www-loyalbooks-com-book-king-solomons-mines-by-haggard-fe0fbcd",
+      "title": "King Solomon's Mines by H. Rider Haggard",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/5.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/King-Solomon-s-Mines.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-dracula-by-bram-stoker-a617619",
-      "title": "Dracula by Bram Stoker",
+      "id": "https-www-loyalbooks-com-book-the-red-badge-of-courage-by-stephen-crane-abb19c7",
+      "title": "The Red Badge of Courage by Stephen Crane",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Dracula-Bram-Stoker.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Red-Badge-of-Courage.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-tarzan-of-the-apes-91b1a00",
-      "title": "Tarzan of the Apes by Edgar Rice Burroughs",
+      "id": "https-www-loyalbooks-com-book-as-a-man-thinketh-by-james-allen-523d222",
+      "title": "As a Man Thinketh by James Allen",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Tarzan-of-the-Apes.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/as-a-man-thinketh-by-james-allen.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-tristan-and-iseult-by-joseph-bedier-abe6c74",
-      "title": "Tristan and Iseult by Joseph Bédier",
+      "id": "https-www-loyalbooks-com-book-call-of-the-wild-by-jack-london-cfd84cb",
+      "title": "The Call of the Wild by Jack London",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Tristan-and-Iseult.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Call-of-the-Wild.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-mystery-of-the-yellow-room-by-gaston-leroux-a9dbd2b",
-      "title": "The Mystery of the Yellow Room by Gaston Leroux",
+      "id": "https-www-loyalbooks-com-book-the-raven-by-edgar-allan-poe-f51839a",
+      "title": "The Raven by Edgar Allan Poe",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Mystery-of-the-Yellow-Room.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-the-federalist-papers-by-alexander-hamilton-john-j-d5542b3",
-      "title": "The Federalist Papers by Alexander Hamilton",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Federalist-Papers.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-the-canterbury-tales-by-geoffrey-chaucer-f0b312e",
-      "title": "The Canterbury Tales by Geoffrey Chaucer",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Canterbury-Tales.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-alices-adventures-in-wonderland-by-lewis-carroll-bdab754",
-      "title": "Alice's Adventures in Wonderland by Lewis Carroll",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/47.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-the-wind-in-the-willows-by-kenneth-grahame-779d1bd",
-      "title": "The Wind in the Willows by Kenneth Grahame",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Wind-in-the-Willows.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-the-wonderful-wizard-of-oz-8e0dd9f",
-      "title": "The Wonderful Wizard of Oz by L. Frank Baum",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Wonderful-Wizard-of-Oz.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/35.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
@@ -151,53 +101,103 @@
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-wuthering-heights-by-emily-bronte-904fdf8",
-      "title": "Wuthering Heights by Emily Bronte",
+      "id": "https-www-loyalbooks-com-book-short-science-fiction-collection-1-40fe9b2",
+      "title": "Short Science Fiction Collection by Various",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Wuthering-Heights-Emily-Bronte.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Short-Science-Fiction-Collection.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-captain-blood-by-rafael-sabatini-a6cd9f8",
-      "title": "Captain Blood by Rafael Sabatini",
+      "id": "https-www-loyalbooks-com-book-sailing-alone-around-the-world-by-joshua-slocum-8173742",
+      "title": "Sailing Alone Around the World by Joshua Slocum",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Captain-Blood.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Sailing-Alone-Around-The-Worl.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-sinking-of-the-titanic-and-great-sea-disasters-05047c9",
-      "title": "The Sinking of the Titanic and Great Sea Disasters by Logan Marshall",
+      "id": "https-www-loyalbooks-com-book-a-princess-of-mars-by-edgar-rice-burroughs-56145fc",
+      "title": "A Princess of Mars by Edgar Rice Burroughs",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Sinking-of-the-Titanic-and-Gr.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Princess-of-Mars.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-tales-from-shakespeare-by-charles-and-mary-lamb-8567916",
-      "title": "Tales from Shakespeare by Charles Lamb",
+      "id": "https-www-loyalbooks-com-book-king-lear-by-william-shakespeare-4ea770c",
+      "title": "King Lear by William Shakespeare",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Tales-from-Shakespeare.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/King-Lear.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-pollyanna-by-eleanor-h-porter-5a4e5bc",
-      "title": "Pollyanna by Eleanor H. Porter",
+      "id": "https-www-loyalbooks-com-book-anne-of-the-island-by-lucy-maud-montgomery-1b4f1c4",
+      "title": "Anne of the Island by Lucy Maud Montgomery",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Pollyanna-.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Anne-of-the-Island.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-around-the-world-in-eighty-days-by-jules-verne-e6144aa",
+      "title": "Around the World in Eighty Days by Jules Verne",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Around-the-World-in-Eighty-Days.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-the-gods-of-mars-by-edgar-rice-burroughs-a27a3a6",
+      "title": "The Gods of Mars by Edgar Rice Burroughs",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Gods-of-Mars.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-tristan-and-iseult-by-joseph-bedier-abe6c74",
+      "title": "Tristan and Iseult by Joseph Bédier",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Tristan-and-Iseult.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-the-adventures-of-ulysses-by-charles-lamb-ed98d83",
+      "title": "The Adventures of Ulysses by Charles Lamb",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/AdventuresofUlysses.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-don-quixote-vol-1-by-miguel-de-cervantes-saavedra-5a63dea",
+      "title": "Don Quixote by Miguel de Cervantes Saavedra",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Don-Quixote-Vol-1.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     }
   ]

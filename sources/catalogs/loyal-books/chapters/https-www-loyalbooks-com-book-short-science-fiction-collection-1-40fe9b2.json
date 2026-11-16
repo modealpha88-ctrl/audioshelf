@@ -1,0 +1,54 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "The 4D Doodler",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/4ddoodler_waldeyer_edm_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "Bread Overhead",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/bread_overhead_leiber_ms_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "Image of the Gods",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/imageofthegods_nourse_jk_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "Martian V. F. W.",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/martianvfw_vandenburg_cy_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "One Shot",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/oneshot_blish_r_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "Out Around Rigel",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/outaroundrigel_wilson_ae_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "Pygmalion’s Spectacles",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/pygmalionsspectacles_weinbaum_cml_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "The Repairman",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/repairman_harrison_ae_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "Toy Shop",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/toyshop_harrison_cs_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "Warning From The Stars",
+      "audioUrl": "https://www.archive.org/download/short_scifi_001_0711/warning_from_the_stars_cocking_rd_64kb.mp3"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "0 – Foreword",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_0_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "1 – Thought and Character",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_1_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "2 – Effect of Thought on Circumstances",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_2_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "3 – Effect of Thought on Health and the Body",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_3_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "4 – Thought and Purpose",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_4_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "5 – The Thought-Factor in Achievement",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_5_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "6 – Visions and Ideals",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_6_allen_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "7 – Serenity",
+      "audioUrl": "https://www.archive.org/download/as_a_man_thinketh_mc_librivox/asamanthinketh_7_allen_64kb.mp3"
+    }
+  ]
+}

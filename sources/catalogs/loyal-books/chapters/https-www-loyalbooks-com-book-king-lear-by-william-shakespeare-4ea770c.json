@@ -1,0 +1,29 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Act 1",
+      "audioUrl": "https://www.archive.org/download/king_lear_librivox/king_lear_1_shakespeare_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "Act 2",
+      "audioUrl": "https://www.archive.org/download/king_lear_librivox/king_lear_2_shakespeare_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "Act 3",
+      "audioUrl": "https://www.archive.org/download/king_lear_librivox/king_lear_3_shakespeare_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "Act 4",
+      "audioUrl": "https://www.archive.org/download/king_lear_librivox/king_lear_4_shakespeare_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "Act 5",
+      "audioUrl": "https://www.archive.org/download/king_lear_librivox/king_lear_5_shakespeare_64kb.mp3"
+    }
+  ]
+}
