@@ -1,0 +1,56 @@
+name: Publish Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag, for example v0.2.0
+        required: true
+        default: v0.2.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Restore release signing key
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.AUDIOSHELF_RELEASE_KEYSTORE_B64 }}
+        run: |
+          test -n "$RELEASE_KEYSTORE_B64"
+          printf '%s' "$RELEASE_KEYSTORE_B64" | base64 --decode > app/release.keystore
+      - name: Build signed release APK
+        env:
+          AUDIOSHELF_KEYSTORE_PATH: release.keystore
+          AUDIOSHELF_STORE_PASSWORD: ${{ secrets.AUDIOSHELF_RELEASE_STORE_PASSWORD }}
+          AUDIOSHELF_KEY_ALIAS: audioshelf
+          AUDIOSHELF_KEY_PASSWORD: ${{ secrets.AUDIOSHELF_RELEASE_STORE_PASSWORD }}
+        run: gradle :app:assembleRelease
+      - name: Verify and name APK
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          test -s app/build/outputs/apk/release/app-release.apk
+          cp app/build/outputs/apk/release/app-release.apk "AudioShelf-${RELEASE_VERSION}.apk"
+          sha256sum "AudioShelf-${RELEASE_VERSION}.apk" > "AudioShelf-${RELEASE_VERSION}.apk.sha256"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "$RELEASE_VERSION" \
+            "AudioShelf-${RELEASE_VERSION}.apk" \
+            "AudioShelf-${RELEASE_VERSION}.apk.sha256" \
+            --title "AudioShelf ${RELEASE_VERSION}" \
+            --generate-notes \
+            --target "$GITHUB_SHA"

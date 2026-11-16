@@ -30,6 +30,10 @@ gradle :app:assembleDebug
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
+Official GitHub releases are built by `.github/workflows/release.yml`, signed
+with the private release certificate stored in encrypted repository secrets,
+and published with a SHA-256 checksum.
+
 ## Adding a source
 
 Implement `AudioSource` in `app/src/main/java/com/mohamed/audioshelf/data/source/`,

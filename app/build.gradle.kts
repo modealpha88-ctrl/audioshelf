@@ -5,6 +5,7 @@ plugins {
 }
 
 android {
+    val releaseKeystorePath = providers.environmentVariable("AUDIOSHELF_KEYSTORE_PATH").orNull
     namespace = "com.mohamed.audioshelf"
     compileSdk = 35
 
@@ -26,6 +27,14 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        if (releaseKeystorePath != null) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = providers.environmentVariable("AUDIOSHELF_STORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("AUDIOSHELF_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("AUDIOSHELF_KEY_PASSWORD").get()
+            }
+        }
     }
 
     buildTypes {
@@ -34,6 +43,9 @@ android {
         }
         release {
             isMinifyEnabled = true
+            if (releaseKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
