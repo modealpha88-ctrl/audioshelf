@@ -153,7 +153,7 @@ private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onS
     }
 
     Column(Modifier.fillMaxSize()) {
-        LargeTopAppBar(title = { Column { Text("AudioShelf"); Text("Public-domain audiobooks", style = MaterialTheme.typography.labelMedium) } })
+        LargeTopAppBar(title = { Column { Text("AudioShelf"); Text("Browse and import audiobooks", style = MaterialTheme.typography.labelMedium) } })
         SearchBar(
             inputField = {
                 SearchBarDefaults.InputField(
@@ -165,7 +165,7 @@ private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onS
                     },
                     expanded = false,
                     onExpandedChange = {},
-                    placeholder = { Text("Search LibriVox titles") },
+                    placeholder = { Text("Search audiobook catalogues") },
                     leadingIcon = {
                         IconButton(onClick = { onSearch(query) }) {
                             Icon(Icons.Default.Search, "Search")
@@ -272,7 +272,7 @@ private fun SourcesScreen(
                 HorizontalDivider(Modifier.padding(vertical = 18.dp))
                 Text("Import audiobook by URL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Use a supported audiobook page link. The site scrapers extract its public HTML audio chapters; they are not source-repository URLs.",
+                    "Paste any public HTTPS audiobook page or direct audio file URL. AudioShelf finds chapter links in standard HTML players and metadata. Sites requiring logins, JavaScript, or protected streaming may not work.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -280,7 +280,7 @@ private fun SourcesScreen(
                     value = bookUrl,
                     onValueChange = { bookUrl = it },
                     label = { Text("Audiobook page URL") },
-                    placeholder = { Text("https://site.example/book-title/") },
+                    placeholder = { Text("https://example.org/audiobook-or-chapter.mp3") },
                     leadingIcon = { Icon(Icons.Default.Link, null) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
