@@ -47,7 +47,7 @@ class OfflineDownloads(private val context: Context) {
             original.take(64) + "-" + hash
         }
         val extension = Uri.parse(mediaUrl).path.orEmpty().substringAfterLast('.', "mp3").lowercase()
-            .takeIf { it in setOf("mp3", "m4a", "mp4", "aac", "ogg", "opus", "flac", "wav") } ?: "mp3"
+            .takeIf { it in setOf("mp3", "m4a", "m4b", "mp4", "aac", "ogg", "opus", "flac", "wav") } ?: "mp3"
         return File(File(base, safeBook), "%04d.%s".format(index + 1, extension))
     }
 }
