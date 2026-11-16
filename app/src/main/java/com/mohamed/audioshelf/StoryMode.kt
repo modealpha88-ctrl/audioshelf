@@ -182,8 +182,10 @@ internal fun StoryMode(
         ?: TimedCaptionParser.active(fullCues, filePositionMs)
     val displayWord = cue?.let { TimedCaptionParser.wordAt(it, filePositionMs).first }.orEmpty()
     val absoluteAudioMs = position + if (embedded) chapters.getOrNull(safeIndex)?.startMs ?: 0L else 0L
-    LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex, absoluteAudioMs / 1000L) {
+    LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex,
+        fullProgress.paused, fullProgress.finished, absoluteAudioMs / 1000L) {
         if (autoTranscribe && sttModelReady && !sttBusy && !sttNativeUnavailable &&
+            (fullProgress.paused || fullProgress.finished) &&
             book.sourceId == "local_files" && chapters.isNotEmpty()) {
             // Generate captions a little ahead of playback in short windows.
             onTranscribeNearby(safeIndex, absoluteAudioMs + 12_000L)
