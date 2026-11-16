@@ -1,0 +1,109 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "00 – Preface",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_00_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "01 – The Tempest",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_01_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "02 – A Midsummer Night’s Dream",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_02_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "03 – Winter’s Tale",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_03_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "04 – Much Ado About Nothing",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_04_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "05 – As You Like It",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_05_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "06 – Two Gentlemen of Verona",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_06_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "07 – Merchant of Venice",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_07_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "08 – Cymbeline",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_08_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "09 – King Lear",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_09_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "10 – Macbeth",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_10_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "11 – All’s Well That Ends Well",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_11_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "12 – Taming of the Shrew",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_12_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "13 – Comedy of Errors",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_13_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "14 – Measure for Measure",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_14_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-16",
+      "title": "15 – Twelfth Night",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_15_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-17",
+      "title": "16 – Timon of Athens",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_16_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-18",
+      "title": "17 – Romeo and Juliet",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_17_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-19",
+      "title": "18 – Hamlet, Prince of Denmark",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_18_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-20",
+      "title": "19 – Othello",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_19_lamb_64kb.mp3"
+    },
+    {
+      "id": "chapter-21",
+      "title": "20 – Pericles, Prince of Tyre",
+      "audioUrl": "https://www.archive.org/download/tales_shakespeare_librivox/tales_from_shakespeare_20_lamb_64kb.mp3"
+    }
+  ]
+}

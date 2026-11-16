@@ -1,0 +1,144 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Ch 01: Out of the Sea",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_01_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "Ch 02: The Savage Home",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_02_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "Ch 03: Life and Death",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_03_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "Ch 04: The Apes",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_04_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "Ch 05: The White Ape",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_05_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "Ch 06: Jungle Battles",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_06_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "Ch 07: The Light of Knowledge",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_07_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "Ch 08: The Tree-Top Hunter",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_08_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "Ch 09: Man and Man",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_09_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "Ch 10: The Fear-Phantom",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_10_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "Ch 11: King of the Apes",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_11_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "Ch 12: Man’s Reason",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_12_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "Ch 13: His Own Kind",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_13_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "Ch 14: At the Mercy of the Jungle",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_14_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-15",
+      "title": "Ch 15: The Forest God",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_15_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-16",
+      "title": "Ch 16: Most Remarkable",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_16_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-17",
+      "title": "Ch 17: Burials",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_17_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-18",
+      "title": "Ch 18: The Jungle Toll",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_18_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-19",
+      "title": "Ch 19: Call of the Primitive",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_19_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-20",
+      "title": "Ch 20: Heredity",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_20_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-21",
+      "title": "Ch 21: The Village of Torture",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_21_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-22",
+      "title": "Ch 22: The Search Party",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_22_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-23",
+      "title": "Ch 23: Brother Men",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_23_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-24",
+      "title": "Ch 24: Lost Treasure",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_24_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-25",
+      "title": "Ch 25: The Outpost of the World",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_25_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-26",
+      "title": "Ch 26: The Height of Civilization",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_26_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-27",
+      "title": "Ch 27: The Giant Again",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_27_burroughs_64kb.mp3"
+    },
+    {
+      "id": "chapter-28",
+      "title": "Ch 28: Conclusion",
+      "audioUrl": "https://www.archive.org/download/tarzan_apes_mfs/tarzan_of_the_apes_28_burroughs_64kb.mp3"
+    }
+  ]
+}

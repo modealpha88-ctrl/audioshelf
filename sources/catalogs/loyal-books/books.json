@@ -1,123 +1,73 @@
 {
   "books": [
     {
-      "id": "https-www-loyalbooks-com-book-the-gods-of-mars-by-edgar-rice-burroughs-a27a3a6",
-      "title": "The Gods of Mars by Edgar Rice Burroughs",
+      "id": "https-www-loyalbooks-com-book-anthem-by-ayn-rand-0186831",
+      "title": "Anthem by Ayn Rand",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Gods-of-Mars.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Anthem.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-decline-and-fall-of-the-roman-empire-vol-i-by--8730ad3",
-      "title": "History of the Decline and Fall of the Roman Empire by Edward Gibbon",
+      "id": "https-www-loyalbooks-com-book-night-and-day-by-virginia-woolf-0fd99d3",
+      "title": "Night and Day by Virginia Woolf",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/History-of-the-Decline-and-Fa.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Night-and-Day-.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-andersens-fairy-tales-by-hc-andersen-387c75f",
-      "title": "Andersen's Fairy Tales by Hans Christian Andersen",
+      "id": "https-www-loyalbooks-com-book-treasure-island-by-robert-louis-stevenson-00ff682",
+      "title": "Treasure Island by Robert Louis Stevenson",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/AndersensFairyTales.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Treasure-Island.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-story-of-doctor-dolittle-by-hugh-lofting-a7ef5b9",
-      "title": "The Story of Doctor Dolittle by Hugh Lofting",
+      "id": "https-www-loyalbooks-com-book-the-return-of-sherlock-holmes-by-sir-arthur-conan--8116ee3",
+      "title": "The Return of Sherlock Holmes by Sir Arthur Conan Doyle",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Story-of-Doctor-Dolittle.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Return-of-Sherlock-Holmes.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-last-days-of-pompeii-53c503a",
-      "title": "Last Days of Pompeii by Edward George Bulwer-Lytton",
+      "id": "https-www-loyalbooks-com-book-history-of-the-united-states-vol-i-by-charles-and--6c98ec2",
+      "title": "History of the United States: The Colonial Period Onwards by Charles Austin Beard",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Last-Days-of-Pompeii.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/5.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-merry-adventures-of-robin-hood-by-howard-pyle-79d2010",
-      "title": "The Merry Adventures of Robin Hood by Howard Pyle",
+      "id": "https-www-loyalbooks-com-book-dracula-by-bram-stoker-a617619",
+      "title": "Dracula by Bram Stoker",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Merry-Adventures-of-Robin-Hoo.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Dracula-Bram-Stoker.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-crime-and-punishment-by-fyodor-dostoyevsky-4606940",
-      "title": "Crime and Punishment by Fyodor Dostoyevsky",
+      "id": "https-www-loyalbooks-com-book-tarzan-of-the-apes-91b1a00",
+      "title": "Tarzan of the Apes by Edgar Rice Burroughs",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Crime-and-Punishment.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-the-swiss-family-robinson-by-johann-david-wyss-e854a18",
-      "title": "The Swiss Family Robinson by Johann David Wyss",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Swiss-Family-Robinson-.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-pollyanna-by-eleanor-h-porter-5a4e5bc",
-      "title": "Pollyanna by Eleanor H. Porter",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Pollyanna-.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-a-tale-of-two-cities-by-charles-dickens-899039f",
-      "title": "A Tale of Two Cities by Charles Dickens",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Tale-of-Two-Cities-Charles-Dickens.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-dream-psychology-by-sigmund-freud-1ae82e1",
-      "title": "Dream Psychology by Sigmund Freud",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Dream-Psychology.jpg",
-      "description": "Public-domain recordings listed by Loyal Books."
-    },
-    {
-      "id": "https-www-loyalbooks-com-book-emma-by-jane-austen-d25d4df",
-      "title": "Emma by Jane Austen",
-      "authors": [
-        "Loyal Books"
-      ],
-      "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Emma-Jane-Austen.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Tarzan-of-the-Apes.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
@@ -131,13 +81,33 @@
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-pilgrims-progress-by-john-bunyan-c0286cf",
-      "title": "The Pilgrim's Progress by John Bunyan",
+      "id": "https-www-loyalbooks-com-book-mystery-of-the-yellow-room-by-gaston-leroux-a9dbd2b",
+      "title": "The Mystery of the Yellow Room by Gaston Leroux",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Pilgrim-s-Progress.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Mystery-of-the-Yellow-Room.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-the-federalist-papers-by-alexander-hamilton-john-j-d5542b3",
+      "title": "The Federalist Papers by Alexander Hamilton",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Federalist-Papers.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-the-canterbury-tales-by-geoffrey-chaucer-f0b312e",
+      "title": "The Canterbury Tales by Geoffrey Chaucer",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Canterbury-Tales.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
@@ -161,43 +131,73 @@
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-politics-by-aristotle-8532c19",
-      "title": "Politics by Aristotle",
+      "id": "https-www-loyalbooks-com-book-the-wonderful-wizard-of-oz-8e0dd9f",
+      "title": "The Wonderful Wizard of Oz by L. Frank Baum",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Politics-Aristotle.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Wonderful-Wizard-of-Oz.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-odyssey-by-homer-68eb026",
-      "title": "The Odyssey by Homer",
+      "id": "https-www-loyalbooks-com-book-the-three-musketeers-by-alexandre-dumas-614889c",
+      "title": "The Three Musketeers by Alexandre Dumas",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Odyssey.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Three-Musketeers.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-aesops-fables-volume-1-fables-1-25-2a04e69",
-      "title": "Aesop's Fables by Aesop",
+      "id": "https-www-loyalbooks-com-book-wuthering-heights-by-emily-bronte-904fdf8",
+      "title": "Wuthering Heights by Emily Bronte",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/Aesops-Fables.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Wuthering-Heights-Emily-Bronte.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     },
     {
-      "id": "https-www-loyalbooks-com-book-the-adventures-of-ulysses-by-charles-lamb-ed98d83",
-      "title": "The Adventures of Ulysses by Charles Lamb",
+      "id": "https-www-loyalbooks-com-book-captain-blood-by-rafael-sabatini-a6cd9f8",
+      "title": "Captain Blood by Rafael Sabatini",
       "authors": [
         "Loyal Books"
       ],
       "language": "English",
-      "coverUrl": "https://www.loyalbooks.com/image/feed/AdventuresofUlysses.jpg",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Captain-Blood.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-the-sinking-of-the-titanic-and-great-sea-disasters-05047c9",
+      "title": "The Sinking of the Titanic and Great Sea Disasters by Logan Marshall",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Sinking-of-the-Titanic-and-Gr.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-tales-from-shakespeare-by-charles-and-mary-lamb-8567916",
+      "title": "Tales from Shakespeare by Charles Lamb",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Tales-from-Shakespeare.jpg",
+      "description": "Public-domain recordings listed by Loyal Books."
+    },
+    {
+      "id": "https-www-loyalbooks-com-book-pollyanna-by-eleanor-h-porter-5a4e5bc",
+      "title": "Pollyanna by Eleanor H. Porter",
+      "authors": [
+        "Loyal Books"
+      ],
+      "language": "English",
+      "coverUrl": "https://www.loyalbooks.com/image/feed/Pollyanna-.jpg",
       "description": "Public-domain recordings listed by Loyal Books."
     }
   ]

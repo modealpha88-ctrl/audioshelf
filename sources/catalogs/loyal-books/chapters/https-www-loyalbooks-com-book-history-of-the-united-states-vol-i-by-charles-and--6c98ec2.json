@@ -1,0 +1,74 @@
+{
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "00 – Preface",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_00_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-2",
+      "title": "01 – The Great Migration to America/The Agencies of American Colonization",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_01_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-3",
+      "title": "02 – The Colonial Peoples",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_02_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-4",
+      "title": "03 – The Process of Colonization",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_03_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-5",
+      "title": "04 – Colonial Agriculture, Industry, and Commerce/The Land and the Westward Movement",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_04_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-6",
+      "title": "05 – Industrial and Commercial Development",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_05_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-7",
+      "title": "06 – Social and Political Progress/The Leadership of the Churches",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_06_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-8",
+      "title": "07 – Schools and Colleges",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_07_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-9",
+      "title": "08 – The Colonial Press",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_08_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-10",
+      "title": "09 – The Evolution in Political Institutions",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_09_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-11",
+      "title": "10 – The Development of Colonial Nationalism/Relations with the Indians and the French",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_10_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-12",
+      "title": "11 – The Effects of Warfare on the Colonies",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_11_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-13",
+      "title": "12 – Colonial Relations with the British Government",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_12_charlesandmarybeard_64kb.mp3"
+    },
+    {
+      "id": "chapter-14",
+      "title": "13 – Summary of Colonial Period",
+      "audioUrl": "https://www.archive.org/download/us_history_vol1_librivox/historyoftheUSpt1_13_charlesandmarybeard_64kb.mp3"
+    }
+  ]
+}
