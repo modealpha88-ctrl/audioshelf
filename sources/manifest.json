@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "name": "AudioShelf Open Audiobook Providers",
-  "description": "Open and public-domain audiobook catalogues, published as native AudioShelf JSON providers. Source-specific license checks apply.",
+  "name": "AudioShelf Audiobook Sources",
+  "description": "Public-domain audiobooks and clearly labeled official external audiobook listening links. External titles require purchase or a library loan.",
   "providers": [
     {
       "id": "open-audiobooks",
@@ -26,6 +26,14 @@
       "attribution": "Project Gutenberg Open Audiobook Collection (Microsoft / MIT collaboration)",
       "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/gutenberg-open-audio/books.json",
       "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/gutenberg-open-audio/chapters/{id}.json"
+    },
+    {
+      "id": "mistborn-official",
+      "name": "Mistborn — Official Editions",
+      "description": "Licensed Mistborn audiobooks via Libby, Google Play, and GraphicAudio (external listening; purchase or library loan)",
+      "attribution": "Brandon Sanderson; Macmillan Audio; GraphicAudio; OverDrive",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/mistborn-official/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/mistborn-official/chapters/{id}.json"
     }
   ]
 }
