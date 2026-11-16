@@ -76,6 +76,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.compose.animation:animation")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
     // Android AARs carry required JNI binaries: JNA's libjnidispatch.so and Vosk's libvosk.so.
     // The plain JNA JAR omits Android native binaries (see official vosk-android-demo).
     implementation("net.java.dev.jna:jna:5.18.1@aar")

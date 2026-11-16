@@ -73,6 +73,27 @@ R8 keep rules protect their reflection and native method declarations.
 Transcription is not yet available for remote streams and is not equivalent to
 text-to-speech. Long books may require significant processing time.
 
+## Full-book M4B transcription (v0.5.5)
+
+Story Mode now includes **Transcribe entire audiobook** for a local, DRM-free
+MP3/M4B selected through Android's document picker. Transcription uses the
+downloaded on-device Vosk English model and processes audio in one-minute
+windows. It writes each completed minute to app-private storage before moving
+to the next, so pause, resume, app relaunch and recoverable system interruptions
+do not discard completed work. A background WorkManager foreground worker shows
+ongoing notification progress and works while Story Mode is closed.
+
+Pause/Resume are in Story Mode. Once any windows have finished, **Export SRT**
+or **Export VTT** opens Android's Save As picker. Timecodes are absolute to
+the original M4B audio, not chapter-relative. The export is generated from the
+saved one-minute files and does not require loading the full transcript into RAM.
+Transcription may be slow, uses substantial CPU/battery/storage, and can be
+interrupted by OS power restrictions or Android 15+ foreground-service quotas;
+keep the phone powered and return to Story Mode to resume if necessary. If
+partially finished, exports contain only completed sections. Speech recognition
+can mishear names and invented vocabulary; the generated file is not an
+official audiobook transcript.
+
 ## Build
 
 Requirements: JDK 17+, Android SDK 35, and Gradle 8.10+.

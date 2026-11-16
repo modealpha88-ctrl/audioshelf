@@ -1,6 +1,8 @@
 package com.mohamed.audioshelf
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -32,6 +35,8 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import com.mohamed.audioshelf.data.captions.FullBookSubtitleStore
+import com.mohamed.audioshelf.data.captions.FullBookTranscriptionWorker
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledIconButton
@@ -110,6 +115,28 @@ internal fun StoryMode(
     var chapterIndex by remember { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
     var position by remember { mutableLongStateOf(controller.currentPosition.coerceAtLeast(0)) }
     var playing by remember { mutableStateOf(controller.isPlaying) }
+    val fullStore = remember(context) { FullBookSubtitleStore(context) }
+    var fullProgress by remember(book.id) { mutableStateOf(fullStore.progress(book.id)) }
+    var fullError by remember(book.id) { mutableStateOf<String?>(null) }
+    var fullExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
+    LaunchedEffect(book.id) {
+        while (true) {
+            fullProgress = fullStore.progress(book.id)
+            delay(1200)
+        }
+    }
+    val exportSrt = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/x-subrip")
+    ) { target ->
+        if (target != null) runCatching { fullStore.export(book.id, target, "srt") }
+            .onFailure { fullError = it.message }
+    }
+    val exportVtt = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/vtt")
+    ) { target ->
+        if (target != null) runCatching { fullStore.export(book.id, target, "vtt") }
+            .onFailure { fullError = it.message }
+    }
     val videoUri = remember(videoRevision) {
         context.getSharedPreferences("audio_shelf_story", 0)
             .getString("video_uri", null)?.let(Uri::parse)
@@ -132,7 +159,12 @@ internal fun StoryMode(
     }
     val embedded = book.sourceId == "local_files" && chapters.size > 1
     val filePositionMs = position + (if (embedded && absoluteM4bTime) chapters.getOrNull(safeIndex)?.startMs ?: 0 else 0)
+    val fullCues = remember(book.id, filePositionMs / FullBookSubtitleStore.WINDOW_MS,
+        fullProgress.completedMs) {
+        fullStore.loadMinute(book.id, filePositionMs)
+    }
     val cue = TimedCaptionParser.active(subtitleCues, filePositionMs)
+        ?: TimedCaptionParser.active(fullCues, filePositionMs)
     val displayWord = cue?.let { TimedCaptionParser.wordAt(it, filePositionMs).first }.orEmpty()
     val absoluteAudioMs = position + if (embedded) chapters.getOrNull(safeIndex)?.startMs ?: 0L else 0L
     LaunchedEffect(autoTranscribe, sttModelReady, sttBusy, safeIndex, absoluteAudioMs / 1000L) {
@@ -203,7 +235,9 @@ internal fun StoryMode(
             }
             Spacer(Modifier.weight(1f))
             Surface(shape = RoundedCornerShape(20.dp), color = Color(0xCC061121)) {
-                Column(Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.padding(14.dp).heightIn(max = 375.dp)
+                    .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(chapters.getOrNull(safeIndex)?.title.orEmpty(),
                         color = Color.White, maxLines = 1, style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(7.dp))
@@ -246,6 +280,79 @@ internal fun StoryMode(
                         if (!sttMessage.isNullOrBlank()) Text(sttMessage,
                             color = Color(0xFFDBF7E9),
                             style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (book.sourceId == "local_files") {
+                        androidx.compose.material3.TextButton(
+                            onClick = { fullExpanded = !fullExpanded },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(if (fullExpanded) "Hide full-book transcription"
+                                 else "Full-book subtitles · Background processing")
+                        }
+                        if (fullExpanded) {
+                            Text(
+                                if (fullProgress.finished) "Complete · ${fullProgress.words} recognized words"
+                                else "${fullProgress.percent}% complete · ${fullProgress.words} words saved",
+                                color = Color.White, style = MaterialTheme.typography.bodyMedium,
+                            )
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { fullProgress.percent / 100f },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            )
+                            Row(Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (!fullProgress.paused && !fullProgress.finished) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            FullBookTranscriptionWorker.pause(context, book.id)
+                                            fullProgress = fullStore.progress(book.id)
+                                        }, modifier = Modifier.weight(1f)
+                                    ) { Text("Pause") }
+                                } else {
+                                    Button(
+                                        enabled = sttModelReady && !sttNativeUnavailable &&
+                                            !fullProgress.finished,
+                                        onClick = {
+                                            runCatching {
+                                                FullBookTranscriptionWorker.resume(context, book.id)
+                                                fullProgress = fullStore.progress(book.id)
+                                                fullError = null
+                                            }.onFailure { fullError = it.message }
+                                        }, modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(if (fullProgress.completedMs > 0) "Resume" else "Start")
+                                    }
+                                }
+                            }
+                            Row(Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    enabled = fullProgress.completedMs > 0L,
+                                    onClick = { exportSrt.launch("AudioShelf-transcript.srt") },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text("Export SRT") }
+                                OutlinedButton(
+                                    enabled = fullProgress.completedMs > 0L,
+                                    onClick = { exportVtt.launch("AudioShelf-transcript.vtt") },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text("Export VTT") }
+                            }
+                            if (!sttModelReady) Text(
+                                "Download the offline speech model above before starting.",
+                                color = Color.White, style = MaterialTheme.typography.bodySmall)
+                            Text("The job keeps processing after Story Mode closes. " +
+                                 "Keep the phone powered; Android may suspend long background jobs.",
+                                color = Color(0xFFD3E3EF),
+                                style = MaterialTheme.typography.bodySmall)
+                            fullProgress.error?.let {
+                                Text(it, color = Color(0xFFFFB8AF),
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                            fullError?.let {
+                                Text(it, color = Color(0xFFFFB8AF),
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                     Button(onClick = { onPickTranscript(safeIndex) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.ClosedCaption, null)

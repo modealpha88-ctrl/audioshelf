@@ -26,6 +26,7 @@ class OnDeviceTranscriber(private val context: Context) {
         audioUri: Uri,
         windowStartMs: Long,
         windowLengthMs: Long = 30_000,
+        sharedModel: Model? = null,
         onWords: ((List<TimedCue>) -> Unit)? = null,
     ): List<TimedCue> = withContext(Dispatchers.IO) {
         val modelFolder = OfflineSpeechModel(context)
@@ -39,7 +40,8 @@ class OnDeviceTranscriber(private val context: Context) {
             "Invalid transcription window."
         }
 
-        Model(modelFolder.directory.absolutePath).use { model ->
+        val model = sharedModel ?: Model(modelFolder.directory.absolutePath)
+        try {
             Recognizer(model, 16000f).use { recognizer ->
                 recognizer.setWords(true)
                 val recognized = ArrayList<TimedCue>()
@@ -199,6 +201,8 @@ class OnDeviceTranscriber(private val context: Context) {
                     extract.release()
                 }
             }
+        } finally {
+            if (sharedModel == null) model.close()
         }
     }
 }
