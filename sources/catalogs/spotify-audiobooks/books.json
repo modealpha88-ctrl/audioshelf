@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Discover audiobooks on Spotify",
+      "authors": [
+        "Spotify Audiobooks"
+      ],
+      "description": "Browse and play eligible licensed audiobooks in Spotify according to subscription, purchase and regional availability. AudioShelf does not download or stream Spotify media.",
+      "externalUrl": "https://open.spotify.com/",
+      "language": "English"
+    }
+  ]
+}
