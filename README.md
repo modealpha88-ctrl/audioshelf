@@ -20,7 +20,7 @@ its API, licence, or written permission allows third-party clients.
 - Material 3 light/dark UI
 - Source interface ready for additional authorized providers
 - Add provider repositories by HTTPS URL, browse their providers, and install or remove them
-- Import a single audiobook by its HTTPS page URL using adapted HTML scraper patterns (requires permission to access the recording)
+- Import from any public HTTPS audiobook page exposing audio links, or a direct audio file/HLS URL (requires permission to access the recording)
 
 ## Build
 
@@ -47,10 +47,10 @@ repository URL, then install any provider listed by that repository. See
 [`docs/PROVIDER_REPOSITORIES.md`](docs/PROVIDER_REPOSITORIES.md) for the JSON format.
 
 For user-initiated single-book imports, open **Sources → Import audiobook by URL** and paste a
-supported book page (not a repository URL). This adapts the HTML extraction patterns from the
-MIT-licensed `aviiciii/audiobook-downloader` Python scrapers. The feature currently supports
-ZAudiobooks, Full Length Audiobooks, HD Audiobooks, Big Audiobooks and Golden Audiobook pages.
-TokyBook's token-protected HLS streaming is **not** supported by the standard playback path.
+public HTTPS book page or direct audio file/playlist URL (not a repository URL). The universal
+HTML importer adapts extraction patterns from the MIT-licensed `aviiciii/audiobook-downloader`
+Python scrapers, but is not restricted to those sites. Direct audio and open HLS URLs are
+supported; JavaScript-only sites and streams requiring login, DRM or custom tokens may not work.
 See [scraper import instructions](docs/SCRAPER_IMPORT.md) and
 [third-party notices](docs/THIRD_PARTY_NOTICES.md).
 
