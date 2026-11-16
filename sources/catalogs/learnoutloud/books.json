@@ -1,0 +1,14 @@
+{
+  "books": [
+    {
+      "id": "official-catalogue",
+      "title": "Explore LearnOutLoud free audiobooks",
+      "authors": [
+        "LearnOutLoud"
+      ],
+      "description": "Discover free education, classic literature and lectures. Links open the official catalogue, which can lead to third-party sources. No automated bulk download.",
+      "externalUrl": "https://www.learnoutloud.com/Free-Audiobooks",
+      "language": "English"
+    }
+  ]
+}
