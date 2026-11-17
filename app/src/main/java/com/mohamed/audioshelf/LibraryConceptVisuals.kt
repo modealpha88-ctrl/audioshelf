@@ -389,8 +389,10 @@ internal fun CinemaConceptCard(book: AudioBook, progress: ListeningProgress,
 
 @Composable
 internal fun PaperConceptCard(book: AudioBook, progress: ListeningProgress,
-    motion: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    motion: Boolean, onOpen: () -> Unit, onResume: () -> Unit,
+    modifier: Modifier = Modifier) {
     val scale = rememberConceptScale(book, motion)
+    var menuExpanded by remember(book.id) { mutableStateOf(false) }
     Card(onClick = onOpen,
         modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale },
         shape = RoundedCornerShape(22.dp),
@@ -409,8 +411,35 @@ internal fun PaperConceptCard(book: AudioBook, progress: ListeningProgress,
                         color = INK, fontFamily = FontFamily.Serif,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Icon(Icons.Default.MoreVert, null, Modifier.size(17.dp),
-                        tint = INK.copy(alpha = .6f))
+                    Box {
+                        IconButton(onClick = { menuExpanded = true },
+                            modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Default.MoreVert,
+                                contentDescription = "Options for ${book.title}",
+                                tint = INK.copy(alpha = .8f))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Book details") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onOpen()
+                                },
+                            )
+                            if (book.externalUrl.isBlank()) {
+                                DropdownMenuItem(
+                                    text = { Text("Resume listening") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onResume()
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
                 Text(book.authors, color = Color(0xFF805D47),
                     fontFamily = FontFamily.Serif,
