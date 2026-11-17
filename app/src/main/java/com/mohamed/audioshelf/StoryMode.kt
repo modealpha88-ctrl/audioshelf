@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -48,6 +49,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -117,7 +119,25 @@ internal fun StoryMode(
     onProgress: (Int, Long) -> Unit,
 ) {
     val context = LocalContext.current
-    var style by rememberSaveable { mutableStateOf("Parkour") }
+    val storyPreferences = remember(context) {
+        context.getSharedPreferences("audio_shelf_story", 0)
+    }
+    var style by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getString("style_" + book.id, "Forest") ?: "Forest")
+    }
+    var dimBackground by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getFloat("dim_" + book.id, .22f))
+    }
+    var reduceMotion by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getBoolean("reduce_motion_" + book.id, false))
+    }
+    LaunchedEffect(book.id, style, dimBackground, reduceMotion) {
+        storyPreferences.edit()
+            .putString("style_" + book.id, style)
+            .putFloat("dim_" + book.id, dimBackground)
+            .putBoolean("reduce_motion_" + book.id, reduceMotion)
+            .apply()
+    }
     var absoluteM4bTime by rememberSaveable { mutableStateOf(true) }
     var autoTranscribe by rememberSaveable(book.id) { mutableStateOf(false) }
     var chapterIndex by remember { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
@@ -214,13 +234,21 @@ internal fun StoryMode(
     }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050A18))) {
-        when (style) {
-            "My video" -> if (videoUri != null) LoopingVideoBackground(videoUri)
-                else StoryMotionBackground("Parkour")
-            else -> StoryMotionBackground(style)
+        Crossfade(targetState = style, animationSpec = tween(500), label = "change scene") { selected ->
+            val preset = StoryBackdropLibrary.find(selected)
+            when {
+                selected == "My video" && videoUri != null -> LoopingVideoBackground(videoUri)
+                preset?.sceneImage != null -> StoryKenneyBackdrop(preset, reduceMotion)
+                else -> StoryMotionBackground(
+                    if (selected == "My video") "Parkour" else selected,
+                    reduceMotion = reduceMotion,
+                )
+            }
         }
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dimBackground)))
+        // Contrast behind HUD, not a dark coating on the whole scenery.
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
-            listOf(Color(0xAA000815), Color(0x22000000), Color(0x66000A14))
+            listOf(Color(0xA4071022), Color.Transparent, Color.Transparent, Color(0xBD061021))
         )))
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -235,20 +263,21 @@ internal fun StoryMode(
                     Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
                 }
             }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Parkour", "Starfield", "Orbs", "My video").forEach { option ->
-                    FilterChip(
-                        selected = style == option,
-                        onClick = { style = option; if (option == "My video" && videoUri == null) onPickVideo() },
-                        label = { Text(option) },
-                    )
-                }
-            }
+            StoryBackdropSelector(
+                style = style,
+                onSelect = { style = it },
+                onPickVideo = onPickVideo,
+            )
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(158.dp)
+                        .background(Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color(0x67000516), Color.Transparent)
+                        )),
+                )
                 if (cue != null && displayWord.isNotBlank()) {
                     AnimatedContent(targetState = displayWord, label = "spoken word") { word ->
                         Text(
@@ -358,6 +387,34 @@ internal fun StoryMode(
                                 .verticalScroll(rememberScrollState()),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
+                            Text(
+                                "Background · " + style,
+                                modifier = Modifier.padding(top = 2.dp),
+                                color = Color(0xFFD9E4F3),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Text("Background dimming", color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.align(Alignment.Start).padding(top = 8.dp))
+                            Slider(
+                                value = dimBackground,
+                                onValueChange = { dimBackground = it },
+                                valueRange = 0f..0.65f,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Row(Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.Switch(
+                                    checked = reduceMotion, onCheckedChange = { reduceMotion = it },
+                                )
+                                Text("  Reduce background motion", color = Color.White,
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (StoryBackdropLibrary.find(style)?.sceneImage != null) {
+                                Text("CC0 scenery by Kenney · Cached for offline use after first load",
+                                    color = Color(0xFFC3D3E5),
+                                    style = MaterialTheme.typography.labelSmall)
+                            }
                     if (book.sourceId == "local_files") {
                         if (!sttModelReady) {
                             OutlinedButton(
@@ -491,13 +548,14 @@ internal fun StoryMode(
 }
 
 @Composable
-private fun StoryMotionBackground(style: String) {
+private fun StoryMotionBackground(style: String, reduceMotion: Boolean = false) {
     val infinite = rememberInfiniteTransition(label = "story backdrop motion")
     val phase by infinite.animateFloat(
         initialValue = 0f, targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
         label = "motion phase",
     )
+    val clock = if (reduceMotion) .2f else phase
     var tap by remember { mutableStateOf<Offset?>(null) }
     Canvas(Modifier.fillMaxSize().pointerInput(style) { detectTapGestures { tap = it } }) {
         val w = size.width
@@ -511,7 +569,7 @@ private fun StoryMotionBackground(style: String) {
             // Original game-like looping floating platforms. No third-party gameplay assets.
             val horizon = h * .37f
             for (i in 0..35) {
-                val progress = ((i / 36f + phase) % 1f)
+                val progress = ((i / 36f + clock) % 1f)
                 val depth = progress * progress
                 val width = w * (.08f + depth * .72f)
                 val height = h * (.01f + depth * .08f)
@@ -527,15 +585,15 @@ private fun StoryMotionBackground(style: String) {
         } else {
             for (i in 0..90) {
                 val seed = (i * .618034f) % 1f
-                val y = (((i * .389f) + phase * (if (style == "Orbs") .28f else .75f)) % 1f) * h
-                val x = (((i * .7549f) + sin((phase + seed) * 6.28).toFloat() * .06f) % 1f) * w
+                val y = (((i * .389f) + clock * (if (style == "Orbs") .28f else .75f)) % 1f) * h
+                val x = (((i * .7549f) + sin((clock + seed) * 6.28).toFloat() * .06f) % 1f) * w
                 val radius = if (style == "Orbs") 5f + seed * 22f else 1.5f + seed * 4f
                 drawCircle(color = if (i % 3 == 0) Color(0xFF8EFAF6)
                     else if (i % 3 == 1) Color(0xFFA78BFA) else Color(0xFFFFFFFF),
                     radius = radius, center = Offset(x, y), alpha = .18f + seed * .45f)
             }
         }
-        tap?.let { drawCircle(Color(0x99FFFFFF), radius = 42f + phase * 70f, center = it,
+        tap?.let { drawCircle(Color(0x99FFFFFF), radius = 42f + clock * 70f, center = it,
             style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)) }
     }
 }

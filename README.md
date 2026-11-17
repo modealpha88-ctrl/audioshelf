@@ -94,6 +94,24 @@ partially finished, exports contain only completed sections. Speech recognition
 can mishear names and invented vocabulary; the generated file is not an
 official audiobook transcript.
 
+## Openly licensed scenic backgrounds (v0.5.8)
+
+Story Mode now includes four additional picture-based backgrounds: **Forest,
+Castle, Desert, and Autumn**. The images are existing artwork from
+[Kenney Background Elements Remastered](https://kenney.nl/assets/background-elements-remastered),
+released under **Creative Commons CC0 1.0**. The PNGs are served over HTTPS
+from the CC0 [game-assets archive](https://github.com/eturner58/game-assets/tree/main/kenney/2D%20assets/Background%20Elements%20Remastered).
+They are **not bundled** in the APK: the first display requires internet,
+after which Coil caches the small images locally and can display them offline.
+When the download is unavailable, the player keeps an animated gradient fallback.
+
+Visual changes: a compact scrolling selector with image previews, slow optional
+parallax over the licensed backgrounds, gentler contrast around center captions,
+and a background-dimming slider plus reduced-motion toggle in Story Mode's
+Tools panel. Background choice and motion settings are remembered per audiobook.
+Existing Parkour, Starfield, Orbs, and user-selected local videos remain available.
+No copyrighted gameplay footage is included.
+
 ## Story Mode controls and caption display
 
 Story Mode keeps audiobook playback controls and an always-accessible **Import/Replace
