@@ -17,6 +17,7 @@ internal data class StoryLicensedClip(
     val creator: String,
     val fileUrl: String,
     val sourceUrl: String,
+    val posterUrl: String,
     val expectedBytes: Long,
     val color: Long,
 ) {
@@ -34,6 +35,8 @@ internal object StoryLicensedVideos {
             fileUrl = "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/36/" +
                 "Rainy_night_in_Sham_Shui_Po.webm/Rainy_night_in_Sham_Shui_Po.webm.720p.vp9.webm",
             sourceUrl = "https://commons.wikimedia.org/wiki/File:Rainy_night_in_Sham_Shui_Po.webm",
+            posterUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/" +
+                "Rainy_night_in_Sham_Shui_Po.webm/500px--Rainy_night_in_Sham_Shui_Po.webm.jpg",
             expectedBytes = 400_000,
             color = 0xFF594A81,
         ),
@@ -45,6 +48,9 @@ internal object StoryLicensedVideos {
             fileUrl = "https://upload.wikimedia.org/wikipedia/commons/0/05/" +
                 "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm",
             sourceUrl = "https://commons.wikimedia.org/wiki/File:Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm",
+            posterUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/" +
+                "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm/" +
+                "500px--Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm.jpg",
             expectedBytes = 5_610_000,
             color = 0xFF2C817A,
         ),
@@ -56,6 +62,8 @@ internal object StoryLicensedVideos {
             fileUrl = "https://upload.wikimedia.org/wikipedia/commons/6/64/" +
                 "Meikarta_Lake_%28video%29.webm",
             sourceUrl = "https://commons.wikimedia.org/wiki/File:Meikarta_Lake_%28video%29.webm",
+            posterUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/" +
+                "Meikarta_Lake_%28video%29.webm/500px--Meikarta_Lake_%28video%29.webm.jpg",
             expectedBytes = 540_000,
             color = 0xFF497C9A,
         ),

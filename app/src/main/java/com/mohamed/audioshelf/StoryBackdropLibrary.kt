@@ -34,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +62,7 @@ internal fun StoryBackdropSelector(
                 name = clip.title,
                 label = clip.subtitle,
                 tint = Color(clip.color),
+                posterUrl = clip.posterUrl,
                 selected = style == clip.title,
                 onClick = { onSelect(clip.title) },
             )
@@ -68,6 +71,7 @@ internal fun StoryBackdropSelector(
             name = "My video",
             label = "Your local clip",
             tint = Color(0xFF8959C0),
+            posterUrl = null,
             selected = style == "My video",
             onClick = {
                 onSelect("My video")
@@ -82,6 +86,7 @@ private fun VideoChoiceCard(
     name: String,
     label: String,
     tint: Color,
+    posterUrl: String?,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -97,6 +102,17 @@ private fun VideoChoiceCard(
             )
             .clickable(onClick = onClick)
     ) {
+        if (posterUrl != null) {
+            AsyncImage(
+                model = posterUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
+                listOf(Color(0x22000000), Color(0xDD050A18))
+            )))
+        }
         Icon(
             if (name == "My video") Icons.Default.VideoLibrary
             else Icons.Default.PlayCircleOutline,
