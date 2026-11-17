@@ -1,6 +1,7 @@
 package com.mohamed.audioshelf
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -13,7 +14,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,7 +72,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
@@ -170,6 +170,8 @@ internal fun StoryMode(
         }
     }
     var fullExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
+    var controlsVisible by rememberSaveable(book.id) { mutableStateOf(true) }
+    BackHandler(enabled = !controlsVisible) { controlsVisible = true }
     var toolsExpanded by rememberSaveable(book.id) { mutableStateOf(false) }
     var captionsHaveShown by rememberSaveable(book.id) { mutableStateOf(false) }
     val captionStore = remember(context) { TimedCaptionStore(context) }
@@ -285,55 +287,68 @@ internal fun StoryMode(
             }
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dimBackground)))
-        // Contrast behind HUD, not a dark coating on the whole scenery.
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
-            listOf(Color(0xA4071022), Color.Transparent, Color.Transparent, Color(0xBD061021))
-        )))
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, "Close story mode", tint = Color.White) }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("STORY MODE", color = Color(0xFFE4F6FF), fontWeight = FontWeight.Black,
-                        style = MaterialTheme.typography.labelMedium)
-                    Text(book.title, color = Color.White, maxLines = 1,
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-                IconButton(onClick = onPickVideo) {
-                    Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
-                }
+        Box(
+            Modifier.fillMaxSize().clickable(
+                interactionSource = null,
+                indication = null,
+                onClickLabel = if (controlsVisible) "Hide story controls" else "Show story controls",
+            ) {
+                scrubPositionMs = null
+                controlsVisible = !controlsVisible
             }
-            StoryBackdropSelector(
-                style = style,
-                onSelect = { style = it },
-                onPickVideo = onPickVideo,
-            )
-            videoStatus?.let { message ->
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xDF071423),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        )
+        if (controlsVisible) {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
+                listOf(Color(0xA4071022), Color.Transparent, Color.Transparent, Color(0xBD061021))
+            )))
+        }
+        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            if (controlsVisible) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, "Close story mode", tint = Color.White) }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("STORY MODE", color = Color(0xFFE4F6FF), fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.labelMedium)
+                        Text(book.title, color = Color.White, maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
+                    IconButton(onClick = onPickVideo) {
+                        Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
+                    }
+                }
+                StoryBackdropSelector(
+                    style = style,
+                    onSelect = { style = it },
+                    onPickVideo = onPickVideo,
+                )
+                videoStatus?.let { message ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xDF071423),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(
-                            message,
-                            color = if (videoFailed) Color(0xFFFFD0B8) else Color(0xFFDBECF6),
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 2,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (videoFailed) {
-                            androidx.compose.material3.TextButton(onClick = { videoRetry++ }) {
-                                Text("Retry")
-                            }
-                            androidx.compose.material3.TextButton(onClick = {
-                                style = "My video"
-                                onPickVideo()
-                            }) {
-                                Text("Local")
+                        Row(
+                            Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                message,
+                                color = if (videoFailed) Color(0xFFFFD0B8) else Color(0xFFDBECF6),
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 2,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (videoFailed) {
+                                androidx.compose.material3.TextButton(onClick = { videoRetry++ }) {
+                                    Text("Retry")
+                                }
+                                androidx.compose.material3.TextButton(onClick = {
+                                    style = "My video"
+                                    onPickVideo()
+                                }) {
+                                    Text("Local")
+                                }
                             }
                         }
                     }
@@ -343,7 +358,7 @@ internal fun StoryMode(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(
+                if (controlsVisible || (cue != null && displayWord.isNotBlank())) Box(
                     modifier = Modifier.fillMaxWidth().height(158.dp)
                         .background(Brush.horizontalGradient(
                             listOf(Color.Transparent, Color(0x67000516), Color.Transparent)
@@ -364,7 +379,7 @@ internal fun StoryMode(
                             ),
                         )
                     }
-                } else if (CaptionOverlayPolicy.showSetupHint(
+                } else if (controlsVisible && CaptionOverlayPolicy.showSetupHint(
                     hasSavedCaptions = captionsAvailable,
                     hasEverShownCue = captionsHaveShown,
                     autoTranscribing = autoTranscribe || sttBusy,
@@ -384,7 +399,7 @@ internal fun StoryMode(
                     }
                 }
             }
-            Surface(
+            if (controlsVisible) Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 color = Color(0xF2081428),
