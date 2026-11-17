@@ -8,6 +8,15 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
+## Full portrait bookshelves and complete cover art (v0.5.17)
+
+Walnut Shelf now displays at least four continuous wood shelves in portrait mode,
+even when only one or two books are saved, instead of leaving the remainder of
+the screen empty. Larger collections grow to additional rows lazily. Cover
+images use **Fit** rather than **Crop**, so book titles and artwork are fully
+visible, and the standing-book proportions are adjusted. Book taps, progress,
+and the existing Motion toggle remain intact.
+
 ## Wooden bookcases and resilient covers (v0.5.16)
 
 The **Walnut Shelf** layout now displays upright clickable cover images inside
