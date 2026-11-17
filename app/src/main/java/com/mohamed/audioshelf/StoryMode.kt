@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -73,6 +74,8 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -150,6 +153,7 @@ internal fun StoryMode(
     var chapterIndex by remember { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
     var position by remember { mutableLongStateOf(controller.currentPosition.coerceAtLeast(0)) }
     var playing by remember { mutableStateOf(controller.isPlaying) }
+    var liveDurationMs by remember(controller) { mutableLongStateOf(0L) }
     val fullStore = remember(context) { FullBookSubtitleStore(context) }
     var fullProgress by remember(book.id) { mutableStateOf(fullStore.progress(book.id)) }
     var fullError by remember(book.id) { mutableStateOf<String?>(null) }
@@ -199,12 +203,32 @@ internal fun StoryMode(
             playing = controller.isPlaying
             chapterIndex = controller.currentMediaItemIndex.coerceAtLeast(0)
             position = controller.currentPosition.coerceAtLeast(0L)
+            liveDurationMs = controller.duration.takeIf { it > 0L } ?: 0L
             if (controller.mediaItemCount > 0 && pollCount++ % 9 == 0) onProgress(chapterIndex, position)
             delay(120)
         }
     }
 
     val safeIndex = chapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
+    val chapterDurationMs = liveDurationMs.takeIf { it > 0L }
+        ?: chapters.getOrNull(safeIndex)?.durationMs?.coerceAtLeast(0L) ?: 0L
+    var scrubPositionMs by remember(book.id, safeIndex) { mutableStateOf<Long?>(null) }
+
+    fun skipBy(deltaMs: Long) {
+        if (chapters.isEmpty() || controller.mediaItemCount == 0) return
+        val current = controller.currentMediaItemIndex.coerceIn(chapters.indices)
+        val currentDuration = controller.duration.takeIf { it > 0L } ?: 0L
+        val durations = chapters.mapIndexed { index, chapter ->
+            if (index == current && currentDuration > 0) currentDuration else chapter.durationMs
+        }
+        val target = StorySeek.byOffset(
+            durations, current, controller.currentPosition.coerceAtLeast(0L), deltaMs
+        )
+        controller.seekTo(target.chapterIndex, target.positionMs)
+        chapterIndex = target.chapterIndex
+        position = target.positionMs
+        onProgress(target.chapterIndex, target.positionMs)
+    }
     val embedded = book.sourceId == "local_files" && chapters.size > 1
     val filePositionMs = position + (if (embedded && absoluteM4bTime) chapters.getOrNull(safeIndex)?.startMs ?: 0 else 0)
     val captionBucket = filePositionMs.coerceAtLeast(0) / TimedCaptionStore.INDEX_SPAN_MS
@@ -368,7 +392,7 @@ internal fun StoryMode(
                 Column(Modifier.fillMaxWidth().padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(start = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -378,28 +402,80 @@ internal fun StoryMode(
                             color = Color.White,
                             style = MaterialTheme.typography.titleSmall,
                         )
+                        IconButton(
+                            enabled = safeIndex > 0,
+                            onClick = { controller.seekToPreviousMediaItem() },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(Icons.Default.SkipPrevious, "Previous chapter", tint = Color.White)
+                        }
+                        IconButton(
+                            enabled = safeIndex < chapters.lastIndex,
+                            onClick = { controller.seekToNextMediaItem() },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
+                        }
                         if (captionsAvailable || captionsHaveShown) {
                             Text("CC READY", color = Color(0xFF80F0DA),
-                                style = MaterialTheme.typography.labelSmall)
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(start = 4.dp),
+                            )
                         }
                     }
+                    // Seek within the current logical chapter. M4B items are clipped,
+                    // so this stays relative to the chapter and keeps captions aligned.
+                    Slider(
+                        value = if (chapterDurationMs > 0L)
+                            ((scrubPositionMs ?: position).coerceIn(0L, chapterDurationMs)
+                                .toFloat() / chapterDurationMs.toFloat()).coerceIn(0f, 1f)
+                        else 0f,
+                        onValueChange = { fraction ->
+                            if (chapterDurationMs > 0L) {
+                                scrubPositionMs = (fraction * chapterDurationMs).toLong()
+                                    .coerceIn(0L, chapterDurationMs)
+                            }
+                        },
+                        onValueChangeFinished = {
+                            scrubPositionMs?.let { target ->
+                                controller.seekTo(safeIndex, target)
+                                position = target
+                                onProgress(safeIndex, target)
+                            }
+                            scrubPositionMs = null
+                        },
+                        enabled = chapterDurationMs > 0L && controller.mediaItemCount > 0,
+                        modifier = Modifier.fillMaxWidth().height(28.dp),
+                    )
                     Row(
-                        Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(StorySeek.clock(scrubPositionMs ?: position),
+                            color = Color(0xFFCDDFEF),
+                            style = MaterialTheme.typography.labelSmall)
+                        Text(if (chapterDurationMs > 0L) StorySeek.clock(chapterDurationMs)
+                             else "--:--",
+                            color = Color(0xFFCDDFEF),
+                            style = MaterialTheme.typography.labelSmall)
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
-                        IconButton(onClick = { controller.seekToPreviousMediaItem() }) {
-                            Icon(Icons.Default.SkipPrevious, "Previous chapter", tint = Color.White)
-                        }
-                        FilledIconButton(onClick = {
-                            if (playing) controller.pause() else controller.play()
-                        }) {
+                        StorySkipButton(-30, chapters.isNotEmpty()) { skipBy(-30_000L) }
+                        StorySkipButton(-10, chapters.isNotEmpty()) { skipBy(-10_000L) }
+                        FilledIconButton(
+                            onClick = { if (playing) controller.pause() else controller.play() },
+                            modifier = Modifier.size(52.dp),
+                        ) {
                             Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 if (playing) "Pause" else "Play")
                         }
-                        IconButton(onClick = { controller.seekToNextMediaItem() }) {
-                            Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
-                        }
+                        StorySkipButton(10, chapters.isNotEmpty()) { skipBy(10_000L) }
+                        StorySkipButton(30, chapters.isNotEmpty()) { skipBy(30_000L) }
                     }
                     Row(
                         Modifier.fillMaxWidth(),
@@ -599,6 +675,23 @@ internal fun StoryMode(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StorySkipButton(seconds: Int, enabled: Boolean, onClick: () -> Unit) {
+    val description = if (seconds > 0) "Skip forward $seconds seconds"
+        else "Skip backward ${-seconds} seconds"
+    val label = if (seconds > 0) "+${seconds}s" else "${seconds}s"
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0x352E486A))
+            .semantics { contentDescription = description },
+    ) {
+        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
     }
 }
 
