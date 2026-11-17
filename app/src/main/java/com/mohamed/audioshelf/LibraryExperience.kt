@@ -178,7 +178,7 @@ fun AnimatedLibraryScreen(
             item {
                 ConceptHero(
                     style, motion,
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(105.dp)
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(74.dp)
                 )
             }
         }
