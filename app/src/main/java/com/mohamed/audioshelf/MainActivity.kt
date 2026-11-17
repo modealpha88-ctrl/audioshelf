@@ -14,6 +14,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -149,23 +159,38 @@ private fun AudioShelfApp(
             }
         },
     ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
-            val selected = state.selectedBook
+        AnimatedContent(
+            targetState = tab to state,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            contentKey = { (pageTab, pageState) -> pageState.selectedBook?.id ?: pageTab },
+            transitionSpec = {
+                val direction = when {
+                    targetState.second.selectedBook != null -> 1
+                    initialState.second.selectedBook != null -> -1
+                    targetState.first.ordinal > initialState.first.ordinal -> 1
+                    else -> -1
+                }
+                (fadeIn(tween(220)) + slideInHorizontally(tween(240)) { it / 10 * direction })
+                    .togetherWith(fadeOut(tween(160)) + slideOutHorizontally(tween(220)) { -it / 10 * direction })
+            },
+            label = "AudioShelf pages",
+        ) { (pageTab, pageState) ->
+            val selected = pageState.selectedBook
             if (selected != null) {
                 BookScreen(
                     book = selected,
-                    chapters = state.chapters,
-                    loading = state.loading,
-                    error = state.error,
+                    chapters = pageState.chapters,
+                    loading = pageState.loading,
+                    error = pageState.error,
                     saved = viewModel.isSaved(selected),
                     controller = controller,
-                    sleepEndsAt = state.sleepEndsAt,
-                    transcriptRevision = state.transcriptRevision,
-                    transcriptError = state.transcriptError,
-                    sttBusy = state.sttBusy,
-                    sttModelReady = state.sttModelReady,
-                    sttMessage = state.sttMessage,
-                    sttNativeUnavailable = state.sttNativeUnavailable,
+                    sleepEndsAt = pageState.sleepEndsAt,
+                    transcriptRevision = pageState.transcriptRevision,
+                    transcriptError = pageState.transcriptError,
+                    sttBusy = pageState.sttBusy,
+                    sttModelReady = pageState.sttModelReady,
+                    sttMessage = pageState.sttMessage,
+                    sttNativeUnavailable = pageState.sttNativeUnavailable,
                     onDownloadSttModel = viewModel::downloadSttModel,
                     onTranscribeNearby = { index, ms -> viewModel.transcribeNearby(selected, index, ms) },
                     videoRevision = videoRevision,
@@ -180,23 +205,23 @@ private fun AudioShelfApp(
                     },
                     onPlay = { index ->
                         val progress = viewModel.progress(selected)
-                        playBook(context, controller, selected, state.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
+                        playBook(context, controller, selected, pageState.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
                     },
                     onResume = {
                         val progress = viewModel.progress(selected)
-                        val index = progress.chapterIndex.coerceIn(state.chapters.indices)
-                        playBook(context, controller, selected, state.chapters, index, progress.positionMs)
+                        val index = progress.chapterIndex.coerceIn(pageState.chapters.indices)
+                        playBook(context, controller, selected, pageState.chapters, index, progress.positionMs)
                     },
-                    onDownload = { OfflineDownloads(context).downloadBook(selected, state.chapters) },
+                    onDownload = { OfflineDownloads(context).downloadBook(selected, pageState.chapters) },
                     onTorrent = { openArchiveTorrent(context, selected) },
                     onProgress = { index, position -> viewModel.saveProgress(selected, index, position) },
                     onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
                 )
-            } else when (tab) {
-                HomeTab.Browse -> BrowseScreen(state, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
-                HomeTab.Library -> LibraryScreen(state.library, viewModel::select)
+            } else when (pageTab) {
+                HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
+                HomeTab.Library -> LibraryScreen(pageState.library, viewModel::select)
                 HomeTab.Sources -> SourcesScreen(
-                    state = state,
+                    state = pageState,
                     isInstalled = viewModel::isProviderInstalled,
                     onAdd = viewModel::addRepository,
                     onImport = viewModel::importWebsiteBook,
@@ -605,98 +630,114 @@ private fun BookScreen(
 ) {
     var showPlayer by remember { mutableStateOf(false) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
-    if (storyOpen && controller != null) {
-        StoryMode(
-            book = book,
-            chapters = chapters,
-            controller = controller,
-            transcriptRevision = transcriptRevision,
-            transcriptError = transcriptError,
-            sttBusy = sttBusy,
-            sttModelReady = sttModelReady,
-            sttMessage = sttMessage,
-            sttNativeUnavailable = sttNativeUnavailable,
-            onDownloadSttModel = onDownloadSttModel,
-            onTranscribeNearby = onTranscribeNearby,
-            videoRevision = videoRevision,
-            onClose = { storyOpen = false },
-            onPickTranscript = onPickTranscript,
-            onPickVideo = onPickVideo,
-            onProgress = onProgress,
-        )
-        return
-    }
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, null) } },
-            actions = { IconButton(onToggleSaved) { Icon(if (saved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, null) } },
-        )
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 12.dp)) {
-            item {
-                Row(Modifier.padding(20.dp)) {
-                    AsyncImage(book.coverUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.width(120.dp).aspectRatio(.7f).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
-                    Spacer(Modifier.width(18.dp))
-                    Column {
-                        Text(book.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(6.dp)); Text(book.authors)
-                        if (book.language.isNotBlank()) Text(book.language, color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.height(14.dp))
-                        if (book.externalUrl.isNotBlank()) {
-                            Button(onClick = onOpenExternal) {
-                                Icon(Icons.Default.OpenInBrowser, null)
-                                Spacer(Modifier.width(6.dp))
-                                Text("Open website")
-                            }
-                            Text(
-                                "This opens a third-party website. AudioShelf does not verify ownership or provide its audio. Check licensing, availability, and any purchase or library terms before listening.",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        } else {
-                            Button(onClick = { if (chapters.isNotEmpty()) { onResume(); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
-                                Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            OutlinedButton(
-                                onClick = { onResume(); storyOpen = true },
-                                enabled = chapters.isNotEmpty() && controller != null,
-                            ) {
-                                Icon(Icons.Default.ClosedCaption, null)
-                                Spacer(Modifier.width(6.dp))
-                                Text("Story mode")
+    val chapterListState = rememberLazyListState()
+    AnimatedContent(
+        targetState = storyOpen && controller != null,
+        transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
+        label = "Story Mode page",
+    ) { showStory ->
+        if (showStory && controller != null) {
+            StoryMode(
+                book = book,
+                chapters = chapters,
+                controller = controller,
+                transcriptRevision = transcriptRevision,
+                transcriptError = transcriptError,
+                sttBusy = sttBusy,
+                sttModelReady = sttModelReady,
+                sttMessage = sttMessage,
+                sttNativeUnavailable = sttNativeUnavailable,
+                onDownloadSttModel = onDownloadSttModel,
+                onTranscribeNearby = onTranscribeNearby,
+                videoRevision = videoRevision,
+                onClose = { storyOpen = false },
+                onPickTranscript = onPickTranscript,
+                onPickVideo = onPickVideo,
+                onProgress = onProgress,
+            )
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                TopAppBar(
+                    title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                    actions = { IconButton(onToggleSaved) { Icon(if (saved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, null) } },
+                )
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    state = chapterListState,
+                    contentPadding = PaddingValues(bottom = 12.dp),
+                ) {
+                    item {
+                        Row(Modifier.padding(20.dp)) {
+                            AsyncImage(book.coverUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.width(120.dp).aspectRatio(.7f).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
+                            Spacer(Modifier.width(18.dp))
+                            Column {
+                                Text(book.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.height(6.dp)); Text(book.authors)
+                                if (book.language.isNotBlank()) Text(book.language, color = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.height(14.dp))
+                                if (book.externalUrl.isNotBlank()) {
+                                    Button(onClick = onOpenExternal) {
+                                        Icon(Icons.Default.OpenInBrowser, null)
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Open website")
+                                    }
+                                    Text(
+                                        "This opens a third-party website. AudioShelf does not verify ownership or provide its audio. Check licensing, availability, and any purchase or library terms before listening.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                } else {
+                                    Button(onClick = { if (chapters.isNotEmpty()) { onResume(); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
+                                        Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    OutlinedButton(
+                                        onClick = { onResume(); storyOpen = true },
+                                        enabled = chapters.isNotEmpty() && controller != null,
+                                    ) {
+                                        Icon(Icons.Default.ClosedCaption, null)
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Story mode")
+                                    }
+                                }
+                                if (book.externalUrl.isBlank()) {
+                                    OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
+                                        Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
+                                    }
+                                }
+                                if (book.sourceId == "internet_archive") {
+                                    OutlinedButton(onClick = onTorrent) {
+                                        Icon(Icons.Default.CloudDownload, null)
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Open torrent")
+                                    }
+                                    Text("Open/public-domain item", style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
-                        if (book.externalUrl.isBlank()) {
-                            OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
-                                Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
-                            }
-                        }
-                        if (book.sourceId == "internet_archive") {
-                            OutlinedButton(onClick = onTorrent) {
-                                Icon(Icons.Default.CloudDownload, null)
-                                Spacer(Modifier.width(6.dp))
-                                Text("Open torrent")
-                            }
-                            Text("Open/public-domain item", style = MaterialTheme.typography.labelSmall)
-                        }
+                        if (book.description.isNotBlank()) Text(book.description, Modifier.padding(horizontal = 20.dp), maxLines = 6, overflow = TextOverflow.Ellipsis)
+                        if (book.externalUrl.isBlank()) Text(if (book.sourceId == "local_files" && chapters.size > 1) "Embedded chapters" else "Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
+                    }
+                    if (loading) item { Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+                    if (error != null) item { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp)) }
+                    itemsIndexed(chapters, key = { _, item -> item.id }) { index, chapter ->
+                        ListItem(
+                            headlineContent = { Text(chapter.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                            supportingContent = { if (chapter.durationMs > 0) Text(formatTime(chapter.durationMs)) },
+                            leadingContent = { IconButton({ onPlay(index); showPlayer = true }) { Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary) } },
+                            modifier = Modifier.clickable { onPlay(index); showPlayer = true },
+                        )
+                        HorizontalDivider()
                     }
                 }
-                if (book.description.isNotBlank()) Text(book.description, Modifier.padding(horizontal = 20.dp), maxLines = 6, overflow = TextOverflow.Ellipsis)
-                if (book.externalUrl.isBlank()) Text(if (book.sourceId == "local_files" && chapters.size > 1) "Embedded chapters" else "Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
-            }
-            if (loading) item { Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-            if (error != null) item { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp)) }
-            itemsIndexed(chapters, key = { _, item -> item.id }) { index, chapter ->
-                ListItem(
-                    headlineContent = { Text(chapter.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                    supportingContent = { if (chapter.durationMs > 0) Text(formatTime(chapter.durationMs)) },
-                    leadingContent = { IconButton({ onPlay(index); showPlayer = true }) { Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary) } },
-                    modifier = Modifier.clickable { onPlay(index); showPlayer = true },
-                )
-                HorizontalDivider()
+                AnimatedVisibility(
+                    visible = showPlayer && controller != null,
+                    enter = fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 },
+                ) {
+                    if (controller != null) PlayerPanel(controller, chapters, sleepEndsAt, onProgress, onSleep)
+                }
             }
         }
-        if (showPlayer && controller != null) PlayerPanel(controller, chapters, sleepEndsAt, onProgress, onSleep)
     }
 }
 

@@ -1,10 +1,16 @@
 package com.mohamed.audioshelf
 
 import android.net.Uri
+import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -297,57 +303,67 @@ internal fun StoryMode(
                 controlsVisible = !controlsVisible
             }
         )
-        if (controlsVisible) {
+        AnimatedVisibility(
+            visible = controlsVisible,
+            enter = fadeIn(tween(220)),
+            exit = fadeOut(tween(180)),
+        ) {
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
                 listOf(Color(0xA4071022), Color.Transparent, Color.Transparent, Color(0xBD061021))
             )))
         }
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
-            if (controlsVisible) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, "Close story mode", tint = Color.White) }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("STORY MODE", color = Color(0xFFE4F6FF), fontWeight = FontWeight.Black,
-                            style = MaterialTheme.typography.labelMedium)
-                        Text(book.title, color = Color.White, maxLines = 1,
-                            style = MaterialTheme.typography.bodyMedium)
+            AnimatedVisibility(
+                visible = controlsVisible,
+                enter = fadeIn(tween(220)) + expandVertically(tween(240), expandFrom = Alignment.Top),
+                exit = fadeOut(tween(150)) + shrinkVertically(tween(220), shrinkTowards = Alignment.Top),
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, "Close story mode", tint = Color.White) }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("STORY MODE", color = Color(0xFFE4F6FF), fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.labelMedium)
+                            Text(book.title, color = Color.White, maxLines = 1,
+                                style = MaterialTheme.typography.bodyMedium)
+                        }
+                        IconButton(onClick = onPickVideo) {
+                            Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
+                        }
                     }
-                    IconButton(onClick = onPickVideo) {
-                        Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
-                    }
-                }
-                StoryBackdropSelector(
-                    style = style,
-                    onSelect = { style = it },
-                    onPickVideo = onPickVideo,
-                )
-                videoStatus?.let { message ->
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xDF071423),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    StoryBackdropSelector(
+                        style = style,
+                        onSelect = { style = it },
+                        onPickVideo = onPickVideo,
+                    )
+                    videoStatus?.let { message ->
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xDF071423),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(
-                                message,
-                                color = if (videoFailed) Color(0xFFFFD0B8) else Color(0xFFDBECF6),
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 2,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (videoFailed) {
-                                androidx.compose.material3.TextButton(onClick = { videoRetry++ }) {
-                                    Text("Retry")
-                                }
-                                androidx.compose.material3.TextButton(onClick = {
-                                    style = "My video"
-                                    onPickVideo()
-                                }) {
-                                    Text("Local")
+                            Row(
+                                Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    message,
+                                    color = if (videoFailed) Color(0xFFFFD0B8) else Color(0xFFDBECF6),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 2,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                if (videoFailed) {
+                                    androidx.compose.material3.TextButton(onClick = { videoRetry++ }) {
+                                        Text("Retry")
+                                    }
+                                    androidx.compose.material3.TextButton(onClick = {
+                                        style = "My video"
+                                        onPickVideo()
+                                    }) {
+                                        Text("Local")
+                                    }
                                 }
                             }
                         }
@@ -399,291 +415,303 @@ internal fun StoryMode(
                     }
                 }
             }
-            if (controlsVisible) Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = Color(0xF2081428),
+            AnimatedVisibility(
+                visible = controlsVisible,
+                enter = fadeIn(tween(220)) + expandVertically(tween(240), expandFrom = Alignment.Bottom),
+                exit = fadeOut(tween(150)) + shrinkVertically(tween(220), shrinkTowards = Alignment.Bottom),
             ) {
-                Column(Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(start = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            chapters.getOrNull(safeIndex)?.title.orEmpty(),
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        IconButton(
-                            enabled = safeIndex > 0,
-                            onClick = { controller.seekToPreviousMediaItem() },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(Icons.Default.SkipPrevious, "Previous chapter", tint = Color.White)
-                        }
-                        IconButton(
-                            enabled = safeIndex < chapters.lastIndex,
-                            onClick = { controller.seekToNextMediaItem() },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
-                        }
-                        if (captionsAvailable || captionsHaveShown) {
-                            Text("CC READY", color = Color(0xFF80F0DA),
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                    }
-                    // Seek within the current logical chapter. M4B items are clipped,
-                    // so this stays relative to the chapter and keeps captions aligned.
-                    Slider(
-                        value = if (chapterDurationMs > 0L)
-                            ((scrubPositionMs ?: position).coerceIn(0L, chapterDurationMs)
-                                .toFloat() / chapterDurationMs.toFloat()).coerceIn(0f, 1f)
-                        else 0f,
-                        onValueChange = { fraction ->
-                            if (chapterDurationMs > 0L) {
-                                scrubPositionMs = (fraction * chapterDurationMs).toLong()
-                                    .coerceIn(0L, chapterDurationMs)
-                            }
-                        },
-                        onValueChangeFinished = {
-                            scrubPositionMs?.let { target ->
-                                controller.seekTo(safeIndex, target)
-                                position = target
-                                onProgress(safeIndex, target)
-                            }
-                            scrubPositionMs = null
-                        },
-                        enabled = chapterDurationMs > 0L && controller.mediaItemCount > 0,
-                        modifier = Modifier.fillMaxWidth().height(28.dp),
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(horizontal = 5.dp, vertical = 1.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(StorySeek.clock(scrubPositionMs ?: position),
-                            color = Color(0xFFCDDFEF),
-                            style = MaterialTheme.typography.labelSmall)
-                        Text(if (chapterDurationMs > 0L) StorySeek.clock(chapterDurationMs)
-                             else "--:--",
-                            color = Color(0xFFCDDFEF),
-                            style = MaterialTheme.typography.labelSmall)
-                    }
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        StorySkipButton(-30, chapters.isNotEmpty()) { skipBy(-30_000L) }
-                        StorySkipButton(-10, chapters.isNotEmpty()) { skipBy(-10_000L) }
-                        FilledIconButton(
-                            onClick = { if (playing) controller.pause() else controller.play() },
-                            modifier = Modifier.size(52.dp),
-                        ) {
-                            Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                if (playing) "Pause" else "Play")
-                        }
-                        StorySkipButton(10, chapters.isNotEmpty()) { skipBy(10_000L) }
-                        StorySkipButton(30, chapters.isNotEmpty()) { skipBy(30_000L) }
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        OutlinedButton(
-                            onClick = { onPickTranscript(safeIndex) },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Icon(Icons.Default.ClosedCaption, null,
-                                modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(if (captionsAvailable) "Replace captions" else "Import captions",
-                                maxLines = 1)
-                        }
-                        androidx.compose.material3.TextButton(
-                            onClick = { toolsExpanded = !toolsExpanded },
-                        ) {
-                            Icon(Icons.Default.Tune, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(if (toolsExpanded) "Close" else "Tools")
-                        }
-                    }
-                    if (toolsExpanded) {
-                        androidx.compose.material3.HorizontalDivider(
-                            color = Color(0x335B7795),
-                            modifier = Modifier.padding(vertical = 8.dp),
-                        )
-                        Column(
-                            Modifier.fillMaxWidth().heightIn(max = 260.dp)
-                                .verticalScroll(rememberScrollState()),
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xF2081428),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "Background · " + style,
-                                modifier = Modifier.padding(top = 2.dp),
-                                color = Color(0xFFD9E4F3),
-                                style = MaterialTheme.typography.labelMedium,
+                                chapters.getOrNull(safeIndex)?.title.orEmpty(),
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleSmall,
                             )
-                            Text("Background dimming", color = Color.White,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.align(Alignment.Start).padding(top = 8.dp))
-                            Slider(
-                                value = dimBackground,
-                                onValueChange = { dimBackground = it },
-                                valueRange = 0f..0.65f,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Row(Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                androidx.compose.material3.Switch(
-                                    checked = reduceMotion, onCheckedChange = { reduceMotion = it },
-                                )
-                                Text("  Pause background video", color = Color.White,
-                                    style = MaterialTheme.typography.bodySmall)
+                            IconButton(
+                                enabled = safeIndex > 0,
+                                onClick = { controller.seekToPreviousMediaItem() },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(Icons.Default.SkipPrevious, "Previous chapter", tint = Color.White)
                             }
-                            StoryLicensedVideos.find(style)?.let { clip ->
-                                Text(
-                                    "Licensed CC0 loop · " + clip.creator +
-                                        " · Downloaded once for offline replay",
-                                    color = Color(0xFFC3D3E5),
+                            IconButton(
+                                enabled = safeIndex < chapters.lastIndex,
+                                onClick = { controller.seekToNextMediaItem() },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(Icons.Default.SkipNext, "Next chapter", tint = Color.White)
+                            }
+                            if (captionsAvailable || captionsHaveShown) {
+                                Text("CC READY", color = Color(0xFF80F0DA),
                                     style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(start = 4.dp),
                                 )
-                                androidx.compose.material3.TextButton(
-                                    onClick = { uriHandler.openUri(clip.sourceUrl) },
-                                ) {
-                                    Text("Video source and license · Wikimedia Commons")
-                                }
                             }
-                    if (book.sourceId == "local_files") {
-                        if (!sttModelReady) {
+                        }
+                        // Seek within the current logical chapter. M4B items are clipped,
+                        // so this stays relative to the chapter and keeps captions aligned.
+                        Slider(
+                            value = if (chapterDurationMs > 0L)
+                                ((scrubPositionMs ?: position).coerceIn(0L, chapterDurationMs)
+                                    .toFloat() / chapterDurationMs.toFloat()).coerceIn(0f, 1f)
+                            else 0f,
+                            onValueChange = { fraction ->
+                                if (chapterDurationMs > 0L) {
+                                    scrubPositionMs = (fraction * chapterDurationMs).toLong()
+                                        .coerceIn(0L, chapterDurationMs)
+                                }
+                            },
+                            onValueChangeFinished = {
+                                scrubPositionMs?.let { target ->
+                                    controller.seekTo(safeIndex, target)
+                                    position = target
+                                    onProgress(safeIndex, target)
+                                }
+                                scrubPositionMs = null
+                            },
+                            enabled = chapterDurationMs > 0L && controller.mediaItemCount > 0,
+                            modifier = Modifier.fillMaxWidth().height(28.dp),
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(StorySeek.clock(scrubPositionMs ?: position),
+                                color = Color(0xFFCDDFEF),
+                                style = MaterialTheme.typography.labelSmall)
+                            Text(if (chapterDurationMs > 0L) StorySeek.clock(chapterDurationMs)
+                                 else "--:--",
+                                color = Color(0xFFCDDFEF),
+                                style = MaterialTheme.typography.labelSmall)
+                        }
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            StorySkipButton(-30, chapters.isNotEmpty()) { skipBy(-30_000L) }
+                            StorySkipButton(-10, chapters.isNotEmpty()) { skipBy(-10_000L) }
+                            FilledIconButton(
+                                onClick = { if (playing) controller.pause() else controller.play() },
+                                modifier = Modifier.size(52.dp),
+                            ) {
+                                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    if (playing) "Pause" else "Play")
+                            }
+                            StorySkipButton(10, chapters.isNotEmpty()) { skipBy(10_000L) }
+                            StorySkipButton(30, chapters.isNotEmpty()) { skipBy(30_000L) }
+                        }
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             OutlinedButton(
-                                onClick = onDownloadSttModel, enabled = !sttBusy,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) { Text("Download free offline speech model (~40 MB)") }
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                androidx.compose.material3.Switch(
-                                    checked = autoTranscribe,
-                                    onCheckedChange = { autoTranscribe = it },
-                                    enabled = !sttNativeUnavailable,
+                                onClick = { onPickTranscript(safeIndex) },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(Icons.Default.ClosedCaption, null,
+                                    modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(if (captionsAvailable) "Replace captions" else "Import captions",
+                                    maxLines = 1)
+                            }
+                            androidx.compose.material3.TextButton(
+                                onClick = { toolsExpanded = !toolsExpanded },
+                            ) {
+                                Icon(Icons.Default.Tune, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(if (toolsExpanded) "Close" else "Tools")
+                            }
+                        }
+                        AnimatedVisibility(
+                            visible = toolsExpanded,
+                            enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+                            exit = fadeOut(tween(140)) + shrinkVertically(tween(200)),
+                        ) {
+                            Column {
+                                androidx.compose.material3.HorizontalDivider(
+                                    color = Color(0x335B7795),
+                                    modifier = Modifier.padding(vertical = 8.dp),
                                 )
-                                Text("  Auto-transcribe as you listen", color = Color.White,
+                                Column(
+                                    Modifier.fillMaxWidth().heightIn(max = 260.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text(
+                                        "Background · " + style,
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        color = Color(0xFFD9E4F3),
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                    Text("Background dimming", color = Color.White,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.align(Alignment.Start).padding(top = 8.dp))
+                                    Slider(
+                                        value = dimBackground,
+                                        onValueChange = { dimBackground = it },
+                                        valueRange = 0f..0.65f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Row(Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically) {
+                                        androidx.compose.material3.Switch(
+                                            checked = reduceMotion, onCheckedChange = { reduceMotion = it },
+                                        )
+                                        Text("  Pause background video", color = Color.White,
+                                            style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    StoryLicensedVideos.find(style)?.let { clip ->
+                                        Text(
+                                            "Licensed CC0 loop · " + clip.creator +
+                                                " · Downloaded once for offline replay",
+                                            color = Color(0xFFC3D3E5),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                        androidx.compose.material3.TextButton(
+                                            onClick = { uriHandler.openUri(clip.sourceUrl) },
+                                        ) {
+                                            Text("Video source and license · Wikimedia Commons")
+                                        }
+                                    }
+                            if (book.sourceId == "local_files") {
+                                if (!sttModelReady) {
+                                    OutlinedButton(
+                                        onClick = onDownloadSttModel, enabled = !sttBusy,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) { Text("Download free offline speech model (~40 MB)") }
+                                } else {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        androidx.compose.material3.Switch(
+                                            checked = autoTranscribe,
+                                            onCheckedChange = { autoTranscribe = it },
+                                            enabled = !sttNativeUnavailable,
+                                        )
+                                        Text("  Auto-transcribe as you listen", color = Color.White,
+                                            style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { onTranscribeNearby(safeIndex, absoluteAudioMs) },
+                                        enabled = !sttBusy && !sttNativeUnavailable, modifier = Modifier.fillMaxWidth(),
+                                    ) { Text("Generate next 30 seconds of captions") }
+                                }
+                                if (sttBusy) androidx.compose.material3.LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth())
+                                if (!sttMessage.isNullOrBlank()) Text(sttMessage,
+                                    color = Color(0xFFDBF7E9),
                                     style = MaterialTheme.typography.bodySmall)
                             }
-                            OutlinedButton(
-                                onClick = { onTranscribeNearby(safeIndex, absoluteAudioMs) },
-                                enabled = !sttBusy && !sttNativeUnavailable, modifier = Modifier.fillMaxWidth(),
-                            ) { Text("Generate next 30 seconds of captions") }
-                        }
-                        if (sttBusy) androidx.compose.material3.LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth())
-                        if (!sttMessage.isNullOrBlank()) Text(sttMessage,
-                            color = Color(0xFFDBF7E9),
-                            style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (book.sourceId == "local_files") {
-                        androidx.compose.material3.TextButton(
-                            onClick = { fullExpanded = !fullExpanded },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(if (fullExpanded) "Hide full-book transcription"
-                                 else "Full-book subtitles · Background processing")
-                        }
-                        if (fullExpanded) {
-                            Text(
-                                if (fullProgress.finished) "Complete · ${fullProgress.words} recognized words"
-                                else "${fullProgress.percent}% complete · ${fullProgress.words} words saved",
-                                color = Color.White, style = MaterialTheme.typography.bodyMedium,
-                            )
-                            androidx.compose.material3.LinearProgressIndicator(
-                                progress = { fullProgress.percent / 100f },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            )
-                            Row(Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (!fullProgress.paused && !fullProgress.finished) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            FullBookTranscriptionWorker.pause(context, book.id)
-                                            fullProgress = fullStore.progress(book.id)
-                                        }, modifier = Modifier.weight(1f)
-                                    ) { Text("Pause") }
-                                } else {
-                                    Button(
-                                        enabled = sttModelReady && !sttNativeUnavailable &&
-                                            !fullProgress.finished,
-                                        onClick = {
-                                            runCatching {
-                                                FullBookTranscriptionWorker.resume(context, book.id)
-                                                fullProgress = fullStore.progress(book.id)
-                                                fullError = null
-                                            }.onFailure { fullError = it.message }
-                                        }, modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(if (fullProgress.completedMs > 0) "Resume" else "Start")
+                            if (book.sourceId == "local_files") {
+                                androidx.compose.material3.TextButton(
+                                    onClick = { fullExpanded = !fullExpanded },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(if (fullExpanded) "Hide full-book transcription"
+                                         else "Full-book subtitles · Background processing")
+                                }
+                                if (fullExpanded) {
+                                    Text(
+                                        if (fullProgress.finished) "Complete · ${fullProgress.words} recognized words"
+                                        else "${fullProgress.percent}% complete · ${fullProgress.words} words saved",
+                                        color = Color.White, style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                    androidx.compose.material3.LinearProgressIndicator(
+                                        progress = { fullProgress.percent / 100f },
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    )
+                                    Row(Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        if (!fullProgress.paused && !fullProgress.finished) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    FullBookTranscriptionWorker.pause(context, book.id)
+                                                    fullProgress = fullStore.progress(book.id)
+                                                }, modifier = Modifier.weight(1f)
+                                            ) { Text("Pause") }
+                                        } else {
+                                            Button(
+                                                enabled = sttModelReady && !sttNativeUnavailable &&
+                                                    !fullProgress.finished,
+                                                onClick = {
+                                                    runCatching {
+                                                        FullBookTranscriptionWorker.resume(context, book.id)
+                                                        fullProgress = fullStore.progress(book.id)
+                                                        fullError = null
+                                                    }.onFailure { fullError = it.message }
+                                                }, modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(if (fullProgress.completedMs > 0) "Resume" else "Start")
+                                            }
+                                        }
+                                    }
+                                    Row(Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedButton(
+                                            enabled = fullProgress.completedMs > 0L && !exporting,
+                                            onClick = { exportSrt.launch("AudioShelf-transcript.srt") },
+                                            modifier = Modifier.weight(1f)
+                                        ) { Text("Export SRT") }
+                                        OutlinedButton(
+                                            enabled = fullProgress.completedMs > 0L && !exporting,
+                                            onClick = { exportVtt.launch("AudioShelf-transcript.vtt") },
+                                            modifier = Modifier.weight(1f)
+                                        ) { Text("Export VTT") }
+                                    }
+                                    if (exporting) Text("Writing subtitle file…",
+                                        color = Color.White, style = MaterialTheme.typography.bodySmall)
+                                    if (!sttModelReady) Text(
+                                        "Download the offline speech model above before starting.",
+                                        color = Color.White, style = MaterialTheme.typography.bodySmall)
+                                    Text("The job keeps processing after Story Mode closes. " +
+                                         "Keep the phone powered; Android may suspend long background jobs.",
+                                        color = Color(0xFFD3E3EF),
+                                        style = MaterialTheme.typography.bodySmall)
+                                    fullProgress.error?.let {
+                                        Text(it, color = Color(0xFFFFB8AF),
+                                            style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    fullError?.let {
+                                        Text(it, color = Color(0xFFFFB8AF),
+                                            style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
                             }
-                            Row(Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(
-                                    enabled = fullProgress.completedMs > 0L && !exporting,
-                                    onClick = { exportSrt.launch("AudioShelf-transcript.srt") },
-                                    modifier = Modifier.weight(1f)
-                                ) { Text("Export SRT") }
-                                OutlinedButton(
-                                    enabled = fullProgress.completedMs > 0L && !exporting,
-                                    onClick = { exportVtt.launch("AudioShelf-transcript.vtt") },
-                                    modifier = Modifier.weight(1f)
-                                ) { Text("Export VTT") }
-                            }
-                            if (exporting) Text("Writing subtitle file…",
-                                color = Color.White, style = MaterialTheme.typography.bodySmall)
-                            if (!sttModelReady) Text(
-                                "Download the offline speech model above before starting.",
-                                color = Color.White, style = MaterialTheme.typography.bodySmall)
-                            Text("The job keeps processing after Story Mode closes. " +
-                                 "Keep the phone powered; Android may suspend long background jobs.",
-                                color = Color(0xFFD3E3EF),
-                                style = MaterialTheme.typography.bodySmall)
-                            fullProgress.error?.let {
-                                Text(it, color = Color(0xFFFFB8AF),
-                                    style = MaterialTheme.typography.bodySmall)
-                            }
-                            fullError?.let {
-                                Text(it, color = Color(0xFFFFB8AF),
-                                    style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
 
-                    if (embedded) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            androidx.compose.material3.Checkbox(
-                                checked = absoluteM4bTime,
-                                onCheckedChange = { absoluteM4bTime = it },
-                            )
-                            Text("M4B transcript uses full-book timestamps",
-                                color = Color.White, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                    if (transcriptError != null) Text(transcriptError,
-                        color = Color(0xFFFFB8AF), style = MaterialTheme.typography.bodySmall)
+                            if (embedded) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    androidx.compose.material3.Checkbox(
+                                        checked = absoluteM4bTime,
+                                        onCheckedChange = { absoluteM4bTime = it },
+                                    )
+                                    Text("M4B transcript uses full-book timestamps",
+                                        color = Color.White, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            if (transcriptError != null) Text(transcriptError,
+                                color = Color(0xFFFFB8AF), style = MaterialTheme.typography.bodySmall)
 
-                            if (!captionsAvailable && !captionsHaveShown) {
-                                Text(
-                                    "Import SRT, VTT or LRC, or generate captions offline.",
-                                    color = Color(0xFFD3E3EF),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
+                                    if (!captionsAvailable && !captionsHaveShown) {
+                                        Text(
+                                            "Import SRT, VTT or LRC, or generate captions offline.",
+                                            color = Color(0xFFD3E3EF),
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -726,7 +754,7 @@ internal fun LoopingVideoBackground(videoUri: Uri, videoPlaying: Boolean = true)
     DisposableEffect(player) { onDispose { player.release() } }
     AndroidView(
         factory = { host ->
-            PlayerView(host).apply {
+            (LayoutInflater.from(host).inflate(R.layout.story_video, null) as PlayerView).apply {
                 useController = false
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 this.player = player
