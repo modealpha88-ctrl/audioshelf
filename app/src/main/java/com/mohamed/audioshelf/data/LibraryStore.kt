@@ -8,6 +8,8 @@ import org.json.JSONObject
 
 class LibraryStore(context: Context) {
     private val prefs = context.getSharedPreferences("audio_shelf", Context.MODE_PRIVATE)
+    private val trustedLocalCovers = java.io.File(context.filesDir, "covers").canonicalPath +
+        java.io.File.separator
 
     fun books(): List<AudioBook> = runCatching {
         val array = JSONArray(prefs.getString(KEY_BOOKS, "[]"))
@@ -28,7 +30,13 @@ class LibraryStore(context: Context) {
 
     /** Persist matched artwork without changing the saved book's identity or progress. */
     fun updateCover(book: AudioBook, coverUrl: String) {
-        if (!coverUrl.startsWith("https://covers.openlibrary.org/b/id/")) return
+        val trustedOpenLibrary = coverUrl.matches(
+            Regex("""https://covers\\.openlibrary\\.org/b/id/\\d+-L\\.jpg"""))
+        val trustedLocal = if (coverUrl.startsWith("file://")) runCatching {
+            val file = java.io.File(requireNotNull(android.net.Uri.parse(coverUrl).path))
+            file.canonicalPath.startsWith(trustedLocalCovers) && file.isFile
+        }.getOrDefault(false) else false
+        if (!trustedOpenLibrary && !trustedLocal) return
         val items = books().toMutableList()
         val index = items.indexOfFirst { it.id == book.id && it.sourceId == book.sourceId }
         if (index < 0 || items[index].coverUrl.isNotBlank()) return
