@@ -79,7 +79,12 @@ internal object StoryLicensedVideos {
         clips.firstOrNull { it.title == name }
 
     fun persistedStyle(name: String?): String =
-        if (name == "My video" || clips.any { it.title == name }) name!! else clips.first().title
+        when {
+            name == "My video" -> name
+            find(name.orEmpty()) != null || StoryAnimation.find(name) != null -> requireNotNull(name)
+            null -> StoryAnimation.Aurora.title
+            else -> clips.first().title
+        }
 }
 
 /** Respect server-provided Retry-After instead of hammering Wikimedia on HTTP 429. */

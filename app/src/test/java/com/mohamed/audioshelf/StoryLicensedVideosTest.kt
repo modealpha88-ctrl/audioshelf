@@ -24,6 +24,13 @@ class StoryLicensedVideosTest {
         assertTrue(lake.fileUrl.endsWith(".480p.vp9.webm"))
     }
 
+    @Test fun animatedThemesPersistWithAnOfflineDefault() {
+        assertEquals("Aurora", StoryLicensedVideos.persistedStyle(null))
+        for (animation in StoryAnimation.entries) {
+            assertEquals(animation.title, StoryLicensedVideos.persistedStyle(animation.title))
+        }
+    }
+
     @Test fun obsoleteStaticThemesMigrateWithoutClearingPreferences() {
         assertEquals("Rainy City", StoryLicensedVideos.persistedStyle("Forest"))
         assertEquals("Rainy City", StoryLicensedVideos.persistedStyle("Castle"))

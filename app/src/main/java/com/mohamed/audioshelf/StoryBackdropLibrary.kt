@@ -8,7 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +53,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-/** The selector contains exclusively verified CC0 video loops and My Video. */
+/** Built-in animated effects, licensed video loops, and the local video picker. */
 @Composable
 internal fun StoryBackdropSelector(
     style: String,
@@ -59,12 +61,22 @@ internal fun StoryBackdropSelector(
     onPickVideo: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState())
+        modifier = Modifier.selectableGroup().horizontalScroll(rememberScrollState())
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        StoryAnimation.entries.forEach { animation ->
+            BackdropChoiceCard(
+                name = animation.title,
+                label = animation.subtitle,
+                tint = animation.tint,
+                animation = animation,
+                selected = style == animation.title,
+                onClick = { onSelect(animation.title) },
+            )
+        }
         StoryLicensedVideos.clips.forEach { clip ->
-            VideoChoiceCard(
+            BackdropChoiceCard(
                 name = clip.title,
                 label = clip.subtitle,
                 tint = Color(clip.color),
@@ -73,7 +85,7 @@ internal fun StoryBackdropSelector(
                 onClick = { onSelect(clip.title) },
             )
         }
-        VideoChoiceCard(
+        BackdropChoiceCard(
             name = "My video",
             label = "Your local clip",
             tint = Color(0xFF8959C0),
@@ -88,11 +100,12 @@ internal fun StoryBackdropSelector(
 }
 
 @Composable
-private fun VideoChoiceCard(
+private fun BackdropChoiceCard(
     name: String,
     label: String,
     tint: Color,
-    clip: StoryLicensedClip?,
+    clip: StoryLicensedClip? = null,
+    animation: StoryAnimation? = null,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -132,8 +145,11 @@ private fun VideoChoiceCard(
                 if (selected) Color(0xFFE5C6FF) else Color(0x887C91AD),
                 shape,
             )
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
     ) {
+        if (animation != null) {
+            StoryAnimatedBackground(animation, Modifier.fillMaxSize())
+        }
         if (preview != null) {
             Image(
                 bitmap = preview!!.asImageBitmap(),
@@ -141,6 +157,8 @@ private fun VideoChoiceCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+        if (animation != null || preview != null) {
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
                 listOf(Color(0x22000000), Color(0xDD050A18))
             )))

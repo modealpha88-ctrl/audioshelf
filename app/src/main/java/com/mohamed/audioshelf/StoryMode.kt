@@ -135,7 +135,7 @@ internal fun StoryMode(
     }
     var style by rememberSaveable(book.id) {
         mutableStateOf(StoryLicensedVideos.persistedStyle(
-            storyPreferences.getString("style_" + book.id, "Rainy City")
+            storyPreferences.getString("style_" + book.id, null)
         ))
     }
     var dimBackground by rememberSaveable(book.id) {
@@ -273,9 +273,15 @@ internal fun StoryMode(
     }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050A18))) {
-        Crossfade(targetState = style, animationSpec = tween(450), label = "change video loop") { selected ->
+        Crossfade(targetState = style, animationSpec = tween(450), label = "Change Story Mode background") { selected ->
             val clip = StoryLicensedVideos.find(selected)
+            val animation = StoryAnimation.find(selected)
             when {
+                animation != null -> StoryAnimatedBackground(
+                    animation = animation,
+                    modifier = Modifier.fillMaxSize(),
+                    moving = selected == style && !reduceMotion,
+                )
                 selected == "My video" && videoUri != null ->
                     LoopingVideoBackground(videoUri, videoPlaying = !reduceMotion)
                 clip != null -> StoryLicensedVideoBackground(
@@ -571,8 +577,15 @@ internal fun StoryMode(
                                         androidx.compose.material3.Switch(
                                             checked = reduceMotion, onCheckedChange = { reduceMotion = it },
                                         )
-                                        Text("  Pause background video", color = Color.White,
+                                        Text("  Pause background motion", color = Color.White,
                                             style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    StoryAnimation.find(style)?.let { animation ->
+                                        androidx.compose.material3.TextButton(
+                                            onClick = { uriHandler.openUri(animation.sourceUrl) },
+                                        ) {
+                                            Text("Inspiration · React Bits")
+                                        }
                                     }
                                     StoryLicensedVideos.find(style)?.let { clip ->
                                         Text(
