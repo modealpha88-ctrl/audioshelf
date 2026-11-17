@@ -183,6 +183,7 @@ private fun AudioShelfApp(
             if (selected != null) {
                 BookScreen(
                     book = selected,
+                    listeningProgress = viewModel.progress(selected),
                     chapters = pageState.chapters,
                     loading = pageState.loading,
                     error = pageState.error,
@@ -223,7 +224,7 @@ private fun AudioShelfApp(
                 )
             } else when (pageTab) {
                 HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
-                HomeTab.Library -> LibraryScreen(pageState.library, viewModel::progress, viewModel::select)
+                HomeTab.Library -> AnimatedLibraryScreen(pageState.library, viewModel::progress, viewModel::select)
                 HomeTab.Sources -> SourcesScreen(
                     state = pageState,
                     isInstalled = viewModel::isProviderInstalled,
@@ -679,6 +680,7 @@ private fun CoverFallback() = Box(Modifier.fillMaxSize(), contentAlignment = Ali
 @Composable
 private fun BookScreen(
     book: AudioBook,
+    listeningProgress: ListeningProgress,
     chapters: List<AudioChapter>,
     loading: Boolean,
     error: String?,
@@ -746,14 +748,9 @@ private fun BookScreen(
                     contentPadding = PaddingValues(bottom = 12.dp),
                 ) {
                     item {
-                        Row(Modifier.padding(20.dp)) {
-                            AsyncImage(book.coverUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.width(120.dp).aspectRatio(.7f).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
-                            Spacer(Modifier.width(18.dp))
-                            Column {
-                                Text(book.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                                Spacer(Modifier.height(6.dp)); Text(book.authors)
-                                if (book.language.isNotBlank()) Text(book.language, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.height(14.dp))
+                        LibraryBookDetailCard(book, listeningProgress)
+                        Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                            Column(Modifier.fillMaxWidth()) {
                                 if (book.externalUrl.isNotBlank()) {
                                     Button(onClick = onOpenExternal) {
                                         Icon(Icons.Default.OpenInBrowser, null)
