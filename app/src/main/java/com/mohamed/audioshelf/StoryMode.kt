@@ -72,6 +72,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -119,11 +120,14 @@ internal fun StoryMode(
     onProgress: (Int, Long) -> Unit,
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val storyPreferences = remember(context) {
         context.getSharedPreferences("audio_shelf_story", 0)
     }
     var style by rememberSaveable(book.id) {
-        mutableStateOf(storyPreferences.getString("style_" + book.id, "Forest") ?: "Forest")
+        mutableStateOf(StoryLicensedVideos.persistedStyle(
+            storyPreferences.getString("style_" + book.id, "Rainy City")
+        ))
     }
     var dimBackground by rememberSaveable(book.id) {
         mutableStateOf(storyPreferences.getFloat("dim_" + book.id, .22f))
@@ -234,15 +238,13 @@ internal fun StoryMode(
     }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050A18))) {
-        Crossfade(targetState = style, animationSpec = tween(500), label = "change scene") { selected ->
-            val preset = StoryBackdropLibrary.find(selected)
+        Crossfade(targetState = style, animationSpec = tween(450), label = "change video loop") { selected ->
+            val clip = StoryLicensedVideos.find(selected)
             when {
-                selected == "My video" && videoUri != null -> LoopingVideoBackground(videoUri)
-                preset?.sceneImage != null -> StoryKenneyBackdrop(preset, reduceMotion)
-                else -> StoryMotionBackground(
-                    if (selected == "My video") "Parkour" else selected,
-                    reduceMotion = reduceMotion,
-                )
+                selected == "My video" && videoUri != null ->
+                    LoopingVideoBackground(videoUri, videoPlaying = !reduceMotion)
+                clip != null -> StoryLicensedVideoBackground(clip, reduceMotion)
+                else -> StoryLicensedVideoBackground(StoryLicensedVideos.clips.first(), reduceMotion)
             }
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dimBackground)))
@@ -407,13 +409,21 @@ internal fun StoryMode(
                                 androidx.compose.material3.Switch(
                                     checked = reduceMotion, onCheckedChange = { reduceMotion = it },
                                 )
-                                Text("  Reduce background motion", color = Color.White,
+                                Text("  Pause background video", color = Color.White,
                                     style = MaterialTheme.typography.bodySmall)
                             }
-                            if (StoryBackdropLibrary.find(style)?.sceneImage != null) {
-                                Text("CC0 scenery by Kenney · Cached for offline use after first load",
+                            StoryLicensedVideos.find(style)?.let { clip ->
+                                Text(
+                                    "Licensed CC0 loop · " + clip.creator +
+                                        " · Downloaded once for offline replay",
                                     color = Color(0xFFC3D3E5),
-                                    style = MaterialTheme.typography.labelSmall)
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                                androidx.compose.material3.TextButton(
+                                    onClick = { uriHandler.openUri(clip.sourceUrl) },
+                                ) {
+                                    Text("Video source and license · Wikimedia Commons")
+                                }
                             }
                     if (book.sourceId == "local_files") {
                         if (!sttModelReady) {
@@ -548,68 +558,18 @@ internal fun StoryMode(
 }
 
 @Composable
-private fun StoryMotionBackground(style: String, reduceMotion: Boolean = false) {
-    val infinite = rememberInfiniteTransition(label = "story backdrop motion")
-    val phase by infinite.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
-        label = "motion phase",
-    )
-    val clock = if (reduceMotion) .2f else phase
-    var tap by remember { mutableStateOf<Offset?>(null) }
-    Canvas(Modifier.fillMaxSize().pointerInput(style) { detectTapGestures { tap = it } }) {
-        val w = size.width
-        val h = size.height
-        drawRect(brush = Brush.verticalGradient(
-            colors = if (style == "Orbs") listOf(Color(0xFF301258), Color(0xFF0D1031))
-                else if (style == "Parkour") listOf(Color(0xFF23376A), Color(0xFF090D22), Color(0xFF052938))
-                else listOf(Color(0xFF070D2C), Color(0xFF14062C))
-        ))
-        if (style == "Parkour") {
-            // Original game-like looping floating platforms. No third-party gameplay assets.
-            val horizon = h * .37f
-            for (i in 0..35) {
-                val progress = ((i / 36f + clock) % 1f)
-                val depth = progress * progress
-                val width = w * (.08f + depth * .72f)
-                val height = h * (.01f + depth * .08f)
-                val x = w * (.48f + sin(i * 1.93).toFloat() * (.1f + depth * .25f)) - width / 2
-                val y = horizon + (h - horizon) * depth
-                drawRoundRect(color = if (i % 3 == 0) Color(0xFF00E3C7)
-                    else if (i % 3 == 1) Color(0xFF8B67EA) else Color(0xFF44A2E8),
-                    topLeft = Offset(x, y), size = Size(width, height),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),
-                    alpha = .8f)
-            }
-            drawCircle(Color(0xFFFCD998), w * .14f, Offset(w * .76f, h * .19f), alpha = .55f)
-        } else {
-            for (i in 0..90) {
-                val seed = (i * .618034f) % 1f
-                val y = (((i * .389f) + clock * (if (style == "Orbs") .28f else .75f)) % 1f) * h
-                val x = (((i * .7549f) + sin((clock + seed) * 6.28).toFloat() * .06f) % 1f) * w
-                val radius = if (style == "Orbs") 5f + seed * 22f else 1.5f + seed * 4f
-                drawCircle(color = if (i % 3 == 0) Color(0xFF8EFAF6)
-                    else if (i % 3 == 1) Color(0xFFA78BFA) else Color(0xFFFFFFFF),
-                    radius = radius, center = Offset(x, y), alpha = .18f + seed * .45f)
-            }
-        }
-        tap?.let { drawCircle(Color(0x99FFFFFF), radius = 42f + clock * 70f, center = it,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)) }
-    }
-}
-
-@Composable
-private fun LoopingVideoBackground(videoUri: Uri) {
+internal fun LoopingVideoBackground(videoUri: Uri, videoPlaying: Boolean = true) {
     val context = LocalContext.current
     val player = remember(context, videoUri) {
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(videoUri))
             repeatMode = Player.REPEAT_MODE_ONE
             volume = 0f
-            playWhenReady = true
+            playWhenReady = videoPlaying
             prepare()
         }
     }
+    LaunchedEffect(player, videoPlaying) { player.playWhenReady = videoPlaying }
     DisposableEffect(player) { onDispose { player.release() } }
     AndroidView(
         factory = { host ->

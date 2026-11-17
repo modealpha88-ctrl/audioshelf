@@ -94,6 +94,27 @@ partially finished, exports contain only completed sections. Speech recognition
 can mishear names and invented vocabulary; the generated file is not an
 official audiobook transcript.
 
+## Licensed portrait video backgrounds (v0.5.9)
+
+The old static Forest, Castle, Desert, Autumn, Parkour, Starfield and Orbs
+presets have been retired in favor of **real moving video** options:
+
+- **Rainy City**: Andy Li's "Rainy night in Sham Shui Po", CC0, 6 seconds
+- **Waterfall**: Pohled 111's "Vodopád Hejlovka (Želivka)", CC0, 16 seconds
+- **Lake Drift**: Sdsecret's "Meikarta Lake", CC0, 6 seconds
+- **My video**: pick a local video that you own or have permission to use
+
+All three publicly hosted video files have portrait (608×1080 original) framing,
+are sourced from Wikimedia Commons with verified CC0 pages, and are downloaded
+**only on first selection** to an app-private folder (up to 24 MB per file).
+They are played muted and looped via the existing Media3 player in a caption-safe
+portrait layout. A source/license link is shown inside Story Mode Tools.
+An interrupted download leaves no partial final asset and can be retried.
+The previous saved background names migrate to Rainy City without clearing
+book progress, captions, or other settings. The background dimming and
+pause-motion options still work. Android video-codec availability and network
+access can vary between devices; after download, the video plays offline.
+
 ## Openly licensed scenic backgrounds (v0.5.8)
 
 Story Mode now includes four additional picture-based backgrounds: **Forest,

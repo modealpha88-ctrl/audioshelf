@@ -1,81 +1,49 @@
 package com.mohamed.audioshelf
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import kotlin.math.sin
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * Selected official Kenney CC0 Background Elements Remastered artwork.
- * The PNGs are mirrored in the publicly accessible CC0 game-assets library.
- * https://kenney.nl/assets/background-elements-remastered
- * https://github.com/eturner58/game-assets/tree/main/kenney/2D%20assets/Background%20Elements%20Remastered
- *
- * Artwork is fetched only when the user opens Story Mode, with local disk cache.
- * If offline on first load, the original gradient backdrop remains visible.
- * No unlicensed gameplay footage or restricted third-party video is bundled.
- */
-internal data class StoryBackdropPreset(
-    val name: String,
-    val sceneImage: String? = null,
-    val accent: Color = Color(0xFF8B84D9),
-)
-
-internal object StoryBackdropLibrary {
-    private const val BASE =
-        "https://raw.githubusercontent.com/eturner58/game-assets/main/" +
-        "kenney/2D%20assets/Background%20Elements%20Remastered/Backgrounds/"
-
-    val presets = listOf(
-        StoryBackdropPreset("Parkour", accent = Color(0xFF26CDBF)),
-        StoryBackdropPreset("Forest", BASE + "backgroundColorForest.png", Color(0xFF7CDDA5)),
-        StoryBackdropPreset("Castle", BASE + "backgroundCastles.png", Color(0xFFD0A8FC)),
-        StoryBackdropPreset("Desert", BASE + "backgroundColorDesert.png", Color(0xFFF5B481)),
-        StoryBackdropPreset("Autumn", BASE + "backgroundColorFall.png", Color(0xFFF0A68D)),
-        StoryBackdropPreset("Starfield", accent = Color(0xFF8AA8F1)),
-        StoryBackdropPreset("Orbs", accent = Color(0xFFB09BED)),
-        StoryBackdropPreset("My video", accent = Color(0xFFBD9EEF)),
-    )
-    fun find(name: String) = presets.firstOrNull { it.name == name }
-}
-
+/** The selector contains exclusively verified CC0 video loops and My Video. */
 @Composable
 internal fun StoryBackdropSelector(
     style: String,
@@ -84,128 +52,134 @@ internal fun StoryBackdropSelector(
 ) {
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        StoryBackdropLibrary.presets.forEach { preset ->
-            val selected = preset.name == style
-            val shape = RoundedCornerShape(16.dp)
-            Box(
-                modifier = Modifier.width(104.dp).height(85.dp)
-                    .clip(shape)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(preset.accent.copy(alpha = .6f), Color(0xFF111329))
-                        )
-                    )
-                    .border(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) Color(0xFFE9D3FF) else Color(0x667C91AD),
-                        shape = shape,
-                    )
-                    .clickable {
-                        onSelect(preset.name)
-                        if (preset.name == "My video") onPickVideo()
-                    },
-            ) {
-                if (preset.sceneImage != null) {
-                    StoryRemoteArtwork(preset.sceneImage, Modifier.fillMaxSize())
-                } else {
-                    Canvas(Modifier.fillMaxSize()) {
-                        repeat(12) { i ->
-                            drawCircle(
-                                preset.accent.copy(alpha = .12f + i % 3 * .10f),
-                                2f + (i % 4) * 5f,
-                                Offset(
-                                    (i * 73 % 110).toFloat() / 110f * size.width,
-                                    (i * 43 % 90).toFloat() / 90f * size.height,
-                                ),
-                            )
-                        }
-                    }
-                }
-                Box(Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color(0xEE030B18))
-                    )
-                ))
-                Text(
-                    preset.name,
-                    modifier = Modifier.align(Alignment.BottomStart)
-                        .padding(start = 9.dp, bottom = 8.dp),
-                    fontSize = 12.sp,
-                    fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        StoryLicensedVideos.clips.forEach { clip ->
+            VideoChoiceCard(
+                name = clip.title,
+                label = clip.subtitle,
+                tint = Color(clip.color),
+                selected = style == clip.title,
+                onClick = { onSelect(clip.title) },
+            )
         }
+        VideoChoiceCard(
+            name = "My video",
+            label = "Your local clip",
+            tint = Color(0xFF8959C0),
+            selected = style == "My video",
+            onClick = {
+                onSelect("My video")
+                onPickVideo()
+            },
+        )
     }
 }
 
 @Composable
-private fun StoryRemoteArtwork(url: String, modifier: Modifier) {
+private fun VideoChoiceCard(
+    name: String,
+    label: String,
+    tint: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(17.dp)
+    Box(
+        Modifier.width(126.dp).height(98.dp)
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(tint, Color(0xFF071424))))
+            .border(
+                if (selected) 2.dp else 1.dp,
+                if (selected) Color(0xFFE5C6FF) else Color(0x887C91AD),
+                shape,
+            )
+            .clickable(onClick = onClick)
+    ) {
+        Icon(
+            if (name == "My video") Icons.Default.VideoLibrary
+            else Icons.Default.PlayCircleOutline,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = .67f),
+            modifier = Modifier.align(Alignment.TopEnd).padding(7.dp).size(22.dp),
+        )
+        Column(
+            Modifier.align(Alignment.BottomStart).padding(horizontal = 10.dp, vertical = 9.dp)
+        ) {
+            Text(name, color = Color.White, fontSize = 14.sp,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(label, color = Color(0xFFE6EAF1), fontSize = 10.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+private sealed interface ClipLoad {
+    data class Downloading(val percent: Int) : ClipLoad
+    data class Ready(val uri: Uri) : ClipLoad
+    data class Failed(val message: String) : ClipLoad
+}
+
+/**
+ * Downloads once to private offline storage, then loops video silently.
+ * The audiobook's separate MediaController remains untouched throughout.
+ */
+@Composable
+internal fun StoryLicensedVideoBackground(
+    clip: StoryLicensedClip,
+    reduceMotion: Boolean,
+) {
     val context = LocalContext.current
-    val request = remember(url, context) {
-        ImageRequest.Builder(context)
-            .data(url)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .crossfade(true)
-            .build()
-    }
-    AsyncImage(
-        model = request,
-        contentDescription = "Free CC0 game scenery by Kenney",
-        contentScale = ContentScale.Crop,
-        modifier = modifier,
-    )
-}
-
-@Composable
-internal fun StoryKenneyBackdrop(preset: StoryBackdropPreset, reduceMotion: Boolean) {
-    val transition = rememberInfiniteTransition(label = "licensed landscape parallax")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(35_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "slow parallax",
-    )
-    Box(Modifier.fillMaxSize().background(Color(0xFF131F30))) {
-        // The gradients are the offline fallback: Kenney's image is cached
-        // after the first successful online visit.
-        Box(Modifier.fillMaxSize().background(
-            Brush.verticalGradient(
-                listOf(preset.accent.copy(alpha = .72f), Color(0xFF0C1B2B), Color(0xFF071027))
-            )
-        ))
-        preset.sceneImage?.let { imageUrl ->
-            StoryRemoteArtwork(
-                imageUrl,
-                modifier = Modifier.fillMaxSize().graphicsLayer {
-                    scaleX = 1.24f
-                    scaleY = 1.24f
-                    translationX = if (reduceMotion) 0f else (phase - .5f) * size.width * .17f
-                    translationY = if (reduceMotion) 0f else
-                        sin(phase.toDouble() * 6.28318).toFloat() * size.height * .018f
-                },
-            )
+    val cache = remember(context) { StoryVideoCache(context) }
+    var retry by remember(clip.id) { mutableIntStateOf(0) }
+    val state by produceState<ClipLoad>(
+        initialValue = ClipLoad.Downloading(0),
+        clip.id, retry,
+    ) {
+        value = ClipLoad.Downloading(0)
+        try {
+            val file = cache.acquire(clip) { progress ->
+                withContext(Dispatchers.Main) { value = ClipLoad.Downloading(progress) }
+            }
+            value = ClipLoad.Ready(Uri.fromFile(file))
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (error: Exception) {
+            value = ClipLoad.Failed(error.message ?: "Unable to load licensed video.")
         }
-        // Subtle atmospheric flecks animate independently of the static art.
-        Canvas(Modifier.fillMaxSize()) {
-            for (i in 0 until 28) {
-                val fx = ((i * .6180339f + if (reduceMotion) 0f else phase * .12f) % 1f)
-                val fy = ((i * .381966f + if (reduceMotion) 0f else phase * .22f) % 1f)
-                drawCircle(
-                    color = preset.accent,
-                    radius = 1.3f + i % 4,
-                    center = Offset(fx * size.width, fy * size.height),
-                    alpha = .14f + .06f * (i % 3),
-                )
+    }
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                listOf(Color(clip.color), Color(0xFF11192E), Color(0xFF060D18))
+            )
+        ), contentAlignment = Alignment.Center,
+    ) {
+        when (val current = state) {
+            is ClipLoad.Ready -> LoopingVideoBackground(
+                current.uri, videoPlaying = !reduceMotion
+            )
+            is ClipLoad.Downloading -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(Icons.Default.PlayCircleOutline, null,
+                    tint = Color.White.copy(alpha = .70f), modifier = Modifier.size(34.dp))
+                Spacer(Modifier.height(8.dp))
+                Text("Downloading " + clip.title + " · " + current.percent + "%",
+                    color = Color.White, fontSize = 13.sp)
+                Text("CC0 video · one-time download", color = Color(0xFFDAEAF4),
+                    fontSize = 11.sp)
+            }
+            is ClipLoad.Failed -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(28.dp),
+            ) {
+                Text("Couldn't load " + clip.title,
+                    color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(current.message, color = Color(0xFFDAEAF4), fontSize = 12.sp)
+                Button(onClick = { retry++ }) { Text("Retry video download") }
             }
         }
     }
