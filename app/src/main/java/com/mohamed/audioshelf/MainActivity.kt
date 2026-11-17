@@ -33,6 +33,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -699,47 +701,117 @@ private fun BookScreen(
 }
 
 @Composable
-private fun PlayerPanel(controller: MediaController, chapters: List<AudioChapter>, sleepEndsAt: Long?, onProgress: (Int, Long) -> Unit, onSleep: (Int) -> Unit) {
-    var playing by remember { mutableStateOf(controller.isPlaying) }
-    var position by remember { mutableLongStateOf(controller.currentPosition.coerceAtLeast(0)) }
-    var duration by remember { mutableLongStateOf(controller.duration.coerceAtLeast(0)) }
-    var chapterIndex by remember { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
-    var speed by remember { mutableFloatStateOf(controller.playbackParameters.speed) }
+private fun PlayerPanel(
+    controller: MediaController,
+    chapters: List<AudioChapter>,
+    sleepEndsAt: Long?,
+    onProgress: (Int, Long) -> Unit,
+    onSleep: (Int) -> Unit,
+) {
+    var playing by remember(controller) { mutableStateOf(controller.isPlaying) }
+    var position by remember(controller) { mutableLongStateOf(controller.currentPosition.coerceAtLeast(0L)) }
+    var duration by remember(controller) { mutableLongStateOf(controller.duration.coerceAtLeast(0L)) }
+    var chapterIndex by remember(controller) { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
+    var speed by remember(controller) { mutableFloatStateOf(controller.playbackParameters.speed) }
     var sleepMenu by remember { mutableStateOf(false) }
+    var scrubPosition by remember(controller) { mutableStateOf<Long?>(null) }
 
     DisposableEffect(controller) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(value: Boolean) { playing = value }
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { chapterIndex = controller.currentMediaItemIndex.coerceAtLeast(0) }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                chapterIndex = controller.currentMediaItemIndex.coerceAtLeast(0)
+                scrubPosition = null
+            }
         }
         controller.addListener(listener)
         onDispose { controller.removeListener(listener) }
     }
     LaunchedEffect(controller, playing, chapterIndex) {
         while (true) {
-            position = controller.currentPosition.coerceAtLeast(0)
-            duration = controller.duration.coerceAtLeast(0)
-            if (controller.mediaItemCount > 0) onProgress(controller.currentMediaItemIndex, position)
+            if (scrubPosition == null) position = controller.currentPosition.coerceAtLeast(0L)
+            duration = controller.duration.takeIf { it > 0L }
+                ?: chapters.getOrNull(controller.currentMediaItemIndex)?.durationMs?.coerceAtLeast(0L)
+                ?: 0L
+            if (controller.mediaItemCount > 0) onProgress(controller.currentMediaItemIndex, controller.currentPosition.coerceAtLeast(0L))
             delay(1000)
         }
     }
 
+    fun seekBy(seconds: Int) {
+        if (chapters.isEmpty() || controller.mediaItemCount == 0) return
+        val index = controller.currentMediaItemIndex.coerceIn(0, minOf(chapters.lastIndex, controller.mediaItemCount - 1))
+        val durations = chapters.mapIndexed { i, chapter ->
+            if (i == index && controller.duration > 0L) controller.duration else chapter.durationMs
+        }
+        val target = StorySeek.byOffset(
+            durationsMs = durations,
+            currentIndex = index,
+            currentPositionMs = controller.currentPosition.coerceAtLeast(0L),
+            offsetMs = seconds * 1000L,
+        )
+        val nextIndex = target.chapterIndex.coerceIn(0, controller.mediaItemCount - 1)
+        controller.seekTo(nextIndex, target.positionMs)
+        chapterIndex = nextIndex
+        position = target.positionMs
+        scrubPosition = null
+        onProgress(nextIndex, target.positionMs)
+    }
+
+    val canSeek = chapters.isNotEmpty() && controller.mediaItemCount > 0
     Surface(tonalElevation = 6.dp, shadowElevation = 8.dp) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Text(chapters.getOrNull(chapterIndex)?.title ?: "Now playing", maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-            Slider(
-                value = if (duration > 0) position.toFloat().coerceIn(0f, duration.toFloat()) else 0f,
-                onValueChange = { position = it.roundToLong() },
-                onValueChangeFinished = { controller.seekTo(position) },
-                valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text(
+                chapters.getOrNull(chapterIndex)?.title ?: "Now playing",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = FontWeight.SemiBold,
             )
+            Slider(
+                value = if (duration > 0L) (scrubPosition ?: position).toFloat().coerceIn(0f, duration.toFloat()) else 0f,
+                onValueChange = { scrubPosition = it.roundToLong().coerceIn(0L, duration) },
+                onValueChangeFinished = {
+                    scrubPosition?.let { target ->
+                        if (canSeek) {
+                            val index = controller.currentMediaItemIndex.coerceIn(0, controller.mediaItemCount - 1)
+                            controller.seekTo(index, target)
+                            chapterIndex = index
+                            position = target
+                            onProgress(index, target)
+                        }
+                    }
+                    scrubPosition = null
+                },
+                valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
+                enabled = canSeek && duration > 0L,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(StorySeek.clock(scrubPosition ?: position), style = MaterialTheme.typography.labelSmall)
+                Text(if (duration > 0L) StorySeek.clock(duration) else "--:--", style = MaterialTheme.typography.labelSmall)
+            }
+            Row(
+                Modifier.fillMaxWidth().padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                PlayerSeekButton(-30, canSeek) { seekBy(-30) }
+                PlayerSeekButton(-10, canSeek) { seekBy(-10) }
+                FilledIconButton(
+                    onClick = { if (playing) controller.pause() else controller.play() },
+                    enabled = canSeek,
+                    modifier = Modifier.size(52.dp),
+                ) {
+                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, if (playing) "Pause" else "Play")
+                }
+                PlayerSeekButton(10, canSeek) { seekBy(10) }
+                PlayerSeekButton(30, canSeek) { seekBy(30) }
+            }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton({ speed = if (speed >= 2f) .5f else speed + .25f; controller.setPlaybackSpeed(speed) }) { Text("${speed}x") }
-                IconButton({ controller.seekToPreviousMediaItem() }) { Icon(Icons.Default.SkipPrevious, null) }
-                FilledIconButton({ if (playing) controller.pause() else controller.play() }) { Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, null) }
-                IconButton({ controller.seekToNextMediaItem() }) { Icon(Icons.Default.SkipNext, null) }
+                IconButton({ controller.seekToPreviousMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipPrevious, "Previous chapter") }
+                IconButton({ controller.seekToNextMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipNext, "Next chapter") }
                 Box {
-                    IconButton({ sleepMenu = true }) { Icon(Icons.Default.Bedtime, null, tint = if (sleepEndsAt != null) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
+                    IconButton({ sleepMenu = true }) { Icon(Icons.Default.Bedtime, "Sleep timer", tint = if (sleepEndsAt != null) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                     DropdownMenu(sleepMenu, { sleepMenu = false }) {
                         listOf(15, 30, 45, 60).forEach { minutes -> DropdownMenuItem({ Text("$minutes minutes") }, { onSleep(minutes); sleepMenu = false }) }
                         DropdownMenuItem({ Text("Cancel timer") }, { onSleep(0); sleepMenu = false })
@@ -747,6 +819,18 @@ private fun PlayerPanel(controller: MediaController, chapters: List<AudioChapter
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PlayerSeekButton(seconds: Int, enabled: Boolean, onClick: () -> Unit) {
+    val description = if (seconds > 0) "Skip forward $seconds seconds" else "Skip backward ${-seconds} seconds"
+    FilledTonalIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(48.dp).semantics { contentDescription = description },
+    ) {
+        Text(if (seconds > 0) "+${seconds}s" else "${seconds}s", style = MaterialTheme.typography.labelMedium)
     }
 }
 
