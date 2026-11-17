@@ -123,11 +123,17 @@ fun AnimatedLibraryScreen(
                 it.authors.contains(search, ignoreCase = true)
         }
     }
+    // Keep a full bookcase visible on portrait phones even if only one book is saved.
+    // Shelves are laid out lazily so larger libraries do not compose every cover.
+    val shelfRows = remember(filtered) { filtered.chunked(3) }
+    val shelfCount = maxOf(4, shelfRows.size)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(
+            if (style == LibraryVisualStyle.Walnut) 0.dp else 12.dp
+        ),
     ) {
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp)) {
@@ -217,10 +223,15 @@ fun AnimatedLibraryScreen(
                 }
             }
         } else if (style == LibraryVisualStyle.Walnut) {
-            items(filtered.chunked(3), key = { row ->
-                row.joinToString("|") { "${it.sourceId}:${it.id}" }
-            }) { row ->
-                WoodenShelfRow(row, progressFor, motion, onBook)
+            // No gaps between rows: the wooden case continues down the screen.
+            item { Spacer(Modifier.height(12.dp)) }
+            items(shelfCount, key = { index -> "wooden-shelf-$index" }) { index ->
+                WoodenShelfRow(
+                    books = shelfRows.getOrElse(index) { emptyList() },
+                    progressFor = progressFor,
+                    motion = motion,
+                    onBook = onBook,
+                )
             }
         } else if (style == LibraryVisualStyle.Aurora) {
             items(filtered.chunked(2), key = { row -> row.joinToString("|") { "${it.sourceId}:${it.id}" } }) { row ->
