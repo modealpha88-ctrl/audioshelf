@@ -13,8 +13,8 @@ android {
         applicationId = "com.mohamed.audioshelf"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "0.5.12"
+        versionCode = 20
+        versionName = "0.5.13"
     }
 
     buildFeatures { compose = true }
