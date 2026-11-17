@@ -302,8 +302,9 @@ fun AnimatedLibraryScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                     LibraryVisualStyle.Paper -> PaperConceptCard(
-                        book, progressFor(book), motion, { onBook(book) },
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                        book = book, progress = progressFor(book), motion = motion,
+                        onOpen = { onBook(book) }, onResume = { onResumeBook(book) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                     else -> Unit
                 }
