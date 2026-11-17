@@ -8,6 +8,30 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
+## Library concepts and immersive themes (v0.5.18)
+
+AudioShelf now implements three distinct Compose library presentations from the
+approved visual concepts, alongside the existing Walnut Shelf:
+
+- **Aurora Gallery**: animated cyan/violet atmosphere, responsive two-column
+  cover gallery, luminous card edges, and optimized approved concept banner.
+- **Cinema Stack**: moody, illustrated landscape cards, projector banner,
+  optimized visual scenes for Dracula and The Final Empire, and a resume-playback
+  button which opens the player after chapter loading.
+- **Paper Library**: warm parchment background, editorial serif book titles,
+  matching light bottom navigation, optimized reading-room banner, readable
+  progress indicators, and a working details/resume menu.
+
+All screens retain live search, real audiobook metadata, cover lookup, progress,
+and the saved library. The Motion setting controls ambient and entrance animation;
+the selected library theme persists. The original Walnut shelves remain available.
+The packaged visual assets are compressed, generated artwork from the approved
+concepts. Other cover art comes from the existing provider/metadata path; unknown
+titles still get the app's safe fallback, rather than falsely assigning artwork.
+
+The artistic landscapes and background motions adapt the approved static mockups
+to real scrolling Android UI. They are not a pixel-perfect screenshot overlay.
+
 ## Full portrait bookshelves and complete cover art (v0.5.17)
 
 Walnut Shelf now displays at least four continuous wood shelves in portrait mode,
