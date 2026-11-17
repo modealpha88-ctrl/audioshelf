@@ -94,6 +94,20 @@ partially finished, exports contain only completed sections. Speech recognition
 can mishear names and invented vocabulary; the generated file is not an
 official audiobook transcript.
 
+## Video availability and caption-safe loading (v0.5.10)
+
+Wikimedia Commons can return HTTP 429 when its servers restrict downloads.
+AudioShelf now identifies its client with a project URL, respects the
+`Retry-After` response (or conservatively cools down for ten minutes), and
+stores that cooldown across screens and app launches to avoid repeated
+requests. The status and retry/local-file options are located directly
+below the video choices, **never across the center captions**. Video playback
+and speech captions remain independent if a background cannot load.
+Preview cards extract frames from locally cached videos and no longer trigger
+separate remote thumbnail requests that could worsen rate limiting.
+Existing cached files remain in app-private storage; all audiobook progress,
+transcripts, and custom videos are preserved.
+
 ## Licensed portrait video backgrounds (v0.5.9)
 
 The old static Forest, Castle, Desert, Autumn, Parkour, Starfield and Orbs

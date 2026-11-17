@@ -132,6 +132,9 @@ internal fun StoryMode(
     var dimBackground by rememberSaveable(book.id) {
         mutableStateOf(storyPreferences.getFloat("dim_" + book.id, .22f))
     }
+    var videoStatus by remember(style) { mutableStateOf<String?>(null) }
+    var videoFailed by remember(style) { mutableStateOf(false) }
+    var videoRetry by remember(style) { mutableIntStateOf(0) }
     var reduceMotion by rememberSaveable(book.id) {
         mutableStateOf(storyPreferences.getBoolean("reduce_motion_" + book.id, false))
     }
@@ -243,8 +246,18 @@ internal fun StoryMode(
             when {
                 selected == "My video" && videoUri != null ->
                     LoopingVideoBackground(videoUri, videoPlaying = !reduceMotion)
-                clip != null -> StoryLicensedVideoBackground(clip, reduceMotion)
-                else -> StoryLicensedVideoBackground(StoryLicensedVideos.clips.first(), reduceMotion)
+                clip != null -> StoryLicensedVideoBackground(
+                    clip = clip,
+                    reduceMotion = reduceMotion,
+                    retryToken = videoRetry,
+                    onStatus = { message, failed ->
+                        if (selected == style) {
+                            videoStatus = message
+                            videoFailed = failed
+                        }
+                    },
+                )
+                else -> Box(Modifier.fillMaxSize().background(Color(0xFF061426)))
             }
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dimBackground)))
@@ -270,6 +283,38 @@ internal fun StoryMode(
                 onSelect = { style = it },
                 onPickVideo = onPickVideo,
             )
+            videoStatus?.let { message ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xDF071423),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            message,
+                            color = if (videoFailed) Color(0xFFFFD0B8) else Color(0xFFDBECF6),
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (videoFailed) {
+                            androidx.compose.material3.TextButton(onClick = { videoRetry++ }) {
+                                Text("Retry")
+                            }
+                            androidx.compose.material3.TextButton(onClick = {
+                                style = "My video"
+                                onPickVideo()
+                            }) {
+                                Text("Local")
+                            }
+                        }
+                    }
+                }
+            }
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,

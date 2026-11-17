@@ -1,6 +1,11 @@
 package com.mohamed.audioshelf
 
 import android.net.Uri
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /** The selector contains exclusively verified CC0 video loops and My Video. */
@@ -62,7 +68,7 @@ internal fun StoryBackdropSelector(
                 name = clip.title,
                 label = clip.subtitle,
                 tint = Color(clip.color),
-                posterUrl = clip.posterUrl,
+                clip = clip,
                 selected = style == clip.title,
                 onClick = { onSelect(clip.title) },
             )
@@ -71,7 +77,7 @@ internal fun StoryBackdropSelector(
             name = "My video",
             label = "Your local clip",
             tint = Color(0xFF8959C0),
-            posterUrl = null,
+            clip = null,
             selected = style == "My video",
             onClick = {
                 onSelect("My video")
@@ -86,11 +92,37 @@ private fun VideoChoiceCard(
     name: String,
     label: String,
     tint: Color,
-    posterUrl: String?,
+    clip: StoryLicensedClip?,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(17.dp)
+    val context = LocalContext.current
+    // No thumbnail network calls; extract a frame from each downloaded local file.
+    val preview by produceState<Bitmap?>(initialValue = null, clip?.id, selected) {
+        if (clip != null) {
+            val cache = StoryVideoCache(context)
+            val tries = if (selected) 25 else 1
+            repeat(tries) {
+                val file = cache.cached(clip)
+                if (file != null) {
+                    value = withContext(Dispatchers.IO) {
+                        val retriever = MediaMetadataRetriever()
+                        try {
+                            retriever.setDataSource(file.absolutePath)
+                            retriever.getFrameAtTime(500_000L)
+                        } catch (_: Exception) {
+                            null
+                        } finally {
+                            retriever.release()
+                        }
+                    }
+                    return@produceState
+                }
+                if (selected) delay(2000)
+            }
+        }
+    }
     Box(
         Modifier.width(126.dp).height(98.dp)
             .clip(shape)
@@ -102,9 +134,9 @@ private fun VideoChoiceCard(
             )
             .clickable(onClick = onClick)
     ) {
-        if (posterUrl != null) {
-            AsyncImage(
-                model = posterUrl,
+        if (preview != null) {
+            Image(
+                bitmap = preview!!.asImageBitmap(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -146,13 +178,14 @@ private sealed interface ClipLoad {
 internal fun StoryLicensedVideoBackground(
     clip: StoryLicensedClip,
     reduceMotion: Boolean,
+    retryToken: Int,
+    onStatus: (String?, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val cache = remember(context) { StoryVideoCache(context) }
-    var retry by remember(clip.id) { mutableIntStateOf(0) }
     val state by produceState<ClipLoad>(
         initialValue = ClipLoad.Downloading(0),
-        clip.id, retry,
+        clip.id, retryToken,
     ) {
         value = ClipLoad.Downloading(0)
         try {
@@ -166,37 +199,25 @@ internal fun StoryLicensedVideoBackground(
             value = ClipLoad.Failed(error.message ?: "Unable to load licensed video.")
         }
     }
+    // Report status to the top HUD. Never draw failures over timed words.
+    LaunchedEffect(state) {
+        when (val current = state) {
+            is ClipLoad.Ready -> onStatus(null, false)
+            is ClipLoad.Downloading -> onStatus(
+                "Downloading " + clip.title + " · " + current.percent + "%", false
+            )
+            is ClipLoad.Failed -> onStatus(current.message, true)
+        }
+    }
     Box(
         Modifier.fillMaxSize().background(
             Brush.verticalGradient(
                 listOf(Color(clip.color), Color(0xFF11192E), Color(0xFF060D18))
             )
-        ), contentAlignment = Alignment.Center,
+        )
     ) {
-        when (val current = state) {
-            is ClipLoad.Ready -> LoopingVideoBackground(
-                current.uri, videoPlaying = !reduceMotion
-            )
-            is ClipLoad.Downloading -> Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(Icons.Default.PlayCircleOutline, null,
-                    tint = Color.White.copy(alpha = .70f), modifier = Modifier.size(34.dp))
-                Spacer(Modifier.height(8.dp))
-                Text("Downloading " + clip.title + " · " + current.percent + "%",
-                    color = Color.White, fontSize = 13.sp)
-                Text("CC0 video · one-time download", color = Color(0xFFDAEAF4),
-                    fontSize = 11.sp)
-            }
-            is ClipLoad.Failed -> Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(28.dp),
-            ) {
-                Text("Couldn't load " + clip.title,
-                    color = Color.White, fontWeight = FontWeight.SemiBold)
-                Text(current.message, color = Color(0xFFDAEAF4), fontSize = 12.sp)
-                Button(onClick = { retry++ }) { Text("Retry video download") }
-            }
+        (state as? ClipLoad.Ready)?.let { ready ->
+            LoopingVideoBackground(ready.uri, videoPlaying = !reduceMotion)
         }
     }
 }
