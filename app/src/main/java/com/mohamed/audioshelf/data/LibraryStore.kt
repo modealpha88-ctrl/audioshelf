@@ -26,6 +26,17 @@ class LibraryStore(context: Context) {
         return added
     }
 
+    /** Persist matched artwork without changing the saved book's identity or progress. */
+    fun updateCover(book: AudioBook, coverUrl: String) {
+        if (!coverUrl.startsWith("https://covers.openlibrary.org/b/id/")) return
+        val items = books().toMutableList()
+        val index = items.indexOfFirst { it.id == book.id && it.sourceId == book.sourceId }
+        if (index < 0 || items[index].coverUrl.isNotBlank()) return
+        items[index] = items[index].copy(coverUrl = coverUrl)
+        val array = JSONArray().apply { items.forEach { put(it.toJson()) } }
+        prefs.edit().putString(KEY_BOOKS, array.toString()).apply()
+    }
+
     fun progress(book: AudioBook): ListeningProgress {
         val key = "${book.sourceId}:${book.id}"
         val json = runCatching { JSONObject(prefs.getString(KEY_PROGRESS, "{}")) }.getOrDefault(JSONObject())
