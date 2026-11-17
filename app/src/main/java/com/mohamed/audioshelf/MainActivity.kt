@@ -224,7 +224,10 @@ private fun AudioShelfApp(
                 )
             } else when (pageTab) {
                 HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
-                HomeTab.Library -> AnimatedLibraryScreen(pageState.library, viewModel::progress, viewModel::select)
+                HomeTab.Library -> AnimatedLibraryScreen(
+                    pageState.library, viewModel::progress, viewModel::select,
+                    onRefreshCovers = viewModel::refreshMissingCovers
+                )
                 HomeTab.Sources -> SourcesScreen(
                     state = pageState,
                     isInstalled = viewModel::isProviderInstalled,
