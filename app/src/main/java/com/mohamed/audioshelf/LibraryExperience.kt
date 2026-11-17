@@ -183,25 +183,11 @@ fun AnimatedLibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(9.dp),
             ) {
                 items(LibraryVisualStyle.entries) { option ->
-                    OutlinedCard(
+                    androidx.compose.material3.FilterChip(
+                        selected = style == option,
                         onClick = { onStyle(option) },
-                        colors = CardDefaults.outlinedCardColors(
-                            containerColor = if (style == option) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surface,
-                        ),
-                        modifier = Modifier.width(145.dp),
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Box(Modifier.fillMaxWidth().height(24.dp)
-                                .clip(RoundedCornerShape(7.dp))
-                                .background(Brush.horizontalGradient(palette(option))))
-                            Spacer(Modifier.height(8.dp))
-                            Text(option.title, style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (style == option) FontWeight.Bold else FontWeight.Medium)
-                            Text(option.tagline, style = MaterialTheme.typography.labelSmall,
-                                maxLines = 2)
-                        }
-                    }
+                        label = { Text(option.title, maxLines = 1) },
+                    )
                 }
             }
         }
@@ -365,10 +351,29 @@ private fun AnimatedLibraryTile(
 @Composable
 private fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
     val fallback: @Composable () -> Unit = {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Headphones, "Cover not available",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(
+            Modifier.fillMaxSize().background(Brush.verticalGradient(
+                listOf(Color(0xFF445567), Color(0xFF262D43))
+            )).padding(10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("AUDIOBOOK", color = Color(0xFFE1D0B9),
+                    style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.height(7.dp))
+                Text(book.title, color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold, maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                if (book.authors.isNotBlank()) {
+                    Spacer(Modifier.height(7.dp))
+                    Text(book.authors, color = Color(0xFFDDDAE4),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
         }
     }
     if (book.coverUrl.isBlank()) {
