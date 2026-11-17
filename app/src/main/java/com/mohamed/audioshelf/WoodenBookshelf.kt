@@ -43,6 +43,10 @@ import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
+/** Show a minimum of four shelves while preserving room for larger libraries. */
+internal fun woodenShelfRowCount(bookCount: Int): Int =
+    maxOf(4, (bookCount.coerceAtLeast(0) / 3) + if (bookCount % 3 == 0) 0 else 1)
+
 /**
  * A portrait-friendly, actual three-dimensional bookshelf rather than a banner
  * over ordinary list cards. Each book remains independently clickable.
@@ -56,7 +60,7 @@ fun WoodenShelfRow(
     onBook: (AudioBook) -> Unit,
 ) {
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(5.dp))
+        Modifier.fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
                     listOf(Color(0xFF54372A), Color(0xFFB58B62),
@@ -151,7 +155,7 @@ private fun StandingBook(
     Column(
         Modifier.widthIn(max = 106.dp)
             .width(99.dp)
-            .height(184.dp)
+            .height(173.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -174,10 +178,13 @@ private fun StandingBook(
                 SubcomposeAsyncImage(
                     model = book.coverUrl,
                     contentDescription = "${book.title} cover; open audiobook",
-                    contentScale = ContentScale.Crop,
+                    // Show the whole printed front, including the title and author.
+                    // Crop previously cut off the sides of both books.
+                    contentScale = ContentScale.Fit,
                     loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
                     error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                        .background(Color(0xFF2A2422)),
                 )
             }
         }
