@@ -82,7 +82,7 @@ internal object StoryLicensedVideos {
         when {
             name == "My video" -> name
             find(name.orEmpty()) != null || StoryAnimation.find(name) != null -> requireNotNull(name)
-            null -> StoryAnimation.Aurora.title
+            name == null -> StoryAnimation.Aurora.title
             else -> clips.first().title
         }
 }
