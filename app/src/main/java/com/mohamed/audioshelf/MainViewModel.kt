@@ -385,6 +385,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Give offline or previously unmatched books another artwork lookup attempt. */
+    fun refreshMissingCovers() {
+        coverAttempts.clear()
+        resolveMissingCovers(_state.value.library)
+    }
+
     fun isSaved(book: AudioBook) = _state.value.library.any { it.id == book.id && it.sourceId == book.sourceId }
     fun progress(book: AudioBook) = store.progress(book)
     fun saveProgress(book: AudioBook, chapters: List<AudioChapter>, chapter: Int, positionMs: Long) {
