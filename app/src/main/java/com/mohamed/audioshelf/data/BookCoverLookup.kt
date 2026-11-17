@@ -13,11 +13,9 @@ import java.net.URLEncoder
 import java.util.Locale
 
 /**
- * Resolves missing cover art using Open Library's public metadata API.
- *
- * A valid provider cover is always preferred. Never guess the artwork from a
- * remote URL: only verified numeric cover IDs returned by Open Library are used.
- * Search errors must not interrupt playback, the library, or offline browsing.
+ * Looks up public Open Library book-cover metadata, not copyrighted audio.
+ * Existing publisher/provider artwork always wins. A network failure never
+ * prevents library browsing or audio playback.
  */
 class BookCoverLookup {
     private val requestMutex = Mutex()
@@ -25,8 +23,7 @@ class BookCoverLookup {
     suspend fun find(book: AudioBook): String? {
         if (book.coverUrl.isNotBlank() || book.title.isBlank()) return null
         return requestMutex.withLock {
-            // Respect the shared public API rather than bulk-spamming parallel searches.
-            delay(750)
+            delay(750) // Limit requests to this public community API.
             withContext(Dispatchers.IO) {
                 runCatching { lookup(book) }.getOrNull()
             }
@@ -34,51 +31,76 @@ class BookCoverLookup {
     }
 
     private fun lookup(book: AudioBook): String? {
-        val title = book.title
-            .substringBefore(" (")
-            .replace('_', ' ')
-            .trim()
-            .take(150)
-        if (title.isBlank()) return null
-        val encoded = URLEncoder.encode(title, "UTF-8")
-        val address = "https://openlibrary.org/search.json?title=$encoded&fields=title,author_name,cover_i&limit=10"
-        val connection = URL(address).openConnection() as HttpURLConnection
-        return try {
-            connection.connectTimeout = 6500
-            connection.readTimeout = 6500
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "AudioShelf/0.5 (https://github.com/modealpha88-ctrl/audioshelf)")
-            if (connection.responseCode !in 200..299) return null
-            val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val docs = JSONObject(response).optJSONArray("docs") ?: return null
-            var bestScore = 0
-            var coverId: Long? = null
-            for (i in 0 until minOf(docs.length(), 10)) {
-                val doc = docs.optJSONObject(i) ?: continue
-                val id = doc.optLong("cover_i", 0)
-                if (id <= 0) continue
-                val authors = doc.optJSONArray("author_name")
-                val candidateAuthors = if (authors == null) emptyList() else
-                    (0 until authors.length()).map { authors.optString(it) }
-                val score = scoreCoverCandidate(
-                    book.title, book.authors, doc.optString("title"), candidateAuthors
-                )
-                if (score > bestScore) {
-                    bestScore = score
-                    coverId = id
+        // Search canonical book titles first rather than edition marketing labels
+        // such as "The Final Empire: Mistborn, Book 1 (Unabridged)".
+        val searches = coverSearchTitles(book.title).take(2)
+        for ((index, title) in searches.withIndex()) {
+            if (index > 0) Thread.sleep(750)
+            val encoded = URLEncoder.encode(title.take(150), "UTF-8")
+            val address = "https://openlibrary.org/search.json?title=$encoded&fields=title,author_name,cover_i&limit=12"
+            val connection = URL(address).openConnection() as HttpURLConnection
+            try {
+                connection.connectTimeout = 6500
+                connection.readTimeout = 6500
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("User-Agent",
+                    "AudioShelf/0.5 (https://github.com/modealpha88-ctrl/audioshelf)")
+                if (connection.responseCode !in 200..299) continue
+                val docs = JSONObject(
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                ).optJSONArray("docs") ?: continue
+                var bestScore = 0
+                var coverId: Long? = null
+                for (i in 0 until minOf(docs.length(), 12)) {
+                    val doc = docs.optJSONObject(i) ?: continue
+                    val id = doc.optLong("cover_i", 0L)
+                    if (id <= 0L) continue
+                    val authors = doc.optJSONArray("author_name")
+                    val candidateAuthors = if (authors == null) emptyList() else
+                        (0 until authors.length()).map { authors.optString(it) }
+                    val score = scoreCoverCandidate(
+                        book.title, book.authors, doc.optString("title"), candidateAuthors
+                    )
+                    if (score > bestScore) {
+                        bestScore = score
+                        coverId = id
+                    }
                 }
+                if (bestScore >= 90 && coverId != null) {
+                    return "https://covers.openlibrary.org/b/id/$coverId-L.jpg"
+                }
+            } finally {
+                connection.disconnect()
             }
-            coverId?.let { "https://covers.openlibrary.org/b/id/$it-L.jpg" }
-        } finally {
-            connection.disconnect()
         }
+        return null
     }
 }
 
+/** Title variations are used only for bibliographic matching, never for audio access. */
+internal fun coverSearchTitles(rawTitle: String): List<String> {
+    val withoutEdition = rawTitle
+        .replace(Regex("""\s*\((unabridged|abridged|audiobook|audio edition|dramatized)\)""",
+            RegexOption.IGNORE_CASE), "")
+        .replace('_', ' ')
+        .trim()
+    // A ":" often separates the published title from the series description.
+    val primary = withoutEdition.substringBefore(':').trim()
+        .replace(Regex("""\s*,?\s*(book|volume|vol\.?)\s*#?\d+\s*$""",
+            RegexOption.IGNORE_CASE), "").trim()
+    val secondary = withoutEdition.substringAfter(':', "").trim()
+        .replace(Regex("""\s*,?\s*(book|volume|vol\.?)\s*#?\d+.*$""",
+            RegexOption.IGNORE_CASE), "").trim()
+
+    return listOf(primary, secondary, withoutEdition)
+        .map { it.trim() }
+        .filter { canonicalCoverText(it).length >= 4 }
+        .distinctBy { canonicalCoverText(it) }
+}
+
 /**
- * Exact title matching is required when there is no trustworthy author.
- * Prefix/subtitle matching is only permitted when the author also matches.
- * This prevents unrelated books receiving misleading cover art.
+ * Match by the core title AND author. A series name alone is not an acceptable
+ * cover match when the author differs.
  */
 internal fun scoreCoverCandidate(
     bookTitle: String,
@@ -86,17 +108,23 @@ internal fun scoreCoverCandidate(
     candidateTitle: String,
     candidateAuthors: List<String>,
 ): Int {
-    val requested = canonicalCoverText(bookTitle.substringBefore(" ("))
+    val variants = coverSearchTitles(bookTitle).map(::canonicalCoverText)
     val actual = canonicalCoverText(candidateTitle)
-    if (requested.isBlank() || actual.isBlank()) return 0
-    val exact = requested == actual
-    val sameCoreTitle = minOf(requested.length, actual.length) >= 11 &&
-        (requested.startsWith("$actual ") || actual.startsWith("$requested "))
-    if (!exact && !sameCoreTitle) return 0
+    if (variants.isEmpty() || actual.isBlank()) return 0
+
+    val primary = variants.first()
+    val exact = actual == primary
+    val otherExact = actual in variants
+    val sameCoreTitle = variants.any { variant ->
+        minOf(variant.length, actual.length) >= 11 &&
+            (variant.startsWith("$actual ") || actual.startsWith("$variant "))
+    }
+    if (!otherExact && !sameCoreTitle) return 0
 
     val author = canonicalCoverText(bookAuthor)
     val authorIsUseful = author.isNotBlank() &&
-        author !in setOf("local audiobook", "unknown", "unknown author", "various", "anonymous")
+        author !in setOf("local audiobook", "unknown", "unknown author",
+            "various", "anonymous")
     if (!authorIsUseful) return if (exact) 100 else 0
 
     val authorTokens = author.split(' ').filter { it.length >= 3 }
@@ -105,12 +133,17 @@ internal fun scoreCoverCandidate(
         normalized == author || (authorTokens.size >= 2 &&
             authorTokens.last() in normalized.split(' '))
     }
-    return if (matched) (if (exact) 120 else 90) else 0
+    if (!matched) return 0
+    return when {
+        exact -> 120
+        otherExact -> 110
+        else -> 90
+    }
 }
 
 private fun canonicalCoverText(text: String): String =
     text.lowercase(Locale.ROOT)
         .replace('_', ' ')
-        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .replace(Regex("""[^\p{L}\p{N}]+"""), " ")
         .trim()
-        .replace(Regex("\\s+"), " ")
+        .replace(Regex("""\s+"""), " ")
