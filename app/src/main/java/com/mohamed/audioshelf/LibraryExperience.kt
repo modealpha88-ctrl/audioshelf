@@ -110,6 +110,7 @@ fun AnimatedLibraryScreen(
     onBook: (AudioBook) -> Unit,
     onResumeBook: (AudioBook) -> Unit,
     onRefreshCovers: () -> Unit,
+    onStyleSelected: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -205,7 +206,7 @@ fun AnimatedLibraryScreen(
                 items(LibraryVisualStyle.entries) { option ->
                     androidx.compose.material3.FilterChip(
                         selected = style == option,
-                        onClick = { onStyle(option) },
+                        onClick = { onStyle(option); onStyleSelected(option.name) },
                         label = { Text(option.title, maxLines = 1) },
                         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                             containerColor = if (style == LibraryVisualStyle.Paper)
