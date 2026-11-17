@@ -8,6 +8,17 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
+## Story Mode seeking (v0.5.11)
+
+Story Mode now includes a touch seek bar with elapsed and total chapter time,
+four skip controls (**−30 seconds**, **−10 seconds**, **+10 seconds**, and
+**+30 seconds**), and compact previous/next-chapter controls. Skip actions
+cross known chapter boundaries correctly, including clipped embedded chapters
+of a local M4B file, while preserving the chapter-relative Media3 seek position,
+full-book subtitle alignment, and saved listening progress. The slider works
+when the playback engine reports a known chapter duration. All other Story Mode
+video loops, caption imports, and offline transcription remain unchanged.
+
 ## Current MVP
 
 - Debounced live search across all enabled catalogues
