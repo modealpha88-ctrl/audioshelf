@@ -43,6 +43,10 @@ import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
+/** Show a minimum of four shelves while preserving room for larger libraries. */
+internal fun woodenShelfRowCount(bookCount: Int): Int =
+    maxOf(4, (bookCount.coerceAtLeast(0) / 3) + if (bookCount % 3 == 0) 0 else 1)
+
 /**
  * A portrait-friendly, actual three-dimensional bookshelf rather than a banner
  * over ordinary list cards. Each book remains independently clickable.
