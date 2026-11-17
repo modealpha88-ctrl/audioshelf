@@ -28,15 +28,32 @@ class LibraryStore(context: Context) {
 
     fun progress(book: AudioBook): ListeningProgress {
         val key = "${book.sourceId}:${book.id}"
-        val json = JSONObject(prefs.getString(KEY_PROGRESS, "{}"))
+        val json = runCatching { JSONObject(prefs.getString(KEY_PROGRESS, "{}")) }.getOrDefault(JSONObject())
         val item = json.optJSONObject(key) ?: return ListeningProgress()
-        return ListeningProgress(item.optInt("chapter"), item.optLong("position"), item.optLong("updated"))
+        return ListeningProgress(
+            chapterIndex = item.optInt("chapter"),
+            positionMs = item.optLong("position"),
+            updatedAt = item.optLong("updated"),
+            chapterCount = item.optInt("chapterCount"),
+            chapterDurationMs = item.optLong("chapterDurationMs"),
+        )
     }
 
-    fun saveProgress(book: AudioBook, chapter: Int, positionMs: Long) {
+    fun saveProgress(
+        book: AudioBook,
+        chapter: Int,
+        positionMs: Long,
+        chapterCount: Int,
+        chapterDurationMs: Long,
+    ) {
         val key = "${book.sourceId}:${book.id}"
         val json = runCatching { JSONObject(prefs.getString(KEY_PROGRESS, "{}")) }.getOrDefault(JSONObject())
-        json.put(key, JSONObject().put("chapter", chapter).put("position", positionMs).put("updated", System.currentTimeMillis()))
+        json.put(key, JSONObject()
+            .put("chapter", chapter)
+            .put("position", positionMs)
+            .put("updated", System.currentTimeMillis())
+            .put("chapterCount", chapterCount)
+            .put("chapterDurationMs", chapterDurationMs))
         prefs.edit().putString(KEY_PROGRESS, json.toString()).apply()
     }
 

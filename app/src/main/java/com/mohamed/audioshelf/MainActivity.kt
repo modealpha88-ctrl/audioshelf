@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,9 +41,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +63,7 @@ import coil.compose.SubcomposeAsyncImage
 import com.google.common.util.concurrent.MoreExecutors
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
+import com.mohamed.audioshelf.model.ListeningProgress
 import com.mohamed.audioshelf.data.OfflineDownloads
 import com.mohamed.audioshelf.data.source.SourceRegistry
 import com.mohamed.audioshelf.data.source.SourceProviderDefinition
@@ -214,12 +218,12 @@ private fun AudioShelfApp(
                     },
                     onDownload = { OfflineDownloads(context).downloadBook(selected, pageState.chapters) },
                     onTorrent = { openArchiveTorrent(context, selected) },
-                    onProgress = { index, position -> viewModel.saveProgress(selected, index, position) },
+                    onProgress = { index, position -> viewModel.saveProgress(selected, pageState.chapters, index, position) },
                     onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
                 )
             } else when (pageTab) {
                 HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
-                HomeTab.Library -> LibraryScreen(pageState.library, viewModel::select)
+                HomeTab.Library -> LibraryScreen(pageState.library, viewModel::progress, viewModel::select)
                 HomeTab.Sources -> SourcesScreen(
                     state = pageState,
                     isInstalled = viewModel::isProviderInstalled,
@@ -554,7 +558,11 @@ private fun ContentList(books: List<AudioBook>, loading: Boolean, error: String?
 }
 
 @Composable
-private fun LibraryScreen(books: List<AudioBook>, onBook: (AudioBook) -> Unit) {
+private fun LibraryScreen(
+    books: List<AudioBook>,
+    progressFor: (AudioBook) -> ListeningProgress,
+    onBook: (AudioBook) -> Unit,
+) {
     Column(Modifier.fillMaxSize()) {
         LargeTopAppBar(title = { Text("Your library") })
         if (books.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -564,7 +572,77 @@ private fun LibraryScreen(books: List<AudioBook>, onBook: (AudioBook) -> Unit) {
                 Text("Add books from Browse to keep them here", style = MaterialTheme.typography.bodyMedium)
             }
         } else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(books.size, key = { "${books[it].sourceId}:${books[it].id}" }) { BookRow(books[it], onBook) }
+            items(books, key = { "${it.sourceId}:${it.id}" }) { book ->
+                val progress = progressFor(book)
+                if (book.externalUrl.isBlank() && (progress.chapterIndex > 0 || progress.positionMs > 0)) {
+                    ListeningCard(book, progress) { onBook(book) }
+                } else {
+                    BookRow(book, onBook)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ListeningCard(book: AudioBook, progress: ListeningProgress, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val count = progress.chapterCount
+    val chapter = progress.chapterIndex.coerceAtLeast(0)
+    val duration = progress.chapterDurationMs
+    val chapterFraction = if (duration > 0L) {
+        progress.positionMs.coerceIn(0L, duration).toFloat() / duration
+    } else 0f
+
+    ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.fillMaxWidth()
+                .background(Brush.linearGradient(listOf(colors.secondaryContainer, colors.surfaceContainer)))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(book.title, style = MaterialTheme.typography.titleLarge, maxLines = 2,
+                        overflow = TextOverflow.Ellipsis)
+                    if (book.authors.isNotBlank()) {
+                        Text(book.authors, style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                SubcomposeAsyncImage(
+                    model = book.coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    loading = { CoverFallback() },
+                    error = { CoverFallback() },
+                    modifier = Modifier.size(84.dp).clip(RoundedCornerShape(12.dp))
+                        .background(colors.surfaceVariant),
+                )
+            }
+            if (chapter in 0 until count && (duration > 0L || chapter > 0)) {
+                val progressFraction = (chapter + chapterFraction) / count
+                val transition = remember { Animatable(0f) }
+                LaunchedEffect(progressFraction) { transition.animateTo(progressFraction, tween(350)) }
+                val segmentCount = count.coerceAtMost(12)
+                Row(
+                    Modifier.fillMaxWidth().clearAndSetSemantics {},
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    repeat(segmentCount) { segment ->
+                        val fill = (transition.value * segmentCount - segment).coerceIn(0f, 1f)
+                        Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp))
+                            .background(colors.onSurface.copy(alpha = .15f))) {
+                            Box(Modifier.fillMaxHeight().fillMaxWidth(fill).background(colors.primary))
+                        }
+                    }
+                }
+            }
+            val chapterLabel = if (chapter in 0 until count) "Chapter ${chapter + 1} of $count"
+                else "Chapter ${chapter + 1}"
+            Text("$chapterLabel · ${formatTime(progress.positionMs.coerceAtLeast(0L))}",
+                style = MaterialTheme.typography.labelLarge)
         }
     }
 }

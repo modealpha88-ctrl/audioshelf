@@ -26,4 +26,6 @@ data class ListeningProgress(
     val chapterIndex: Int = 0,
     val positionMs: Long = 0,
     val updatedAt: Long = System.currentTimeMillis(),
+    val chapterCount: Int = 0,
+    val chapterDurationMs: Long = 0,
 )

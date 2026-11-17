@@ -328,7 +328,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             chapters.first().durationMs > 0) {
                             val target = chapters.indexOfLast { it.startMs <= old.positionMs }
                             if (target > 0) {
-                                store.saveProgress(book, target, old.positionMs - chapters[target].startMs)
+                                saveProgress(book, chapters, target, old.positionMs - chapters[target].startMs)
                             }
                         }
                     }
@@ -352,7 +352,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isSaved(book: AudioBook) = _state.value.library.any { it.id == book.id && it.sourceId == book.sourceId }
     fun progress(book: AudioBook) = store.progress(book)
-    fun saveProgress(book: AudioBook, chapter: Int, positionMs: Long) = store.saveProgress(book, chapter, positionMs)
+    fun saveProgress(book: AudioBook, chapters: List<AudioChapter>, chapter: Int, positionMs: Long) {
+        val current = chapters.getOrNull(chapter) ?: return
+        store.saveProgress(book, chapter, positionMs, chapters.size, current.durationMs)
+    }
 
     fun setSleepTimer(minutes: Int, onElapsed: () -> Unit) {
         sleepJob?.cancel()
