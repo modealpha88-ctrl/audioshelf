@@ -7,6 +7,7 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.BookCoverLookup
+import com.mohamed.audioshelf.data.LocalEmbeddedCover
 import com.mohamed.audioshelf.data.LibraryStore
 import com.mohamed.audioshelf.data.captions.TimedCaptionStore
 import com.mohamed.audioshelf.data.captions.OfflineSpeechModel
@@ -53,6 +54,7 @@ data class AudioShelfState(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val store = LibraryStore(application)
     private val coverLookup = BookCoverLookup()
+    private val embeddedCover = LocalEmbeddedCover(application)
     private val coverAttempts = mutableSetOf<String>()
     private val repositoryStore = ProviderRepositoryStore(application)
     private val _state = MutableStateFlow(
@@ -368,7 +370,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (pending.isEmpty()) return
         viewModelScope.launch {
             for (book in pending) {
-                val url = coverLookup.find(book) ?: continue
+                val url = embeddedCover.find(book) ?: coverLookup.find(book) ?: continue
                 if (store.contains(book)) store.updateCover(book, url)
                 val snapshot = _state.value
                 val matches: (AudioBook) -> Boolean = {
