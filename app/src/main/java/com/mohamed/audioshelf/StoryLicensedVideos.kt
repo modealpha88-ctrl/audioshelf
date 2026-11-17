@@ -4,6 +4,8 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -98,7 +100,11 @@ internal object StoryVideoRetryPolicy {
 
 /** Cache in private filesDir, rather than cacheDir, to preserve downloaded loops. */
 internal class StoryVideoCache(private val context: Context) {
-    companion object { private const val MAX_BYTES = 24L * 1024L * 1024L }
+    companion object {
+        private const val MAX_BYTES = 24L * 1024L * 1024L
+        // Avoid simultaneous downloads during rapid background switches/crossfades.
+        private val downloadMutex = Mutex()
+    }
     private val folder = File(context.filesDir, "licensed_story_videos")
     private val networkPreferences = context.getSharedPreferences(
         "licensed_video_download_limits", Context.MODE_PRIVATE
@@ -113,7 +119,8 @@ internal class StoryVideoCache(private val context: Context) {
     }
 
     suspend fun acquire(clip: StoryLicensedClip, onProgress: suspend (Int) -> Unit): File =
-        withContext(Dispatchers.IO) {
+        downloadMutex.withLock {
+            withContext(Dispatchers.IO) {
             cached(clip)?.let { return@withContext it }
             val remaining = cooldownRemaining()
             if (remaining > 0L) throw IOException(StoryVideoRetryPolicy.waitMessage(remaining))
@@ -194,5 +201,5 @@ internal class StoryVideoCache(private val context: Context) {
             } finally {
                 pending.delete()
             }
-        }
+        }    }
 }
