@@ -8,6 +8,21 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
+## Wooden bookcases and resilient covers (v0.5.16)
+
+The **Walnut Shelf** layout now displays upright clickable cover images inside
+actual wooden bookcases with shelf depth and optional entrance animation, inspired
+by traditional portrait bookshelf readers. Aurora, Cinema and Paper styles are
+still available through a compact style selector. In **Paper Library**, progress
+labels have readable dark contrast and progress bars no longer show an end dot.
+
+Cover lookup now prefers *embedded cover art* from local MP3/M4B files (including
+older imports) before title-and-author searching. It strips audiobook marketing
+suffixes such as "Book 1 (Unabridged)" and has a **Find covers** retry action
+in Library. Existing artwork and listening progress are preserved. If neither
+embedded art nor a verified online cover is available, the app shows a styled
+book-title placeholder.
+
 ## Animated library and automatic covers (v0.5.15)
 
 The Library has four built-in, selectable styles: **Walnut Shelf**, **Aurora Gallery**,
