@@ -31,7 +31,7 @@ class LibraryStore(context: Context) {
     /** Persist matched artwork without changing the saved book's identity or progress. */
     fun updateCover(book: AudioBook, coverUrl: String) {
         val trustedOpenLibrary = coverUrl.matches(
-            Regex("""https://covers\\.openlibrary\\.org/b/id/\\d+-L\\.jpg"""))
+            Regex("""https://covers\.openlibrary\.org/b/id/\d+-L\.jpg"""))
         val trustedLocal = if (coverUrl.startsWith("file://")) runCatching {
             val file = java.io.File(requireNotNull(android.net.Uri.parse(coverUrl).path))
             file.canonicalPath.startsWith(trustedLocalCovers) && file.isFile
