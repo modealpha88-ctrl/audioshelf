@@ -46,8 +46,11 @@ internal object StoryLicensedVideos {
             title = "Waterfall",
             subtitle = "Flowing water · 16 seconds",
             creator = "Pohled 111",
-            fileUrl = "https://upload.wikimedia.org/wikipedia/commons/0/05/" +
-                "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm",
+            // Use Wikimedia's smaller licensed VP9 480p derivative rather than
+            // transferring a full-resolution 5.35 MB original to each device.
+            fileUrl = "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/05/" +
+                "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm/" +
+                "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm.480p.vp9.webm",
             sourceUrl = "https://commons.wikimedia.org/wiki/File:Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm",
             posterUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/" +
                 "Vodop%C3%A1d_Hejlovka_%28%C5%BDelivka%29_video.webm/" +
@@ -60,8 +63,8 @@ internal object StoryLicensedVideos {
             title = "Lake Drift",
             subtitle = "Gentle lakeside motion · 6 seconds",
             creator = "Sdsecret",
-            fileUrl = "https://upload.wikimedia.org/wikipedia/commons/6/64/" +
-                "Meikarta_Lake_%28video%29.webm",
+            fileUrl = "https://upload.wikimedia.org/wikipedia/commons/transcoded/6/64/" +
+                "Meikarta_Lake_%28video%29.webm/Meikarta_Lake_%28video%29.webm.480p.vp9.webm",
             sourceUrl = "https://commons.wikimedia.org/wiki/File:Meikarta_Lake_%28video%29.webm",
             posterUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/" +
                 "Meikarta_Lake_%28video%29.webm/500px--Meikarta_Lake_%28video%29.webm.jpg",

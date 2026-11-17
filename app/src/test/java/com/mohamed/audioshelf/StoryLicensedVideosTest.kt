@@ -16,6 +16,14 @@ class StoryLicensedVideosTest {
         }
     }
 
+    @Test fun usesSmallerCompatibleVideoTranscodes() {
+        val waterfall = StoryLicensedVideos.clips.first { it.id == "waterfall" }
+        val lake = StoryLicensedVideos.clips.first { it.id == "lake_drift" }
+        assertTrue(waterfall.fileUrl.contains("/transcoded/"))
+        assertTrue(waterfall.fileUrl.endsWith(".480p.vp9.webm"))
+        assertTrue(lake.fileUrl.endsWith(".480p.vp9.webm"))
+    }
+
     @Test fun obsoleteStaticThemesMigrateWithoutClearingPreferences() {
         assertEquals("Rainy City", StoryLicensedVideos.persistedStyle("Forest"))
         assertEquals("Rainy City", StoryLicensedVideos.persistedStyle("Castle"))
