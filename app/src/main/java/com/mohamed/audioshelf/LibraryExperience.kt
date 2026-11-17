@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -136,15 +137,17 @@ fun AnimatedLibraryScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        item {
-            AnimatedLibraryBackdrop(style, motion, Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp).height(136.dp)) {
-                Column(Modifier.padding(19.dp)) {
-                    Text("A story worth returning to", style = MaterialTheme.typography.titleLarge,
-                        color = foreground(style), fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(5.dp))
-                    Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
-                        color = foreground(style).copy(alpha = 0.82f))
+        // The Walnut layout is the actual bookcase; omit its former decorative banner.
+        if (style != LibraryVisualStyle.Walnut) {
+            item {
+                AnimatedLibraryBackdrop(style, motion, Modifier.fillMaxWidth()
+                    .padding(horizontal = 16.dp).height(82.dp)) {
+                    Column(Modifier.padding(15.dp)) {
+                        Text(style.title, style = MaterialTheme.typography.titleLarge,
+                            color = foreground(style), fontWeight = FontWeight.Bold)
+                        Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
+                            color = foreground(style).copy(alpha = .82f))
+                    }
                 }
             }
         }
@@ -210,6 +213,12 @@ fun AnimatedLibraryScreen(
                         else "Try a different title or author",
                         style = MaterialTheme.typography.bodyMedium)
                 }
+            }
+        } else if (style == LibraryVisualStyle.Walnut) {
+            items(filtered.chunked(3), key = { row ->
+                row.joinToString("|") { "${it.sourceId}:${it.id}" }
+            }) { row ->
+                WoodenShelfRow(row, progressFor, motion, onBook)
             }
         } else if (style == LibraryVisualStyle.Aurora) {
             items(filtered.chunked(2), key = { row -> row.joinToString("|") { "${it.sourceId}:${it.id}" } }) { row ->
@@ -310,7 +319,7 @@ private fun AnimatedLibraryTile(
                 Text(book.authors, color = ink.copy(alpha = .7f),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BookProgressLine(progress)
+                BookProgressLine(progress, ink, if (style == LibraryVisualStyle.Paper) Color(0xFF6E4C86) else MaterialTheme.colorScheme.primary)
             }
         } else {
             Row(Modifier.fillMaxWidth().padding(12.dp),
@@ -331,7 +340,7 @@ private fun AnimatedLibraryTile(
                         Text("IN YOUR COLLECTION", color = Color(0xFFAE8058),
                             style = MaterialTheme.typography.labelSmall)
                     }
-                    BookProgressLine(progress)
+                    BookProgressLine(progress, ink, if (style == LibraryVisualStyle.Paper) Color(0xFF6E4C86) else MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -353,7 +362,7 @@ private fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
         SubcomposeAsyncImage(
             model = book.coverUrl,
             contentDescription = "${book.title} cover",
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             loading = { fallback() },
             error = { fallback() },
             modifier = modifier.clip(RoundedCornerShape(12.dp)),
@@ -372,16 +381,19 @@ private fun fraction(progress: ListeningProgress): Float {
 }
 
 @Composable
-private fun BookProgressLine(progress: ListeningProgress) {
+private fun BookProgressLine(progress: ListeningProgress, ink: Color, accent: Color) {
     if (progress.chapterCount <= 0) return
-    Spacer(Modifier.height(4.dp))
-    LinearProgressIndicator(
-        progress = { fraction(progress) },
-        modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp)),
-    )
+    Spacer(Modifier.height(5.dp))
+    // A plain track has no end-stop dot (which looked like 100% progress at zero).
+    Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp))
+        .background(ink.copy(alpha = .19f))) {
+        Box(Modifier.fillMaxWidth(fraction(progress)).fillMaxHeight()
+            .background(accent))
+    }
     Text("${(fraction(progress) * 100).toInt()}% listened · Chapter ${progress.chapterIndex + 1}",
-        style = MaterialTheme.typography.labelSmall, maxLines = 1,
-        overflow = TextOverflow.Ellipsis)
+        color = ink.copy(alpha = .82f),
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 /** A larger book-detail card opens when a library item is tapped. */
