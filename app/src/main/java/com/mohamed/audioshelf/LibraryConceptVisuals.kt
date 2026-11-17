@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -125,20 +127,33 @@ internal fun ConceptAtmosphere(style: LibraryVisualStyle, motion: Boolean,
 @Composable
 internal fun ConceptHero(style: LibraryVisualStyle, motion: Boolean,
     modifier: Modifier = Modifier) {
+    val art = when (style) {
+        LibraryVisualStyle.Aurora -> R.drawable.library_aurora_hero
+        LibraryVisualStyle.Cinema -> R.drawable.library_cinema_hero
+        LibraryVisualStyle.Paper -> R.drawable.library_paper_hero
+        LibraryVisualStyle.Walnut -> null
+    }
     Box(modifier.clip(RoundedCornerShape(25.dp))) {
-        ConceptHeroIllustration(style, motion, Modifier.fillMaxSize())
-        Column(Modifier.align(Alignment.CenterStart)
-            .padding(start = 19.dp, end = 110.dp)) {
-            Text(style.title, style = MaterialTheme.typography.headlineSmall,
-                fontFamily = if (style == LibraryVisualStyle.Paper) FontFamily.Serif
-                    else FontFamily.Default,
-                fontWeight = FontWeight.Bold, color = conceptInk(style),
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
-                fontFamily = if (style == LibraryVisualStyle.Paper) FontFamily.Serif
-                    else FontFamily.Default,
-                color = conceptInk(style).copy(alpha = .85f),
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (art == null) {
+            ConceptHeroIllustration(style, motion, Modifier.fillMaxSize())
+        } else {
+            // Assets were extracted from the user's approved concept renders.
+            // Only the banner is rasterized; text, cards and controls below remain live.
+            Image(painter = painterResource(art),
+                contentDescription = "${style.title} — ${style.tagline}",
+                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (motion && style == LibraryVisualStyle.Aurora) {
+                val transition = rememberInfiniteTransition(label = "Aurora banner glow")
+                val shift by transition.animateFloat(0f, 1f,
+                    infiniteRepeatable(tween(8500, easing = LinearEasing),
+                        RepeatMode.Reverse), label = "Light drift")
+                Box(Modifier.align(Alignment.TopEnd)
+                    .offset(x = (-20 + shift * 30).dp, y = (-58 + shift * 15).dp)
+                    .size(118.dp)
+                    .background(Brush.radialGradient(listOf(
+                        CYAN.copy(alpha = .17f), Color.Transparent
+                    )), RoundedCornerShape(80.dp)))
+            }
         }
     }
 }
@@ -320,12 +335,25 @@ internal fun CinemaConceptCard(book: AudioBook, progress: ListeningProgress,
     ) {
         Box(Modifier.fillMaxWidth().height(210.dp)) {
             CinemaBackdrop(book, motion, Modifier.fillMaxSize())
-            if (book.coverUrl.isNotBlank()) {
+            val conceptScene = when {
+                book.title.contains("dracula", ignoreCase = true) ->
+                    R.drawable.library_cinema_dracula
+                book.title.contains("final empire", ignoreCase = true) ||
+                    book.title.contains("mistborn", ignoreCase = true) ->
+                    R.drawable.library_cinema_empire
+                else -> null
+            }
+            if (conceptScene != null) {
+                Image(painter = painterResource(conceptScene), contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                        .fillMaxHeight().fillMaxWidth(.61f))
+            } else if (book.coverUrl.isNotBlank()) {
                 AsyncImage(model = book.coverUrl, contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.align(Alignment.CenterEnd)
                         .fillMaxHeight().fillMaxWidth(.5f)
-                        .graphicsLayer { alpha = .16f })
+                        .graphicsLayer { alpha = .24f })
             }
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
                 Color(0xF70C1929), Color(0xDE132437),
