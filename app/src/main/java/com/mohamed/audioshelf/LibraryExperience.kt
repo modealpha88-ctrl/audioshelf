@@ -107,6 +107,7 @@ fun AnimatedLibraryScreen(
     books: List<AudioBook>,
     progressFor: (AudioBook) -> ListeningProgress,
     onBook: (AudioBook) -> Unit,
+    onRefreshCovers: () -> Unit,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -132,9 +133,23 @@ fun AnimatedLibraryScreen(
                 Text("Your library", style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
-                Text("${books.size} saved audiobooks",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${books.size} saved audiobooks",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (books.any { it.coverUrl.isBlank() }) {
+                        androidx.compose.material3.TextButton(onClick = onRefreshCovers) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(17.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Find covers")
+                        }
+                    }
+                }
             }
         }
         // The Walnut layout is the actual bookcase; omit its former decorative banner.
