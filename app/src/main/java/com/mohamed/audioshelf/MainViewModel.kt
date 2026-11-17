@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.mohamed.audioshelf.data.BookCoverLookup
 import com.mohamed.audioshelf.data.LibraryStore
 import com.mohamed.audioshelf.data.captions.TimedCaptionStore
 import com.mohamed.audioshelf.data.captions.OfflineSpeechModel
@@ -51,6 +52,8 @@ data class AudioShelfState(
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val store = LibraryStore(application)
+    private val coverLookup = BookCoverLookup()
+    private val coverAttempts = mutableSetOf<String>()
     private val repositoryStore = ProviderRepositoryStore(application)
     private val _state = MutableStateFlow(
         AudioShelfState(
@@ -66,6 +69,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         SourceRegistry.bindLocalFiles(application)
         syncInstalledSources()
+        resolveMissingCovers(store.books())
         browse()
     }
 
@@ -305,12 +309,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         browseJob = viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             runCatching { block() }
-                .onSuccess { _state.value = _state.value.copy(browse = it, loading = false) }
+                .onSuccess {
+                    _state.value = _state.value.copy(browse = it, loading = false)
+                    if (_state.value.query.isNotBlank()) resolveMissingCovers(it, limit = 10)
+                }
                 .onFailure { _state.value = _state.value.copy(loading = false, error = it.friendlyMessage()) }
         }
     }
 
     fun select(book: AudioBook) {
+        resolveMissingCovers(listOf(book), limit = 1)
         if (book.externalUrl.isNotBlank()) {
             _state.value = _state.value.copy(selectedBook = book, chapters = emptyList(), loading = false, error = null)
             return
@@ -346,8 +354,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun closeBook() { _state.value = _state.value.copy(selectedBook = null, chapters = emptyList()) }
 
     fun toggleLibrary(book: AudioBook) {
-        store.toggle(book)
+        val added = store.toggle(book)
         _state.value = _state.value.copy(library = store.books())
+        if (added) resolveMissingCovers(listOf(book), limit = 1)
+    }
+
+    private fun resolveMissingCovers(books: List<AudioBook>, limit: Int = Int.MAX_VALUE) {
+        val pending = books.asSequence()
+            .filter { it.coverUrl.isBlank() }
+            .take(limit)
+            .filter { coverAttempts.add("${it.sourceId}:${it.id}") }
+            .toList()
+        if (pending.isEmpty()) return
+        viewModelScope.launch {
+            for (book in pending) {
+                val url = coverLookup.find(book) ?: continue
+                if (store.contains(book)) store.updateCover(book, url)
+                val snapshot = _state.value
+                val matches: (AudioBook) -> Boolean = {
+                    it.id == book.id && it.sourceId == book.sourceId && it.coverUrl.isBlank()
+                }
+                _state.value = snapshot.copy(
+                    library = store.books(),
+                    browse = snapshot.browse.map { if (matches(it)) it.copy(coverUrl = url) else it },
+                    selectedBook = snapshot.selectedBook?.let {
+                        if (matches(it)) it.copy(coverUrl = url) else it
+                    },
+                )
+            }
+        }
     }
 
     fun isSaved(book: AudioBook) = _state.value.library.any { it.id == book.id && it.sourceId == book.sourceId }

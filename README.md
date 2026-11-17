@@ -8,6 +8,24 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
+## Animated library and automatic covers (proposed)
+
+The Library has four built-in, selectable styles: **Walnut Shelf**, **Aurora Gallery**,
+**Cinema Stack**, and **Paper Library**. Each style supports subtle motion; turn
+**Motion** off from the Library header to disable ambient and entry animations.
+Search saved audiobooks by title or author. Opening a book shows a larger artwork
+and listening-progress card before the player and chapter controls.
+
+Books missing artwork are matched by title and author against
+[Open Library's public Search API](https://openlibrary.org/dev/docs/api/search).
+Only covers with a sufficiently strong match are used. Provider artwork is
+never replaced, no existing library record or listening progress is deleted, and
+network failures leave a placeholder visible. Matched Open Library cover IDs
+are cached in the saved library. Searching a remote catalogue also enriches a
+limited number of visible results. Book titles and author names are sent to
+Open Library for searches; do not enable Internet access if you want a fully
+offline-only experience.
+
 ## Story Mode seeking (v0.5.11)
 
 Story Mode now includes a touch seek bar with elapsed and total chapter time,
