@@ -8,7 +8,7 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
-## Animated library and automatic covers (proposed)
+## Animated library and automatic covers (v0.5.15)
 
 The Library has four built-in, selectable styles: **Walnut Shelf**, **Aurora Gallery**,
 **Cinema Stack**, and **Paper Library**. Each style supports subtle motion; turn
