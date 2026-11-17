@@ -31,6 +31,28 @@ class BookCoverLookupTest {
             "The War of the Worlds: A Novel", listOf("H. G. Wells")))
     }
 
+    @Test fun unabridgedAudiobookTitleFindsPublishedBook() {
+        assertEquals(listOf("The Final Empire", "Mistborn",
+            "The Final Empire: Mistborn, Book 1"), coverSearchTitles(
+            "The Final Empire: Mistborn, Book 1 (Unabridged)"))
+        assertEquals(120, scoreCoverCandidate(
+            "The Final Empire: Mistborn, Book 1 (Unabridged)",
+            "Brandon Sanderson", "The Final Empire", listOf("Brandon Sanderson")))
+    }
+
+    @Test fun wrongAuthorNeverMatchesEditionAliases() {
+        assertEquals(0, scoreCoverCandidate(
+            "The Final Empire: Mistborn, Book 1 (Unabridged)",
+            "Brandon Sanderson", "The Final Empire", listOf("Another Author")))
+    }
+
+    @Test fun emptyOrUnrelatedTitleIsNotAccepted() {
+        assertEquals(0, scoreCoverCandidate(
+            "The Final Empire: Mistborn, Book 1 (Unabridged)",
+            "Brandon Sanderson", "The Well of Ascension",
+            listOf("Brandon Sanderson")))
+    }
+
     @Test fun punctuationIsNormalized() {
         assertEquals(120, scoreCoverCandidate(
             "Alice's Adventures in Wonderland", "Lewis Carroll",

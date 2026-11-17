@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -31,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -106,6 +108,7 @@ fun AnimatedLibraryScreen(
     books: List<AudioBook>,
     progressFor: (AudioBook) -> ListeningProgress,
     onBook: (AudioBook) -> Unit,
+    onRefreshCovers: () -> Unit,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -131,20 +134,36 @@ fun AnimatedLibraryScreen(
                 Text("Your library", style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
-                Text("${books.size} saved audiobooks",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${books.size} saved audiobooks",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (books.any { it.coverUrl.isBlank() }) {
+                        androidx.compose.material3.TextButton(onClick = onRefreshCovers) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(17.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Find covers")
+                        }
+                    }
+                }
             }
         }
-        item {
-            AnimatedLibraryBackdrop(style, motion, Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp).height(136.dp)) {
-                Column(Modifier.padding(19.dp)) {
-                    Text("A story worth returning to", style = MaterialTheme.typography.titleLarge,
-                        color = foreground(style), fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(5.dp))
-                    Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
-                        color = foreground(style).copy(alpha = 0.82f))
+        // The Walnut layout is the actual bookcase; omit its former decorative banner.
+        if (style != LibraryVisualStyle.Walnut) {
+            item {
+                AnimatedLibraryBackdrop(style, motion, Modifier.fillMaxWidth()
+                    .padding(horizontal = 16.dp).height(82.dp)) {
+                    Column(Modifier.padding(15.dp)) {
+                        Text(style.title, style = MaterialTheme.typography.titleLarge,
+                            color = foreground(style), fontWeight = FontWeight.Bold)
+                        Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
+                            color = foreground(style).copy(alpha = .82f))
+                    }
                 }
             }
         }
@@ -165,25 +184,11 @@ fun AnimatedLibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(9.dp),
             ) {
                 items(LibraryVisualStyle.entries) { option ->
-                    OutlinedCard(
+                    androidx.compose.material3.FilterChip(
+                        selected = style == option,
                         onClick = { onStyle(option) },
-                        colors = CardDefaults.outlinedCardColors(
-                            containerColor = if (style == option) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surface,
-                        ),
-                        modifier = Modifier.width(145.dp),
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Box(Modifier.fillMaxWidth().height(24.dp)
-                                .clip(RoundedCornerShape(7.dp))
-                                .background(Brush.horizontalGradient(palette(option))))
-                            Spacer(Modifier.height(8.dp))
-                            Text(option.title, style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (style == option) FontWeight.Bold else FontWeight.Medium)
-                            Text(option.tagline, style = MaterialTheme.typography.labelSmall,
-                                maxLines = 2)
-                        }
-                    }
+                        label = { Text(option.title, maxLines = 1) },
+                    )
                 }
             }
         }
@@ -210,6 +215,12 @@ fun AnimatedLibraryScreen(
                         else "Try a different title or author",
                         style = MaterialTheme.typography.bodyMedium)
                 }
+            }
+        } else if (style == LibraryVisualStyle.Walnut) {
+            items(filtered.chunked(3), key = { row ->
+                row.joinToString("|") { "${it.sourceId}:${it.id}" }
+            }) { row ->
+                WoodenShelfRow(row, progressFor, motion, onBook)
             }
         } else if (style == LibraryVisualStyle.Aurora) {
             items(filtered.chunked(2), key = { row -> row.joinToString("|") { "${it.sourceId}:${it.id}" } }) { row ->
@@ -310,7 +321,7 @@ private fun AnimatedLibraryTile(
                 Text(book.authors, color = ink.copy(alpha = .7f),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BookProgressLine(progress)
+                BookProgressLine(progress, ink, if (style == LibraryVisualStyle.Paper) Color(0xFF6E4C86) else MaterialTheme.colorScheme.primary)
             }
         } else {
             Row(Modifier.fillMaxWidth().padding(12.dp),
@@ -331,7 +342,7 @@ private fun AnimatedLibraryTile(
                         Text("IN YOUR COLLECTION", color = Color(0xFFAE8058),
                             style = MaterialTheme.typography.labelSmall)
                     }
-                    BookProgressLine(progress)
+                    BookProgressLine(progress, ink, if (style == LibraryVisualStyle.Paper) Color(0xFF6E4C86) else MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -341,10 +352,29 @@ private fun AnimatedLibraryTile(
 @Composable
 private fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
     val fallback: @Composable () -> Unit = {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Headphones, "Cover not available",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(
+            Modifier.fillMaxSize().background(Brush.verticalGradient(
+                listOf(Color(0xFF445567), Color(0xFF262D43))
+            )).padding(10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("AUDIOBOOK", color = Color(0xFFE1D0B9),
+                    style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.height(7.dp))
+                Text(book.title, color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold, maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                if (book.authors.isNotBlank()) {
+                    Spacer(Modifier.height(7.dp))
+                    Text(book.authors, color = Color(0xFFDDDAE4),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
         }
     }
     if (book.coverUrl.isBlank()) {
@@ -353,7 +383,7 @@ private fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
         SubcomposeAsyncImage(
             model = book.coverUrl,
             contentDescription = "${book.title} cover",
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             loading = { fallback() },
             error = { fallback() },
             modifier = modifier.clip(RoundedCornerShape(12.dp)),
@@ -372,16 +402,19 @@ private fun fraction(progress: ListeningProgress): Float {
 }
 
 @Composable
-private fun BookProgressLine(progress: ListeningProgress) {
+private fun BookProgressLine(progress: ListeningProgress, ink: Color, accent: Color) {
     if (progress.chapterCount <= 0) return
-    Spacer(Modifier.height(4.dp))
-    LinearProgressIndicator(
-        progress = { fraction(progress) },
-        modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp)),
-    )
+    Spacer(Modifier.height(5.dp))
+    // A plain track has no end-stop dot (which looked like 100% progress at zero).
+    Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp))
+        .background(ink.copy(alpha = .19f))) {
+        Box(Modifier.fillMaxWidth(fraction(progress)).fillMaxHeight()
+            .background(accent))
+    }
     Text("${(fraction(progress) * 100).toInt()}% listened · Chapter ${progress.chapterIndex + 1}",
-        style = MaterialTheme.typography.labelSmall, maxLines = 1,
-        overflow = TextOverflow.Ellipsis)
+        color = ink.copy(alpha = .82f),
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 /** A larger book-detail card opens when a library item is tapped. */
