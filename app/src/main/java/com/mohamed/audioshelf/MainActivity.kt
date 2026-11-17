@@ -136,12 +136,50 @@ private fun AudioShelfApp(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
     var tab by remember { mutableStateOf(HomeTab.Browse) }
+    var libraryStyle by remember {
+        mutableStateOf(context.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
+            .getString("visual_style", "Aurora") ?: "Aurora")
+    }
+    var autoResumeKey by remember { mutableStateOf<String?>(null) }
+    var showPlayerFor by remember { mutableStateOf<String?>(null) }
+    val paperLibrary = tab == HomeTab.Library && state.selectedBook == null &&
+        libraryStyle == "Paper"
+    val conceptLibrary = tab == HomeTab.Library && state.selectedBook == null &&
+        (libraryStyle == "Aurora" || libraryStyle == "Cinema")
+    val navInk = if (paperLibrary) Color(0xFF4B3225) else
+        if (conceptLibrary) Color(0xFFF1ECFD) else MaterialTheme.colorScheme.onSurfaceVariant
+    val navColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = navInk, selectedTextColor = navInk,
+        unselectedIconColor = navInk.copy(alpha = .8f),
+        unselectedTextColor = navInk.copy(alpha = .8f),
+        indicatorColor = if (paperLibrary) Color(0xFFE0CAD2) else
+            if (conceptLibrary) Color(0xFF51416C)
+            else MaterialTheme.colorScheme.secondaryContainer,
+    )
+    LaunchedEffect(autoResumeKey, state.selectedBook?.id,
+        state.selectedBook?.sourceId, state.chapters, controller) {
+        val book = state.selectedBook ?: return@LaunchedEffect
+        val key = "${book.sourceId}:${book.id}"
+        if (autoResumeKey != key || state.chapters.isEmpty() ||
+            controller == null || book.externalUrl.isNotBlank()) return@LaunchedEffect
+        val progress = viewModel.progress(book)
+        val index = progress.chapterIndex.coerceIn(state.chapters.indices)
+        autoResumeKey = null
+        playBook(context, controller, book, state.chapters, index, progress.positionMs)
+    }
 
     Scaffold(
         bottomBar = {
             if (state.selectedBook == null) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = when {
+                        paperLibrary -> Color(0xFFF5E7D4)
+                        conceptLibrary -> Color(0xFF0E192B)
+                        else -> MaterialTheme.colorScheme.surfaceContainer
+                    },
+                ) {
                     NavigationBarItem(
+                        colors = navColors,
                         selected = tab == HomeTab.Browse,
                         onClick = { tab = HomeTab.Browse },
                         icon = { Icon(Icons.Default.Explore, null) },
@@ -149,12 +187,14 @@ private fun AudioShelfApp(
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Library,
+                        colors = navColors,
                         onClick = { tab = HomeTab.Library },
                         icon = { Icon(Icons.Default.LibraryBooks, null) },
                         label = { Text("Library") },
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Sources,
+                        colors = navColors,
                         onClick = { tab = HomeTab.Sources },
                         icon = { Icon(Icons.Default.Extension, null) },
                         label = { Text("Sources") },
@@ -184,6 +224,8 @@ private fun AudioShelfApp(
                 BookScreen(
                     book = selected,
                     listeningProgress = viewModel.progress(selected),
+                    openPlayerInitially = showPlayerFor ==
+                        "${selected.sourceId}:${selected.id}",
                     chapters = pageState.chapters,
                     loading = pageState.loading,
                     error = pageState.error,
@@ -201,7 +243,11 @@ private fun AudioShelfApp(
                     videoRevision = videoRevision,
                     onPickTranscript = { index -> onPickTranscript(selected, index) },
                     onPickVideo = onPickVideo,
-                    onBack = viewModel::closeBook,
+                    onBack = {
+                        autoResumeKey = null
+                        showPlayerFor = null
+                        viewModel.closeBook()
+                    },
                     onToggleSaved = { viewModel.toggleLibrary(selected) },
                     onOpenExternal = {
                         if (selected.externalUrl.startsWith("https://")) {
@@ -225,8 +271,23 @@ private fun AudioShelfApp(
             } else when (pageTab) {
                 HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
                 HomeTab.Library -> AnimatedLibraryScreen(
-                    pageState.library, viewModel::progress, viewModel::select,
-                    onRefreshCovers = viewModel::refreshMissingCovers
+                    books = pageState.library,
+                    progressFor = viewModel::progress,
+                    onBook = { book ->
+                        autoResumeKey = null
+                        showPlayerFor = null
+                        viewModel.select(book)
+                    },
+                    onResumeBook = { book ->
+                        if (book.externalUrl.isBlank()) {
+                            val key = "${book.sourceId}:${book.id}"
+                            autoResumeKey = key
+                            showPlayerFor = key
+                        }
+                        viewModel.select(book)
+                    },
+                    onRefreshCovers = viewModel::refreshMissingCovers,
+                    onStyleSelected = { libraryStyle = it },
                 )
                 HomeTab.Sources -> SourcesScreen(
                     state = pageState,
@@ -684,6 +745,7 @@ private fun CoverFallback() = Box(Modifier.fillMaxSize(), contentAlignment = Ali
 private fun BookScreen(
     book: AudioBook,
     listeningProgress: ListeningProgress,
+    openPlayerInitially: Boolean,
     chapters: List<AudioChapter>,
     loading: Boolean,
     error: String?,
@@ -711,7 +773,7 @@ private fun BookScreen(
     onProgress: (Int, Long) -> Unit,
     onSleep: (Int) -> Unit,
 ) {
-    var showPlayer by remember { mutableStateOf(false) }
+    var showPlayer by remember(book.id) { mutableStateOf(openPlayerInitially) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
     val chapterListState = rememberLazyListState()
     AnimatedContent(

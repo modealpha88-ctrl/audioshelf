@@ -66,7 +66,7 @@ import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
-private enum class LibraryVisualStyle(val title: String, val tagline: String) {
+internal enum class LibraryVisualStyle(val title: String, val tagline: String) {
     Walnut("Walnut Shelf", "Warm wood & amber"),
     Aurora("Aurora Gallery", "Glowing cover gallery"),
     Cinema("Cinema Stack", "Cinematic listening cards"),
@@ -108,7 +108,9 @@ fun AnimatedLibraryScreen(
     books: List<AudioBook>,
     progressFor: (AudioBook) -> ListeningProgress,
     onBook: (AudioBook) -> Unit,
+    onResumeBook: (AudioBook) -> Unit,
     onRefreshCovers: () -> Unit,
+    onStyleSelected: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -128,6 +130,10 @@ fun AnimatedLibraryScreen(
     val shelfRows = remember(filtered) { filtered.chunked(3) }
     val shelfCount = woodenShelfRowCount(filtered.size)
 
+    Box(Modifier.fillMaxSize().background(conceptSurface(style))) {
+        if (style != LibraryVisualStyle.Walnut) {
+            ConceptAtmosphere(style, motion, Modifier.fillMaxSize())
+        }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 28.dp),
@@ -138,15 +144,23 @@ fun AnimatedLibraryScreen(
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp)) {
                 Text("Your library", style = MaterialTheme.typography.headlineMedium,
+                    color = conceptInk(style),
+                    fontFamily = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.text.font.FontFamily.Serif
+                        else androidx.compose.ui.text.font.FontFamily.Default,
                     fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${books.size} saved audiobooks",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = conceptInk(style).copy(alpha = .77f))
                     if (books.any { it.coverUrl.isBlank() }) {
-                        androidx.compose.material3.TextButton(onClick = onRefreshCovers) {
+                        androidx.compose.material3.TextButton(
+                            onClick = onRefreshCovers,
+                            colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                                contentColor = conceptInk(style))
+                        ) {
                             androidx.compose.material3.Icon(
                                 androidx.compose.material.icons.Icons.Default.Refresh,
                                 contentDescription = null,
@@ -162,23 +176,23 @@ fun AnimatedLibraryScreen(
         // The Walnut layout is the actual bookcase; omit its former decorative banner.
         if (style != LibraryVisualStyle.Walnut) {
             item {
-                AnimatedLibraryBackdrop(style, motion, Modifier.fillMaxWidth()
-                    .padding(horizontal = 16.dp).height(82.dp)) {
-                    Column(Modifier.padding(15.dp)) {
-                        Text(style.title, style = MaterialTheme.typography.titleLarge,
-                            color = foreground(style), fontWeight = FontWeight.Bold)
-                        Text(style.tagline, style = MaterialTheme.typography.bodyMedium,
-                            color = foreground(style).copy(alpha = .82f))
-                    }
-                }
+                ConceptHero(
+                    style, motion,
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(74.dp)
+                )
             }
         }
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("Library appearance", Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall)
-                Text("Motion", style = MaterialTheme.typography.labelMedium)
+                    style = MaterialTheme.typography.titleSmall,
+                    color = conceptInk(style),
+                    fontFamily = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.text.font.FontFamily.Serif
+                        else androidx.compose.ui.text.font.FontFamily.Default)
+                Text("Motion", style = MaterialTheme.typography.labelMedium,
+                    color = conceptInk(style))
                 Spacer(Modifier.width(8.dp))
                 Switch(checked = motion, onCheckedChange = {
                     motion = it
@@ -192,8 +206,18 @@ fun AnimatedLibraryScreen(
                 items(LibraryVisualStyle.entries) { option ->
                     androidx.compose.material3.FilterChip(
                         selected = style == option,
-                        onClick = { onStyle(option) },
+                        onClick = { onStyle(option); onStyleSelected(option.name) },
                         label = { Text(option.title, maxLines = 1) },
+                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                            containerColor = if (style == LibraryVisualStyle.Paper)
+                                androidx.compose.ui.graphics.Color(0xFFF7EAD8)
+                                else androidx.compose.ui.graphics.Color.Transparent,
+                            labelColor = conceptInk(style),
+                            selectedContainerColor = if (style == LibraryVisualStyle.Paper)
+                                androidx.compose.ui.graphics.Color(0xFFE2CDB7)
+                                else androidx.compose.ui.graphics.Color(0xFF504768),
+                            selectedLabelColor = conceptInk(style)
+                        ),
                     )
                 }
             }
@@ -202,8 +226,33 @@ fun AnimatedLibraryScreen(
             OutlinedTextField(
                 value = search, onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                singleLine = true, label = { Text("Search your books") },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = conceptInk(style),
+                    fontFamily = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.text.font.FontFamily.Serif
+                        else androidx.compose.ui.text.font.FontFamily.Default),
+                label = { Text("Search your books") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = conceptInk(style),
+                    unfocusedTextColor = conceptInk(style),
+                    focusedLabelColor = conceptInk(style),
+                    unfocusedLabelColor = conceptInk(style).copy(alpha = .65f),
+                    focusedLeadingIconColor = conceptInk(style),
+                    unfocusedLeadingIconColor = conceptInk(style).copy(alpha = .7f),
+                    focusedBorderColor = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.graphics.Color(0xFFB69379)
+                        else androidx.compose.ui.graphics.Color(0xFF9E83C9),
+                    unfocusedBorderColor = conceptInk(style).copy(alpha = .34f),
+                    focusedContainerColor = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.graphics.Color(0xBBFFF8EC)
+                        else androidx.compose.ui.graphics.Color(0x6617283C),
+                    unfocusedContainerColor = if (style == LibraryVisualStyle.Paper)
+                        androidx.compose.ui.graphics.Color(0xA6FFF8EC)
+                        else androidx.compose.ui.graphics.Color(0x6617283C),
+                    cursorColor = conceptInk(style),
+                ),
             )
         }
         if (filtered.isEmpty()) {
@@ -238,7 +287,7 @@ fun AnimatedLibraryScreen(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { book ->
-                        AnimatedLibraryTile(book, progressFor(book), style, motion,
+                        AuroraConceptCard(book, progressFor(book), motion,
                             { onBook(book) }, Modifier.weight(1f))
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -246,12 +295,22 @@ fun AnimatedLibraryScreen(
             }
         } else {
             items(filtered, key = { "${it.sourceId}:${it.id}" }) { book ->
-                AnimatedLibraryTile(
-                    book, progressFor(book), style, motion,
-                    { onBook(book) }, Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                )
+                when (style) {
+                    LibraryVisualStyle.Cinema -> CinemaConceptCard(
+                        book, progressFor(book), motion,
+                        onOpen = { onBook(book) }, onPlay = { onResumeBook(book) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    )
+                    LibraryVisualStyle.Paper -> PaperConceptCard(
+                        book = book, progress = progressFor(book), motion = motion,
+                        onOpen = { onBook(book) }, onResume = { onResumeBook(book) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    )
+                    else -> Unit
+                }
             }
         }
+    }
     }
 }
 
@@ -361,7 +420,7 @@ private fun AnimatedLibraryTile(
 }
 
 @Composable
-private fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
+internal fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
     val fallback: @Composable () -> Unit = {
         Box(
             Modifier.fillMaxSize().background(Brush.verticalGradient(
