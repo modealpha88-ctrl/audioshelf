@@ -1,0 +1,232 @@
+{
+  "books": [
+    {
+      "id": "hp-1-fry",
+      "title": "Harry Potter and the Philosopher’s Stone — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/audio-hp-1-harry-potter-philosophe-stone/"
+    },
+    {
+      "id": "hp-2-fry",
+      "title": "Harry Potter and the Chamber of Secrets — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/harry-potter-chamber-secr-stephen-fry-2/"
+    },
+    {
+      "id": "hp-3-fry",
+      "title": "Harry Potter and the Prisoner of Azkaban — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/hp-harry-potter-prisoner-azkaban-audio-book-3/"
+    },
+    {
+      "id": "hp-4-fry",
+      "title": "Harry Potter and the Goblet of Fire — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/4-harry-potter-goblet-fire-audiobook-read-stephen-fry/"
+    },
+    {
+      "id": "hp-5-fry",
+      "title": "Harry Potter and the Order of the Phoenix — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/5-harry-potter-order-phoenix-hp-audio-book/"
+    },
+    {
+      "id": "hp-6-fry",
+      "title": "Harry Potter and the Half-Blood Prince — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/half-blood-prine-stephen-fry-6/"
+    },
+    {
+      "id": "hp-7-fry",
+      "title": "Harry Potter and the Deathly Hallows — Stephen Fry",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Stephen Fry"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/7-harry-potter-deathl-hallows-audiobook-free-read-stephen-fry/"
+    },
+    {
+      "id": "hp-1-dale",
+      "title": "Harry Potter and the Sorcerer’s Stone — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/jim-dale-hp-1-harry-potter-the-sorcerers-stone/"
+    },
+    {
+      "id": "hp-2-dale",
+      "title": "Harry Potter and the Chamber of Secrets — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/hp-2-harry-potter-chambr-secrets-jim-dale-audio-book/"
+    },
+    {
+      "id": "hp-3-dale",
+      "title": "Harry Potter and the Prisoner of Azkaban — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/audio-book-hp-3-harry-potter-prisoner-azkaban-jim-dale/"
+    },
+    {
+      "id": "hp-4-dale",
+      "title": "Harry Potter and the Goblet of Fire — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/goble-fire-jim-dale-harry-potter-hp-audio-book-4/"
+    },
+    {
+      "id": "hp-5-dale",
+      "title": "Harry Potter and the Order of the Phoenix — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/potter-order-phoeni-5-jim-dale-book/"
+    },
+    {
+      "id": "hp-6-dale",
+      "title": "Harry Potter and the Half-Blood Prince — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/hp-6-harry-potter-half-blood-prince-jim-dale/"
+    },
+    {
+      "id": "hp-7-dale",
+      "title": "Harry Potter and the Deathly Hallows — Jim Dale",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [
+        "Jim Dale"
+      ],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/7-harry-potter-deathl-hallow-jim-dale/"
+    },
+    {
+      "id": "cursed-child",
+      "title": "Harry Potter and the Cursed Child",
+      "authors": [
+        "Jack Thorne",
+        "J. K. Rowling",
+        "John Tiffany"
+      ],
+      "narrators": [],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/harry-potter-cursed-child-8-j-k-rowling-audiobook/"
+    },
+    {
+      "id": "fantastic-beasts",
+      "title": "Fantastic Beasts and Where to Find Them",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/fantastic-beast-where-fi-n-them/"
+    },
+    {
+      "id": "quidditch",
+      "title": "Quidditch Through the Ages",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/quidditc-through-age-book-free-j-k-rowling/"
+    },
+    {
+      "id": "beedle",
+      "title": "The Tales of Beedle the Bard",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "narrators": [],
+      "language": "English",
+      "description": "External listing from the Harry Potter Audiobooks index.",
+      "externalUrl": "https://hpaudiobooks.app/j-k-rowling-11-the-tales-beedle-the-bard-audiobook/"
+    }
+  ]
+}
