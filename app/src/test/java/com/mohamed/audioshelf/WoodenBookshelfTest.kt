@@ -8,13 +8,13 @@ class WoodenBookshelfTest {
         assertEquals(4, woodenShelfRowCount(0))
         assertEquals(4, woodenShelfRowCount(1))
         assertEquals(4, woodenShelfRowCount(2))
-        assertEquals(4, woodenShelfRowCount(12))
+        assertEquals(4, woodenShelfRowCount(8))
     }
 
     @Test fun largerLibrariesGrowWithoutTruncatingBooks() {
-        assertEquals(5, woodenShelfRowCount(13))
-        assertEquals(5, woodenShelfRowCount(15))
-        assertEquals(6, woodenShelfRowCount(16))
-        assertEquals(34, woodenShelfRowCount(100))
+        assertEquals(5, woodenShelfRowCount(9))
+        assertEquals(5, woodenShelfRowCount(10))
+        assertEquals(6, woodenShelfRowCount(11))
+        assertEquals(50, woodenShelfRowCount(100))
     }
 }

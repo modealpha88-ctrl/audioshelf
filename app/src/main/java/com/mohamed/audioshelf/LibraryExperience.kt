@@ -127,7 +127,7 @@ fun AnimatedLibraryScreen(
     }
     // Keep a full bookcase visible on portrait phones even if only one book is saved.
     // Shelves are laid out lazily so larger libraries do not compose every cover.
-    val shelfRows = remember(filtered) { filtered.chunked(3) }
+    val shelfRows = remember(filtered) { filtered.chunked(LOUNGE_COLUMNS) }
     val shelfCount = woodenShelfRowCount(filtered.size)
 
     Box(Modifier.fillMaxSize().background(conceptSurface(style))) {

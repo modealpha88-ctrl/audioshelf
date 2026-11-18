@@ -46,9 +46,11 @@ import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
+internal const val LOUNGE_COLUMNS = 2
+
 /** Show a minimum of four shelves while preserving room for larger libraries. */
 internal fun woodenShelfRowCount(bookCount: Int): Int =
-    maxOf(4, (bookCount.coerceAtLeast(0) / 3) + if (bookCount % 3 == 0) 0 else 1)
+    maxOf(4, (bookCount.coerceAtLeast(0) / LOUNGE_COLUMNS) + if (bookCount % LOUNGE_COLUMNS == 0) 0 else 1)
 
 /**
  * A portrait-friendly, actual three-dimensional bookshelf rather than a banner
@@ -66,8 +68,8 @@ fun WoodenShelfRow(
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2f)) {
         Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit)
-        val sideInset = maxWidth * .057f
-        val topInset = maxHeight * .13f
+        val sideInset = maxWidth * .06f
+        val topInset = maxHeight * .157f
         val deckInset = maxHeight * .147f
         Row(
             Modifier.fillMaxSize().padding(start = sideInset, end = sideInset,
@@ -75,7 +77,7 @@ fun WoodenShelfRow(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            repeat(3) { index ->
+            repeat(LOUNGE_COLUMNS) { index ->
                 Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
                     val book = books.getOrNull(index)
                     if (book != null) AlbumSleeve(book, progressFor(book), motion) { onBook(book) }
