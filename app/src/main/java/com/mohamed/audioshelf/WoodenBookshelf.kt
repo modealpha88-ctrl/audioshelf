@@ -15,8 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +68,7 @@ fun WoodenShelfRow(
                 )
             )
     ) {
-        Box(Modifier.fillMaxWidth().height(204.dp)) {
+        Box(Modifier.fillMaxWidth().height(150.dp)) {
             Canvas(Modifier.fillMaxSize()) {
                 // Dark recess and a softly-lit wood back panel.
                 drawRect(Brush.verticalGradient(listOf(
@@ -101,7 +101,7 @@ fun WoodenShelfRow(
                     ) {
                         val book = books.getOrNull(index)
                         if (book != null) {
-                            StandingBook(
+                            AlbumSleeve(
                                 book = book, progress = progressFor(book),
                                 motion = motion, onClick = { onBook(book) }
                             )
@@ -134,7 +134,7 @@ fun WoodenShelfRow(
 }
 
 @Composable
-private fun StandingBook(
+private fun AlbumSleeve(
     book: AudioBook,
     progress: ListeningProgress,
     motion: Boolean,
@@ -152,11 +152,12 @@ private fun StandingBook(
         animationSpec = tween(durationMillis = 360),
         label = "Shelf book fade",
     )
-    Column(
-        Modifier.widthIn(max = 106.dp)
-            .width(99.dp)
-            .height(173.dp)
+    Box(
+        Modifier.widthIn(max = 136.dp)
+            .fillMaxWidth()
+            .aspectRatio(1f)
             .graphicsLayer {
+                transformOrigin = TransformOrigin(0.5f, 1f)
                 scaleX = scale
                 scaleY = scale
                 this.alpha = alpha
@@ -166,27 +167,18 @@ private fun StandingBook(
             .clickable(onClick = onClick)
             .background(Color(0xFF3B2B2C)),
     ) {
-        Row(Modifier.weight(1f).fillMaxWidth()) {
-            Box(
-                Modifier.width(5.dp).fillMaxHeight().background(
-                    Brush.horizontalGradient(listOf(Color(0xFF180D0A), Color(0xA8946757)))
-                )
+        if (book.coverUrl.isBlank()) {
+            ShelfTextCover(book, Modifier.fillMaxSize())
+        } else {
+            SubcomposeAsyncImage(
+                model = book.coverUrl,
+                contentDescription = "${book.title} cover; open audiobook",
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.BottomCenter,
+                loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
+                error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
+                modifier = Modifier.fillMaxSize(),
             )
-            if (book.coverUrl.isBlank()) {
-                ShelfTextCover(book, Modifier.weight(1f).fillMaxHeight())
-            } else {
-                SubcomposeAsyncImage(
-                    model = book.coverUrl,
-                    contentDescription = "${book.title} cover; open audiobook",
-                    // Show the whole printed front, including the title and author.
-                    // Crop previously cut off the sides of both books.
-                    contentScale = ContentScale.Fit,
-                    loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                    error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                        .background(Color(0xFF2A2422)),
-                )
-            }
         }
         val fraction = if (progress.chapterCount > 0) {
             val within = if (progress.chapterDurationMs > 0) {
@@ -195,9 +187,9 @@ private fun StandingBook(
             } else 0f
             ((progress.chapterIndex + within) / progress.chapterCount).coerceIn(0f, 1f)
         } else 0f
-        Box(Modifier.fillMaxWidth().height(4.dp).background(Color(0xFF201511))) {
-            Box(Modifier.fillMaxWidth(fraction).fillMaxHeight()
-                .background(Color(0xFFFFCA8B)))
+        if (fraction > 0f) {
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)
+                .height(2.dp).background(Color(0xFFFFCA8B)))
         }
     }
 }
