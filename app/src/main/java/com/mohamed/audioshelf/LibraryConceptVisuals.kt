@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -50,7 +51,7 @@ internal fun conceptSurface(style: LibraryVisualStyle): Color = when (style) {
     LibraryVisualStyle.Paper -> Color(0xFFF7EAD8)
     LibraryVisualStyle.Aurora -> Color(0xFF071121)
     LibraryVisualStyle.Cinema -> Color(0xFF091725)
-    LibraryVisualStyle.Walnut -> Color(0xFF141017)
+    LibraryVisualStyle.Walnut -> Color(0xFF201815)
 }
 internal fun conceptInk(style: LibraryVisualStyle): Color =
     if (style == LibraryVisualStyle.Paper) INK else Color(0xFFF4F1FC)
@@ -85,14 +86,6 @@ internal fun ConceptAtmosphere(style: LibraryVisualStyle, motion: Boolean,
                     w * .78f, Offset(w * (.16f + drift * .22f), h * .34f))
                 drawCircle(Brush.radialGradient(listOf(VIOLET.copy(alpha = .3f), Color.Transparent)),
                     w * .85f, Offset(w * (.92f - drift * .15f), h * .8f))
-                val wave = Path().apply {
-                    moveTo(-w * .1f, h * .87f)
-                    cubicTo(w * .28f, h * .7f, w * .65f, h * .96f, w * 1.15f, h * .83f)
-                }
-                drawPath(wave, Brush.horizontalGradient(listOf(CYAN, VIOLET)),
-                    style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round))
-                drawPath(wave, Color.White.copy(alpha = .35f),
-                    style = Stroke(width = .75.dp.toPx()))
                 for (i in 0..20) {
                     drawCircle(Color.White.copy(alpha = .14f),
                         .85.dp.toPx(), Offset(w * ((i * 41 % 97) / 100f),
@@ -288,35 +281,18 @@ internal fun ConceptProgressBar(progress: ListeningProgress, accent: Color,
 internal fun AuroraConceptCard(book: AudioBook, progress: ListeningProgress,
     motion: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val scale = rememberConceptScale(book, motion)
-    Card(
-        onClick = onOpen,
-        modifier = modifier.graphicsLayer {
-            scaleX = scale; scaleY = scale
-        },
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, Brush.linearGradient(listOf(CYAN, VIOLET, CYAN))),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF152744)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 7.dp),
-    ) {
-        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
-            Color(0xFF0F394B), Color(0xFF242146), Color(0xFF35204C))))
-            .padding(10.dp)) {
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp))
-                .background(Brush.linearGradient(listOf(CYAN, VIOLET)))) {
-                LibraryCover(book, Modifier.fillMaxWidth().aspectRatio(.76f)
-                    .padding(2.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(book.title, color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Text(book.authors, color = Color(0xFFDDD9ED),
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(11.dp))
-            ConceptProgressBar(progress, VIOLET, Color.White)
-        }
+    Column(modifier.graphicsLayer { scaleX = scale; scaleY = scale }
+        .clickable(onClick = onOpen).padding(vertical = 4.dp)) {
+        val accent = if (book.title.hashCode() % 2 == 0) CYAN else VIOLET
+        CollectorSleeve(book, Modifier.fillMaxWidth().aspectRatio(1.06f),
+            glow = accent.copy(alpha = .65f))
+        Spacer(Modifier.height(5.dp))
+        Text(book.title, color = Color.White, style = MaterialTheme.typography.titleMedium,
+            fontFamily = FontFamily.Serif, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(book.authors, color = Color(0xFFDDD9ED), style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Serif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(4.dp))
+        ConceptProgressBar(progress, accent, Color.White)
     }
 }
 
@@ -393,16 +369,10 @@ internal fun PaperConceptCard(book: AudioBook, progress: ListeningProgress,
     modifier: Modifier = Modifier) {
     val scale = rememberConceptScale(book, motion)
     var menuExpanded by remember(book.id) { mutableStateOf(false) }
-    Card(onClick = onOpen,
-        modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale },
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(.8.dp, Color.White),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF6E9)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-    ) {
-        Row(Modifier.fillMaxWidth().padding(14.dp),
+    Column(modifier.graphicsLayer { scaleX = scale; scaleY = scale }.clickable(onClick = onOpen)) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            LibraryCover(book, Modifier.width(94.dp).aspectRatio(.73f))
+            CollectorSleeve(book, Modifier.size(width = 82.dp, height = 88.dp))
             Spacer(Modifier.width(15.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.Top) {
@@ -445,10 +415,11 @@ internal fun PaperConceptCard(book: AudioBook, progress: ListeningProgress,
                     fontFamily = FontFamily.Serif,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(9.dp))
-                ConceptProgressBar(progress, Color(0xFF9266A6), INK, paper = true)
+                Spacer(Modifier.height(2.dp))
+                ConceptProgressBar(progress, Color(0xFF97703F), INK, paper = true)
             }
         }
+        HorizontalDivider(color = Color(0x446E4D32))
     }
 }
 

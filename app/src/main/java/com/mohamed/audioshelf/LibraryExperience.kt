@@ -67,7 +67,7 @@ import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
 internal enum class LibraryVisualStyle(val title: String, val tagline: String) {
-    Walnut("Walnut Shelf", "Warm wood & amber"),
+    Walnut("Listening Lounge", "Walnut & vinyl"),
     Aurora("Aurora Gallery", "Glowing cover gallery"),
     Cinema("Cinema Stack", "Cinematic listening cards"),
     Paper("Paper Library", "Editorial & calm"),
@@ -138,23 +138,35 @@ fun AnimatedLibraryScreen(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(
-            if (style == LibraryVisualStyle.Walnut) 0.dp else 12.dp
+            if (style == LibraryVisualStyle.Walnut || style == LibraryVisualStyle.Paper) 0.dp else 8.dp
         ),
     ) {
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp)) {
-                Text("Your library", style = MaterialTheme.typography.headlineMedium,
-                    color = conceptInk(style),
-                    fontFamily = if (style == LibraryVisualStyle.Paper)
-                        androidx.compose.ui.text.font.FontFamily.Serif
-                        else androidx.compose.ui.text.font.FontFamily.Default,
-                    fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(5.dp))
+                if (style == LibraryVisualStyle.Cinema) {
+                    ConceptHero(style, motion, Modifier.fillMaxWidth().height(74.dp))
+                } else {
+                    val art = when (style) {
+                        LibraryVisualStyle.Walnut -> R.drawable.lounge_turntable
+                        LibraryVisualStyle.Aurora -> R.drawable.aurora_sky
+                        else -> R.drawable.paper_lamp
+                    }
+                    Box(Modifier.fillMaxWidth().heightIn(min = 90.dp)) {
+                        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(art), null,
+                            Modifier.align(Alignment.CenterEnd).fillMaxWidth(.56f).height(90.dp),
+                            contentScale = ContentScale.Crop)
+                        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(
+                            0f to conceptSurface(style), .45f to conceptSurface(style),
+                            .78f to Color.Transparent)))
+                        Text(style.title, Modifier.align(Alignment.CenterStart),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                            color = conceptInk(style))
+                    }
+                }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${books.size} saved audiobooks",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = conceptInk(style).copy(alpha = .77f))
+                    Text("${books.size} saved audiobooks", Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall, color = conceptInk(style))
                     if (books.any { it.coverUrl.isBlank() }) {
                         androidx.compose.material3.TextButton(
                             onClick = onRefreshCovers,
@@ -171,15 +183,6 @@ fun AnimatedLibraryScreen(
                         }
                     }
                 }
-            }
-        }
-        // The Walnut layout is the actual bookcase; omit its former decorative banner.
-        if (style != LibraryVisualStyle.Walnut) {
-            item {
-                ConceptHero(
-                    style, motion,
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(74.dp)
-                )
             }
         }
         item {
@@ -207,7 +210,7 @@ fun AnimatedLibraryScreen(
                     androidx.compose.material3.FilterChip(
                         selected = style == option,
                         onClick = { onStyle(option); onStyleSelected(option.name) },
-                        label = { Text(option.title, maxLines = 1) },
+                        label = { Text(if (option == LibraryVisualStyle.Walnut) "Lounge" else option.name, maxLines = 1) },
                         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                             containerColor = if (style == LibraryVisualStyle.Paper)
                                 androidx.compose.ui.graphics.Color(0xFFF7EAD8)
@@ -503,7 +506,8 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
             .heightIn(min = 190.dp)
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            LibraryCover(book, Modifier.width(116.dp).aspectRatio(.72f))
+            if (style == LibraryVisualStyle.Cinema) LibraryCover(book, Modifier.width(116.dp).aspectRatio(.72f))
+            else CollectorSleeve(book, Modifier.width(116.dp).height(145.dp), detail = true, motion = motion)
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("AUDIOBOOK", color = foreground(style).copy(alpha = .75f),

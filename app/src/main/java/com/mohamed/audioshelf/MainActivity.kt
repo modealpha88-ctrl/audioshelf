@@ -144,16 +144,17 @@ private fun AudioShelfApp(
     var showPlayerFor by remember { mutableStateOf<String?>(null) }
     val paperLibrary = tab == HomeTab.Library && state.selectedBook == null &&
         libraryStyle == "Paper"
+    val loungeLibrary = tab == HomeTab.Library && state.selectedBook == null && libraryStyle == "Walnut"
     val conceptLibrary = tab == HomeTab.Library && state.selectedBook == null &&
         (libraryStyle == "Aurora" || libraryStyle == "Cinema")
     val navInk = if (paperLibrary) Color(0xFF4B3225) else
-        if (conceptLibrary) Color(0xFFF1ECFD) else MaterialTheme.colorScheme.onSurfaceVariant
+        if (loungeLibrary) Color(0xFFF3E2CC) else if (conceptLibrary) Color(0xFFF1ECFD) else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
         unselectedIconColor = navInk.copy(alpha = .8f),
         unselectedTextColor = navInk.copy(alpha = .8f),
         indicatorColor = if (paperLibrary) Color(0xFFE0CAD2) else
-            if (conceptLibrary) Color(0xFF51416C)
+            if (loungeLibrary) Color(0xFF67472D) else if (conceptLibrary) Color(0xFF51416C)
             else MaterialTheme.colorScheme.secondaryContainer,
     )
     LaunchedEffect(autoResumeKey, state.selectedBook?.id,
@@ -174,6 +175,7 @@ private fun AudioShelfApp(
                 NavigationBar(
                     containerColor = when {
                         paperLibrary -> Color(0xFFF5E7D4)
+                        loungeLibrary -> Color(0xFF201815)
                         conceptLibrary -> Color(0xFF0E192B)
                         else -> MaterialTheme.colorScheme.surfaceContainer
                     },

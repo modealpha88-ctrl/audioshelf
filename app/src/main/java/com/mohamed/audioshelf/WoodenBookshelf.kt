@@ -2,6 +2,8 @@ package com.mohamed.audioshelf
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,34 +62,16 @@ fun WoodenShelfRow(
     onBook: (AudioBook) -> Unit,
 ) {
     Column(
-        Modifier.fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    listOf(Color(0xFF54372A), Color(0xFFB58B62),
-                        Color(0xFFD1AD83), Color(0xFF7C5338), Color(0xFF3D271F))
-                )
-            )
+        Modifier.fillMaxWidth().background(Color(0xFF342219)).padding(horizontal = 6.dp)
     ) {
-        Box(Modifier.fillMaxWidth().height(150.dp)) {
-            Canvas(Modifier.fillMaxSize()) {
-                // Dark recess and a softly-lit wood back panel.
-                drawRect(Brush.verticalGradient(listOf(
-                    Color(0xC91B1010), Color(0x1D160B06), Color(0x130E0604),
-                    Color(0x602B160D)
-                )))
-                val grain = listOf(.08f, .15f, .26f, .41f, .57f, .69f, .82f, .92f)
-                grain.forEachIndexed { index, x ->
-                    val stroke = if (index % 3 == 0) 1.7.dp.toPx() else .7.dp.toPx()
-                    drawLine(
-                        color = Color(0x55F5D9B8),
-                        start = androidx.compose.ui.geometry.Offset(size.width * x, 0f),
-                        end = androidx.compose.ui.geometry.Offset(
-                            size.width * (x + .018f), size.height
-                        ),
-                        strokeWidth = stroke
-                    )
-                }
-            }
+        Box(Modifier.fillMaxWidth().height(150.dp)
+            .clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))) {
+            Image(painterResource(R.drawable.lounge_felt), null, Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds)
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+                Color(0x666F421A), Color.Transparent, Color(0x550E0907)))))
+            Box(Modifier.align(Alignment.TopCenter).fillMaxWidth(.78f).height(2.dp)
+                .background(Color(0xFFE9B36D), RoundedCornerShape(2.dp)))
             Row(
                 Modifier.fillMaxSize()
                     .padding(start = 8.dp, end = 8.dp, top = 14.dp, bottom = 0.dp),
@@ -110,26 +94,11 @@ fun WoodenShelfRow(
                 }
             }
         }
-        // Top bevel, front lip, and underside shadow give each shelf depth.
-        Box(Modifier.fillMaxWidth().height(5.dp)
-            .background(Brush.verticalGradient(listOf(
-                Color(0xFFFAE4BF), Color(0xFFAD805C)
-            ))))
-        Box(Modifier.fillMaxWidth().height(15.dp)
-            .background(Brush.verticalGradient(listOf(
-                Color(0xFFBA8D61), Color(0xFF946542), Color(0xFF583A2B)
-            )))) {
-            Canvas(Modifier.fillMaxSize()) {
-                drawLine(Color(0x55F7D9A7),
-                    androidx.compose.ui.geometry.Offset(0f, size.height * .18f),
-                    androidx.compose.ui.geometry.Offset(size.width, size.height * .18f),
-                    strokeWidth = 1.dp.toPx())
-            }
+        Box(Modifier.fillMaxWidth().height(12.dp)) {
+            Image(painterResource(R.drawable.lounge_walnut), null, Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFB88D53)))
         }
-        Box(Modifier.fillMaxWidth().height(9.dp)
-            .background(Brush.verticalGradient(listOf(
-                Color(0xBF170A07), Color(0x0020100B)
-            ))))
     }
 }
 
@@ -162,31 +131,10 @@ private fun AlbumSleeve(
                 scaleY = scale
                 this.alpha = alpha
             }
-            .shadow(8.dp, RoundedCornerShape(topStart = 3.dp, topEnd = 4.dp))
-            .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 4.dp))
-            .clickable(onClick = onClick)
-            .background(Color(0xFF3B2B2C)),
+            .clickable(onClick = onClick),
     ) {
-        if (book.coverUrl.isBlank()) {
-            ShelfTextCover(book, Modifier.fillMaxSize())
-        } else {
-            SubcomposeAsyncImage(
-                model = book.coverUrl,
-                contentDescription = "${book.title} cover; open audiobook",
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.BottomCenter,
-                loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-        val fraction = if (progress.chapterCount > 0) {
-            val within = if (progress.chapterDurationMs > 0) {
-                progress.positionMs.coerceIn(0L, progress.chapterDurationMs).toFloat() /
-                    progress.chapterDurationMs
-            } else 0f
-            ((progress.chapterIndex + within) / progress.chapterCount).coerceIn(0f, 1f)
-        } else 0f
+        CollectorSleeve(book, Modifier.fillMaxSize())
+        val fraction = conceptProgress(progress)
         if (fraction > 0f) {
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)
                 .height(2.dp).background(Color(0xFFFFCA8B)))
@@ -195,7 +143,7 @@ private fun AlbumSleeve(
 }
 
 @Composable
-private fun ShelfTextCover(book: AudioBook, modifier: Modifier = Modifier) {
+internal fun ShelfTextCover(book: AudioBook, modifier: Modifier = Modifier) {
     val tones = when ((book.title.hashCode().toLong() and 0x7fffffffL) % 4L) {
         0L -> listOf(Color(0xFF4D5B5A), Color(0xFF1B343E))
         1L -> listOf(Color(0xFF725750), Color(0xFF352833))
