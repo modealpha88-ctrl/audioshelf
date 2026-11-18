@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
             AudioShelfTheme {
                 AudioShelfApp(
                     viewModel,
+                    onExit = { finish() },
                     onPickLocalAudio = { localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream")) },
                     onPickTranscript = { book, index ->
                         captionTarget = book to index
@@ -127,6 +129,7 @@ private enum class HomeTab { Browse, Library, Sources }
 @Composable
 private fun AudioShelfApp(
     viewModel: MainViewModel,
+    onExit: () -> Unit,
     onPickLocalAudio: () -> Unit,
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
@@ -135,13 +138,41 @@ private fun AudioShelfApp(
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
-    var tab by remember { mutableStateOf(HomeTab.Browse) }
+    var tabHistory by rememberSaveable { mutableStateOf(arrayListOf(HomeTab.Browse)) }
+    val tab = tabHistory.last()
+    fun selectTab(next: HomeTab) {
+        if (tab == next) return
+        val existing = tabHistory.indexOf(next)
+        tabHistory = if (existing >= 0) ArrayList(tabHistory.take(existing + 1))
+            else ArrayList(tabHistory + next)
+    }
+    var confirmExit by rememberSaveable { mutableStateOf(false) }
     var libraryStyle by remember {
         mutableStateOf(context.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
             .getString("visual_style", "Aurora") ?: "Aurora")
     }
     var autoResumeKey by remember { mutableStateOf<String?>(null) }
     var showPlayerFor by remember { mutableStateOf<String?>(null) }
+    fun closeBook() {
+        autoResumeKey = null
+        showPlayerFor = null
+        viewModel.closeBook()
+    }
+    BackHandler {
+        when {
+            state.selectedBook != null -> closeBook()
+            tabHistory.size > 1 -> tabHistory = ArrayList(tabHistory.dropLast(1))
+            else -> confirmExit = true
+        }
+    }
+    if (confirmExit) {
+        AlertDialog(
+            onDismissRequest = { confirmExit = false },
+            title = { Text("Leave AudioShelf?") },
+            confirmButton = { TextButton(onClick = onExit) { Text("Leave") } },
+            dismissButton = { TextButton(onClick = { confirmExit = false }) { Text("Stay") } },
+        )
+    }
     val paperLibrary = tab == HomeTab.Library && state.selectedBook == null &&
         libraryStyle == "Paper"
     val loungeLibrary = tab == HomeTab.Library && state.selectedBook == null && libraryStyle == "Walnut"
@@ -183,21 +214,21 @@ private fun AudioShelfApp(
                     NavigationBarItem(
                         colors = navColors,
                         selected = tab == HomeTab.Browse,
-                        onClick = { tab = HomeTab.Browse },
+                        onClick = { selectTab(HomeTab.Browse) },
                         icon = { Icon(Icons.Default.Explore, null) },
                         label = { Text("Browse") },
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Library,
                         colors = navColors,
-                        onClick = { tab = HomeTab.Library },
+                        onClick = { selectTab(HomeTab.Library) },
                         icon = { Icon(Icons.Default.LibraryBooks, null) },
                         label = { Text("Library") },
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Sources,
                         colors = navColors,
-                        onClick = { tab = HomeTab.Sources },
+                        onClick = { selectTab(HomeTab.Sources) },
                         icon = { Icon(Icons.Default.Extension, null) },
                         label = { Text("Sources") },
                     )
@@ -245,11 +276,7 @@ private fun AudioShelfApp(
                     videoRevision = videoRevision,
                     onPickTranscript = { index -> onPickTranscript(selected, index) },
                     onPickVideo = onPickVideo,
-                    onBack = {
-                        autoResumeKey = null
-                        showPlayerFor = null
-                        viewModel.closeBook()
-                    },
+                    onBack = ::closeBook,
                     onToggleSaved = { viewModel.toggleLibrary(selected) },
                     onOpenExternal = {
                         if (selected.externalUrl.startsWith("https://")) {
@@ -777,6 +804,14 @@ private fun BookScreen(
 ) {
     var showPlayer by remember(book.id) { mutableStateOf(openPlayerInitially) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
+    val navigateBack: () -> Unit = {
+        when {
+            storyOpen -> storyOpen = false
+            showPlayer -> showPlayer = false
+            else -> onBack()
+        }
+    }
+    BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
     AnimatedContent(
         targetState = storyOpen && controller != null,
@@ -806,7 +841,7 @@ private fun BookScreen(
             Column(Modifier.fillMaxSize()) {
                 TopAppBar(
                     title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                    navigationIcon = { IconButton(navigateBack) { Icon(Icons.Default.ArrowBack, null) } },
                     actions = { IconButton(onToggleSaved) { Icon(if (saved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, null) } },
                 )
                 LazyColumn(
