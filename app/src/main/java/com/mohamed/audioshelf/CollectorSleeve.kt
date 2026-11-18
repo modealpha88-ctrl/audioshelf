@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -76,7 +78,7 @@ internal fun coverMatteBounds(pixels: IntArray, w: Int, h: Int): MatteBounds? {
 
 @Composable
 internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = Color.Transparent,
-    detail: Boolean = false, motion: Boolean = false) {
+    detail: Boolean = false, motion: Boolean = false, onShelf: Boolean = false) {
     val context = LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null }).size(480, 480)
@@ -95,7 +97,19 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
         val extra = if (portrait) .10f else reveal
         val faceW = minOf(maxWidth / (1f + extra), maxHeight * ratio)
         val faceH = faceW / ratio
-        Box(Modifier.width(faceW * (1f + extra)).height(faceH)) {
+        Box(Modifier.width(faceW * (1f + extra)).height(faceH).drawBehind {
+            if (onShelf) {
+                val contact = Offset(size.width * .52f, size.height)
+                val radius = size.width * .54f
+                if (radius > 0f) withTransform({
+                    scale(1f, .075f, contact)
+                }) {
+                    drawCircle(Brush.radialGradient(
+                        listOf(Color.Black.copy(alpha = .84f), Color.Transparent),
+                        contact, radius), radius, contact)
+                }
+            }
+        }) {
             if (!portrait) {
                 Canvas(Modifier.align(Alignment.CenterEnd).size(minOf(faceW, faceH) * .96f)) {
                     val radius = size.minDimension / 2

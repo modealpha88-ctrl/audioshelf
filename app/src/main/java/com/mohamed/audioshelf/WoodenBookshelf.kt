@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,43 +62,25 @@ fun WoodenShelfRow(
     motion: Boolean,
     onBook: (AudioBook) -> Unit,
 ) {
-    Column(
-        Modifier.fillMaxWidth().background(Color(0xFF342219)).padding(horizontal = 6.dp)
-    ) {
-        Box(Modifier.fillMaxWidth().height(150.dp)
-            .clip(RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp))) {
-            Image(painterResource(R.drawable.lounge_felt), null, Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds)
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-                Color(0x666F421A), Color.Transparent, Color(0x550E0907)))))
-            Box(Modifier.align(Alignment.TopCenter).fillMaxWidth(.78f).height(2.dp)
-                .background(Color(0xFFE9B36D), RoundedCornerShape(2.dp)))
-            Row(
-                Modifier.fillMaxSize()
-                    .padding(start = 8.dp, end = 8.dp, top = 14.dp, bottom = 0.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                repeat(3) { index ->
-                    Box(
-                        Modifier.weight(1f).fillMaxHeight(),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        val book = books.getOrNull(index)
-                        if (book != null) {
-                            AlbumSleeve(
-                                book = book, progress = progressFor(book),
-                                motion = motion, onClick = { onBook(book) }
-                            )
-                        }
-                    }
+    // The cabinet is 2:1. The deck spans 83–89% of its height.
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2f)) {
+        Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit)
+        val sideInset = maxWidth * .057f
+        val topInset = maxHeight * .13f
+        val deckInset = maxHeight * .147f
+        Row(
+            Modifier.fillMaxSize().padding(start = sideInset, end = sideInset,
+                top = topInset, bottom = deckInset),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            repeat(3) { index ->
+                Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
+                    val book = books.getOrNull(index)
+                    if (book != null) AlbumSleeve(book, progressFor(book), motion) { onBook(book) }
                 }
             }
-        }
-        Box(Modifier.fillMaxWidth().height(12.dp)) {
-            Image(painterResource(R.drawable.lounge_walnut), null, Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds)
-            Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFB88D53)))
         }
     }
 }
@@ -122,9 +105,7 @@ private fun AlbumSleeve(
         label = "Shelf book fade",
     )
     Box(
-        Modifier.widthIn(max = 136.dp)
-            .fillMaxWidth()
-            .aspectRatio(1f)
+        Modifier.fillMaxSize()
             .graphicsLayer {
                 transformOrigin = TransformOrigin(0.5f, 1f)
                 scaleX = scale
@@ -133,7 +114,7 @@ private fun AlbumSleeve(
             }
             .clickable(onClick = onClick),
     ) {
-        CollectorSleeve(book, Modifier.fillMaxSize())
+        CollectorSleeve(book, Modifier.fillMaxSize(), onShelf = true)
         val fraction = conceptProgress(progress)
         if (fraction > 0f) {
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)
