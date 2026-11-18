@@ -226,6 +226,14 @@
       "attribution": "Third-party website referenced by the r/Piracy Books megathread; no third-party media license verified",
       "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-galaxy-audiobooks/books.json",
       "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/reddit-galaxy-audiobooks/chapters/{id}.json"
+    },
+    {
+      "id": "hp-audiobooks",
+      "name": "Harry Potter Audiobooks",
+      "description": "Browse the Stephen Fry and Jim Dale editions and four related titles. Opens the source listing externally.",
+      "attribution": "Catalog listings: HP Audiobooks",
+      "browseUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/hp-audiobooks/books.json",
+      "chaptersUrl": "https://raw.githubusercontent.com/modealpha88-ctrl/audioshelf/main/sources/catalogs/hp-audiobooks/chapters.json"
     }
   ]
 }
