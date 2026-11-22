@@ -103,7 +103,7 @@ private fun incomingTorrent(intent: Intent?): IncomingTorrent? {
                 .containsMatchIn(candidate)) ||
             (uri.scheme.equals("https", true) &&
                 uri.path.orEmpty().endsWith(".torrent", ignoreCase = true))
-        return candidate.takeIf { valid }?.let(IncomingTorrent::Link)
+        return candidate.takeIf { valid }?.let { IncomingTorrent.Link(it) }
     }
     return when (intent.action) {
         Intent.ACTION_VIEW -> {
@@ -123,7 +123,7 @@ private fun incomingTorrent(intent: Intent?): IncomingTorrent? {
                 val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                 uri?.takeIf { (it.scheme == "content" || it.scheme == "file") &&
                     intent.type.equals("application/x-bittorrent", true) }
-                    ?.let(IncomingTorrent::Document)
+                    ?.let { IncomingTorrent.Document(it) }
             }
         }
         else -> null
