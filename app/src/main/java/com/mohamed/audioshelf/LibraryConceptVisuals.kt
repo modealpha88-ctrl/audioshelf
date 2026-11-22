@@ -249,10 +249,10 @@ private fun ConceptHeroIllustration(style: LibraryVisualStyle, motion: Boolean,
 
 @Composable
 private fun rememberConceptScale(book: AudioBook, motion: Boolean): Float {
-    var appeared by remember(book.id, motion) { mutableStateOf(!motion) }
-    LaunchedEffect(book.id, motion) { appeared = true }
+    var appeared by remember(book.sourceId, book.id, motion) { mutableStateOf(!motion) }
+    LaunchedEffect(book.sourceId, book.id, motion) { appeared = true }
     val v by animateFloatAsState(if (appeared) 1f else .97f,
-        animationSpec = tween(360), label = "Book appears")
+        animationSpec = tween(if (motion) 360 else 0, easing = coverSettle), label = "Book appears")
     return v
 }
 

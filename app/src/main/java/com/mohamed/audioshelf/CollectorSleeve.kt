@@ -1,8 +1,7 @@
 package com.mohamed.audioshelf
 
-import android.animation.ValueAnimator
 import android.graphics.Bitmap
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.LinearEasing
@@ -19,12 +18,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.geometry.Size as DrawSize
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.currentStateAsState
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -85,7 +91,8 @@ internal fun coverMatteBounds(pixels: IntArray, w: Int, h: Int): MatteBounds? {
 
 @Composable
 internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = Color.Transparent,
-    detail: Boolean = false, motion: Boolean = false, onShelf: Boolean = false) {
+    detail: Boolean = false, motion: Boolean = false, onShelf: Boolean = false,
+    walnut: Boolean = onShelf, pose: Modifier = Modifier) {
     val context = LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null }).size(480, 480)
@@ -95,55 +102,67 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
     val drawable = (painter.state as? AsyncImagePainter.State.Success)?.result?.drawable
     val ratio = if (drawable != null && drawable.intrinsicHeight > 0)
         drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight else .67f
-    val conceptPrint = remember(drawable, book.title, onShelf) {
-        if (onShelf) (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let {
+    val conceptPrint = remember(drawable, book.title, walnut) {
+        if (walnut) (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let {
             matchingLoungePrint(book.title, it)
         } else null
     }
     val portrait = ratio < .86f
-    var open by remember(book.id) { mutableStateOf(false) }
-    LaunchedEffect(detail, motion, book.id) { open = detail }
-    val allowMotion = motion && ValueAnimator.areAnimatorsEnabled()
-    val reveal by animateFloatAsState(if (open) .22f else if (onShelf) .20f else .095f,
-        tween(if (allowMotion) 420 else 0), label = "Record reveal")
-    // Sweep the same studio light over cover art AND approved edition artwork.
-    // No bitmap edits: all reflections are composited on top of the real art.
-    val lightTravel = if (onShelf && allowMotion) {
-        val transition = rememberInfiniteTransition(label = "Collector studio reflection")
-        val position by transition.animateFloat(
-            initialValue = -.65f,
-            targetValue = 1.35f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 5800, easing = LinearEasing),
-            ),
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val allowMotion = motion && lifecycle.isAtLeast(Lifecycle.State.RESUMED)
+    val extension = if (detail) .24f else if (onShelf) .23f else .095f
+    val reveal = remember(book.sourceId, book.id, allowMotion) {
+        Animatable(if (detail && allowMotion) .10f else extension)
+    }
+    LaunchedEffect(reveal, extension) {
+        if (allowMotion) reveal.animateTo(extension, tween(430, easing = coverSettle))
+        else reveal.snapTo(extension)
+    }
+    val lightTravel: State<Float>? = if (walnut && allowMotion) {
+        rememberInfiniteTransition(label = "Collector studio reflection").animateFloat(
+            initialValue = -.45f,
+            targetValue = 1.45f,
+            animationSpec = infiniteRepeatable(tween(8200, easing = LinearEasing)),
             label = "Cover reflection travel",
         )
-        position
-    } else .24f
+    } else null
     BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
-        val spine = if (onShelf) .18f else .076f
-        val pages = if (onShelf) .052f else .024f
-        val extra = if (portrait) spine + pages else reveal
+        val spine = if (walnut) .18f else .076f
+        val pages = if (walnut) .052f else .024f
+        val extra = if (portrait) spine + pages else extension
         val faceW = minOf(maxWidth / (1f + extra), maxHeight * ratio)
         val faceH = faceW / ratio
-        Box(Modifier.width(faceW * (1f + extra)).height(faceH).drawBehind {
-            if (onShelf) {
-                val contact = Offset(size.width * .52f, size.height)
-                val radius = size.width * .54f
-                if (radius > 0f) withTransform({
-                    scale(1f, .075f, contact)
-                }) {
-                    drawCircle(Brush.radialGradient(
-                        listOf(Color.Black.copy(alpha = .84f), Color.Transparent),
-                        contact, radius), radius, contact)
+        Box(Modifier.width(faceW * (1f + extra)).height(faceH)
+            .then(if (onShelf) Modifier.sleeveContactShadow().clearAndSetSemantics {} else Modifier)
+            .then(walnutSharedSleeve(book, walnut && motion))
+            .then(pose)) {
+            if (!portrait && walnut) {
+                // The covered part of the disc is drawn under the jacket.
+                Canvas(Modifier.matchParentSize()) {
+                    val radius = minOf(faceW.toPx(), size.height) * .48f
+                    val uncovered = faceW.toPx() * reveal.value
+                    val center = Offset(faceW.toPx() + uncovered - radius, size.height * .5f)
+                    drawCircle(
+                        brush = Brush.linearGradient(
+                            0f to Color(0xFF100E12),
+                            .36f to Color(0xFF232023),
+                            .49f to Color(0xFF514950),
+                            .60f to Color(0xFF19171D),
+                            1f to Color(0xFF0D0C10),
+                            start = center - Offset(radius, radius * .7f),
+                            end = center + Offset(radius, radius * .7f),
+                        ),
+                        radius = radius,
+                        center = center,
+                    )
+                    for (groove in 9..32) {
+                        drawCircle(Color.White.copy(alpha = if (groove % 5 == 0) .20f else .09f),
+                            radius * groove / 33f, center, style = Stroke(.45.dp.toPx()))
+                    }
+                    drawCircle(Color(0xFF827164), radius, center, style = Stroke(.65.dp.toPx()))
+                    drawCircle(Color(0xFF755343), radius * .32f, center)
+                    drawCircle(Color.Black, radius * .037f, center)
                 }
-            }
-        }) {
-            if (onShelf && !portrait) {
-                Image(painterResource(R.drawable.lounge_record), null,
-                    Modifier.align(Alignment.CenterEnd).width(faceW * reveal).height(faceH)
-                        .vinylReflection(lightTravel),
-                    contentScale = ContentScale.FillBounds)
             } else if (!portrait) {
                 Canvas(Modifier.align(Alignment.CenterEnd).size(minOf(faceW, faceH) * .96f)) {
                     val radius = size.minDimension / 2
@@ -152,25 +171,78 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                         radius * i / 24f, style = Stroke(.45.dp.toPx()))
                 }
             }
+            if (portrait && walnut) {
+                Canvas(Modifier.matchParentSize()) {
+                    val foreEdge = faceW.toPx() * (1f + spine)
+                    val pageStack = Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(4.dp.toPx(), -3.dp.toPx())
+                        lineTo(foreEdge, -3.dp.toPx())
+                        lineTo(size.width, 0f)
+                        close()
+                    }
+                    drawPath(pageStack, Brush.horizontalGradient(
+                        listOf(Color(0xFF523626), Color(0xFFD2AA75), Color(0xFF947354)),
+                        endX = size.width.coerceAtLeast(1f),
+                    ))
+                }
+            }
             Row(Modifier.align(Alignment.BottomStart).height(faceH)
                 .shadow(if (onShelf) 10.dp else 3.dp, RoundedCornerShape(1.dp))) {
-                if (portrait && onShelf) Image(painterResource(R.drawable.lounge_binding), null,
-                    Modifier.width(faceW * spine).fillMaxHeight(), contentScale = ContentScale.FillBounds)
+                if (portrait && walnut) Image(painterResource(R.drawable.lounge_binding), null,
+                    Modifier.width(faceW * spine).fillMaxHeight().bindingLight(), contentScale = ContentScale.FillBounds)
                 else if (portrait) Box(Modifier.width(faceW * spine).fillMaxHeight()
                     .background(Brush.horizontalGradient(listOf(Color(0xFF46232A), Color(0xFF874451), Color(0xFF47282C)))))
                 val face = Modifier.width(faceW).fillMaxHeight()
                     .border(.7.dp, glow, RoundedCornerShape(1.dp))
-                    .then(if (onShelf) Modifier.loungePrintLight(portrait, lightTravel) else Modifier)
+                    .then(if (walnut) Modifier.loungePrintLight(portrait, lightTravel) else Modifier)
                 if (conceptPrint != null) Image(painterResource(conceptPrint), book.title, face,
-                    contentScale = ContentScale.FillBounds)
+                    contentScale = ContentScale.Fit)
                 else if (drawable != null) Image(painter, book.title, face, contentScale = ContentScale.Fit)
                 else ShelfTextCover(book, face)
-                if (portrait && onShelf) Image(painterResource(R.drawable.lounge_pages), null,
-                    Modifier.width(faceW * pages).fillMaxHeight(), contentScale = ContentScale.FillBounds)
+                if (portrait && walnut) Image(painterResource(R.drawable.lounge_pages), null,
+                    Modifier.width(faceW * pages).fillMaxHeight().pageEdge(), contentScale = ContentScale.FillBounds)
                 else if (portrait) Box(Modifier.width(faceW * pages).fillMaxHeight()
                     .background(Color(0xFFE4CFAB)))
             }
         }
+    }
+}
+
+private fun Modifier.sleeveContactShadow() = drawWithCache {
+    val center = Offset(size.width * .51f, size.height - 1.dp.toPx())
+    val radius = size.width * .64f
+    val shadow = Brush.radialGradient(
+        0f to Color(0xF0000000), .60f to Color(0x8C0A0300), 1f to Color.Transparent,
+        center = center, radius = radius.coerceAtLeast(1f),
+    )
+    onDrawBehind {
+        withTransform({ scale(1f, .095f, center) }) { drawCircle(shadow, radius, center) }
+    }
+}
+
+private fun Modifier.bindingLight() = drawWithCache {
+    val bands = floatArrayOf(.09f, .12f, .86f, .89f)
+    val light = Brush.horizontalGradient(
+        0f to Color(0x990B0706), .37f to Color(0x27FFE3B5), 1f to Color(0x950B0605),
+    )
+    onDrawWithContent {
+        drawContent()
+        drawRect(light)
+        for (position in bands) {
+            val y = size.height * position
+            drawLine(Color(0x9ADCB988), Offset(0f, y), Offset(size.width, y), .65.dp.toPx())
+        }
+    }
+}
+
+private fun Modifier.pageEdge() = drawWithCache {
+    val shade = Brush.horizontalGradient(
+        0f to Color(0x99140802), .36f to Color(0x23FFE6B2), 1f to Color(0x660B0704),
+    )
+    onDrawWithContent {
+        drawContent()
+        drawRect(shade)
     }
 }
 
@@ -193,7 +265,7 @@ private fun Modifier.vinylReflection(position: Float) = drawWithCache {
 }
 
 /** A soft grazing light and a moving satin sheen, drawn over the actual cover. */
-private fun Modifier.loungePrintLight(portrait: Boolean, position: Float) = drawWithCache {
+private fun Modifier.loungePrintLight(portrait: Boolean, position: State<Float>?) = drawWithCache {
     val ambient = Brush.linearGradient(
         0f to Color(0xFFFFD399).copy(alpha = if (portrait) .14f else .21f),
         .32f to Color(0xFFFFDDAD).copy(alpha = if (portrait) .025f else .06f),
@@ -208,8 +280,8 @@ private fun Modifier.loungePrintLight(portrait: Boolean, position: Float) = draw
         .50f to Color(0xFFFFF6DE).copy(alpha = if (portrait) .11f else .19f),
         .61f to Color.Transparent,
         1f to Color.Transparent,
-        start = Offset(size.width * (position - .35f), 0f),
-        end = Offset(size.width * (position + .35f), size.height),
+        start = Offset(-size.width * .35f, 0f),
+        end = Offset(size.width * .35f, size.height),
     )
     val hinge = Brush.horizontalGradient(
         listOf(Color.Black.copy(alpha = .30f), Color.Transparent),
@@ -218,7 +290,13 @@ private fun Modifier.loungePrintLight(portrait: Boolean, position: Float) = draw
     onDrawWithContent {
         drawContent()
         drawRect(ambient)
-        drawRect(specular)
+        clipRect {
+            val travel = ((position?.value ?: .24f) - .5f) * size.width * 2f
+            translate(left = travel) {
+                drawRect(specular, topLeft = Offset(-size.width * 2f, 0f),
+                    size = DrawSize(size.width * 5f, size.height))
+            }
+        }
         if (portrait) drawRect(hinge)
         drawLine(Color(0xFFFFDFB1).copy(alpha = .63f), Offset.Zero,
             Offset(size.width, 0f), .85.dp.toPx())

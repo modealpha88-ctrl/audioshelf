@@ -5,3 +5,6 @@ local.properties
 *.iml
 *.apk
 captures/
+
+# Locally installed Codex skills
+.agents/skills/

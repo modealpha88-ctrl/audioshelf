@@ -1,6 +1,16 @@
 package com.mohamed.audioshelf
 
+import android.animation.ValueAnimator
 import android.content.Context
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -84,7 +94,47 @@ private fun palette(style: LibraryVisualStyle): List<Color> = when (style) {
 private fun foreground(style: LibraryVisualStyle): Color =
     if (style == LibraryVisualStyle.Paper) Color(0xFF302A28) else Color.White
 
-private const val PREF_LIBRARY_VISUALS = "audio_shelf_library_visuals"
+internal const val PREF_LIBRARY_VISUALS = "audio_shelf_library_visuals"
+
+@Composable
+internal fun systemMotionEnabled(): Boolean {
+    val resolver = LocalContext.current.contentResolver
+    var enabled by remember(resolver) { mutableStateOf(ValueAnimator.areAnimatorsEnabled()) }
+    DisposableEffect(resolver) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                enabled = ValueAnimator.areAnimatorsEnabled()
+            }
+        }
+        resolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE), false, observer,
+        )
+        onDispose { resolver.unregisterContentObserver(observer) }
+    }
+    return enabled
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+internal class WalnutTransition(
+    val shared: SharedTransitionScope,
+    val visibility: AnimatedVisibilityScope,
+)
+
+internal val LocalWalnutTransition = staticCompositionLocalOf<WalnutTransition?> { null }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+internal fun walnutSharedSleeve(book: AudioBook, enabled: Boolean): Modifier {
+    val scopes = LocalWalnutTransition.current
+    if (!enabled || scopes == null) return Modifier
+    return with(scopes.shared) {
+        Modifier.sharedElement(
+            rememberSharedContentState("walnut-sleeve:${book.sourceId}:${book.id}"),
+            animatedVisibilityScope = scopes.visibility,
+            boundsTransform = { _, _ -> tween(410, easing = coverSettle) },
+        )
+    }
+}
 
 @Composable
 private fun rememberedVisuals(): Triple<LibraryVisualStyle, Boolean, (LibraryVisualStyle) -> Unit> {
@@ -119,6 +169,7 @@ fun AnimatedLibraryScreen(
     }
     val (style, _, onStyle) = rememberedVisuals()
     var motion by rememberSaveable { mutableStateOf(prefs.getBoolean("motion_enabled", true)) }
+    val animateVisuals = systemMotionEnabled() && motion
     var search by rememberSaveable { mutableStateOf("") }
     var appearanceExpanded by rememberSaveable { mutableStateOf(false) }
     var sortByTitle by rememberSaveable { mutableStateOf(false) }
@@ -139,7 +190,7 @@ fun AnimatedLibraryScreen(
 
     Box(Modifier.fillMaxSize().background(conceptSurface(style))) {
         if (style != LibraryVisualStyle.Walnut) {
-            ConceptAtmosphere(style, motion, Modifier.fillMaxSize())
+            ConceptAtmosphere(style, animateVisuals, Modifier.fillMaxSize())
         }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,7 +202,7 @@ fun AnimatedLibraryScreen(
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp)) {
                 if (style == LibraryVisualStyle.Cinema) {
-                    ConceptHero(style, motion, Modifier.fillMaxWidth().height(74.dp))
+                    ConceptHero(style, animateVisuals, Modifier.fillMaxWidth().height(74.dp))
                 } else {
                     val art = when (style) {
                         LibraryVisualStyle.Walnut -> R.drawable.lounge_turntable
@@ -361,7 +412,7 @@ fun AnimatedLibraryScreen(
                 WoodenShelfRow(
                     books = shelfRows.getOrElse(index) { emptyList() },
                     progressFor = progressFor,
-                    motion = motion,
+                    motion = animateVisuals,
                     onBook = onBook,
                 )
             }
@@ -370,7 +421,7 @@ fun AnimatedLibraryScreen(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { book ->
-                        AuroraConceptCard(book, progressFor(book), motion,
+                        AuroraConceptCard(book, progressFor(book), animateVisuals,
                             { onBook(book) }, Modifier.weight(1f))
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -380,12 +431,12 @@ fun AnimatedLibraryScreen(
             items(filtered, key = { "${it.sourceId}:${it.id}" }) { book ->
                 when (style) {
                     LibraryVisualStyle.Cinema -> CinemaConceptCard(
-                        book, progressFor(book), motion,
+                        book, progressFor(book), animateVisuals,
                         onOpen = { onBook(book) }, onPlay = { onResumeBook(book) },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                     LibraryVisualStyle.Paper -> PaperConceptCard(
-                        book = book, progress = progressFor(book), motion = motion,
+                        book = book, progress = progressFor(book), motion = animateVisuals,
                         onOpen = { onBook(book) }, onResume = { onResumeBook(book) },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
@@ -580,14 +631,15 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
     val style = LibraryVisualStyle.entries.firstOrNull {
         it.name == prefs.getString("visual_style", LibraryVisualStyle.Aurora.name)
     } ?: LibraryVisualStyle.Aurora
-    val motion = prefs.getBoolean("motion_enabled", true)
+    val motion = systemMotionEnabled() && prefs.getBoolean("motion_enabled", true)
     AnimatedLibraryBackdrop(
         style, motion, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
             .heightIn(min = 190.dp)
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (style == LibraryVisualStyle.Cinema) LibraryCover(book, Modifier.width(116.dp).aspectRatio(.72f))
-            else CollectorSleeve(book, Modifier.width(116.dp).height(145.dp), detail = true, motion = motion)
+            else CollectorSleeve(book, Modifier.width(116.dp).height(145.dp), detail = true, motion = motion,
+                walnut = style == LibraryVisualStyle.Walnut)
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("AUDIOBOOK", color = foreground(style).copy(alpha = .75f),
