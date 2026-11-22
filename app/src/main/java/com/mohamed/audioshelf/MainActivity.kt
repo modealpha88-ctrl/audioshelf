@@ -859,6 +859,29 @@ private fun CoverFallback(book: AudioBook? = null) =
         }
     }
 
+private fun bookDetailColors(style: String): ColorScheme = when (style) {
+    "Walnut" -> darkColorScheme(
+        primary = Color(0xFFF7C58B), secondary = Color(0xFFDEB58E),
+        background = Color(0xFF1D1512), surface = Color(0xFF2A211E),
+        onSurface = Color(0xFFF9E9D8), onBackground = Color(0xFFF9E9D8),
+    )
+    "Cinema" -> darkColorScheme(
+        primary = Color(0xFF91BEDA), secondary = Color(0xFFBDD5E8),
+        background = Color(0xFF0B1724), surface = Color(0xFF1B2B3B),
+        onSurface = Color(0xFFEDF5FA), onBackground = Color(0xFFEDF5FA),
+    )
+    "Paper" -> lightColorScheme(
+        primary = Color(0xFF845E3F), secondary = Color(0xFF9F7F65),
+        background = Color(0xFFF7ECD9), surface = Color(0xFFFFF8EB),
+        onSurface = Color(0xFF3B3027), onBackground = Color(0xFF3B3027),
+    )
+    else -> darkColorScheme(
+        primary = Color(0xFF77E6E1), secondary = Color(0xFFC3A8F7),
+        background = Color(0xFF081425), surface = Color(0xFF17243B),
+        onSurface = Color(0xFFF7F3FF), onBackground = Color(0xFFF7F3FF),
+    )
+}
+
 @Composable
 private fun BookScreen(
     book: AudioBook,
@@ -902,6 +925,12 @@ private fun BookScreen(
     }
     BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
+    val detailContext = LocalContext.current
+    val detailStyle = remember(book.id) {
+        detailContext.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
+            .getString("visual_style", "Aurora") ?: "Aurora"
+    }
+    val detailColors = remember(detailStyle) { bookDetailColors(detailStyle) }
     AnimatedContent(
         targetState = storyOpen && controller != null,
         transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
@@ -927,7 +956,8 @@ private fun BookScreen(
                 onProgress = onProgress,
             )
         } else {
-            Column(Modifier.fillMaxSize()) {
+            MaterialTheme(colorScheme = detailColors) {
+            Column(Modifier.fillMaxSize().background(detailColors.background)) {
                 TopAppBar(
                     title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     navigationIcon = { IconButton(navigateBack) { Icon(Icons.Default.ArrowBack, null) } },
@@ -1006,6 +1036,7 @@ private fun BookScreen(
                 ) {
                     if (controller != null) PlayerPanel(controller, book, chapters, sleepEndsAt, onProgress, onSleep)
                 }
+            }
             }
         }
     }
