@@ -141,7 +141,8 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
         }) {
             if (onShelf && !portrait) {
                 Image(painterResource(R.drawable.lounge_record), null,
-                    Modifier.align(Alignment.CenterEnd).width(faceW * reveal).height(faceH),
+                    Modifier.align(Alignment.CenterEnd).width(faceW * reveal).height(faceH)
+                        .vinylReflection(lightTravel),
                     contentScale = ContentScale.FillBounds)
             } else if (!portrait) {
                 Canvas(Modifier.align(Alignment.CenterEnd).size(minOf(faceW, faceH) * .96f)) {
@@ -152,7 +153,7 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                 }
             }
             Row(Modifier.align(Alignment.BottomStart).height(faceH)
-                .shadow(2.dp, RoundedCornerShape(1.dp))) {
+                .shadow(if (onShelf) 10.dp else 3.dp, RoundedCornerShape(1.dp))) {
                 if (portrait && onShelf) Image(painterResource(R.drawable.lounge_binding), null,
                     Modifier.width(faceW * spine).fillMaxHeight(), contentScale = ContentScale.FillBounds)
                 else if (portrait) Box(Modifier.width(faceW * spine).fillMaxHeight()
@@ -170,6 +171,24 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                     .background(Color(0xFFE4CFAB)))
             }
         }
+    }
+}
+
+/** Metallic grooves catch the same light used on the jacket rather than moving independently. */
+private fun Modifier.vinylReflection(position: Float) = drawWithCache {
+    val reflection = Brush.linearGradient(
+        0f to Color.Transparent,
+        .40f to Color.Transparent,
+        .52f to Color(0x66FFE9C5),
+        .64f to Color.Transparent,
+        1f to Color.Transparent,
+        start = Offset(size.width * (position - .45f), 0f),
+        end = Offset(size.width * (position + .45f), size.height),
+    )
+    onDrawWithContent {
+        drawContent()
+        drawCircle(reflection, radius = size.minDimension * .48f,
+            center = Offset(size.width * .5f, size.height * .5f), alpha = .64f)
     }
 }
 
