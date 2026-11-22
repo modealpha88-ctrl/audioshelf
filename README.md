@@ -296,3 +296,17 @@ production Play Store release.
 ## Licence
 
 Apache-2.0. See `LICENSE`.
+
+### Codex motion skills
+
+From the repository root, run `python3 scripts/install-motion-skills.py` with
+Git and Python 3 installed. On Windows, you can also run
+`powershell -NoProfile -File scripts/install-motion-skills.ps1`. The installer
+uses the revisions in `scripts/motion-skills.lock` and puts all 56 skills from
+the 19 packs in `.agents/skills`. Open a new Codex session from the AudioShelf
+checkout so Codex discovers them. The two packs with a `lower-thirds` skill
+are both installed, with the TikTok variant named `tiktok-lower-thirds`.
+
+To install for Codex across projects, pass `--destination` with the path to
+your user-level `.agents/skills` directory (PowerShell: `-Destination`). The
+installer accepts identical existing files and reports conflicting skills.
