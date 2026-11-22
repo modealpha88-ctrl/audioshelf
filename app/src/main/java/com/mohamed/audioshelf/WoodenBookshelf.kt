@@ -1,5 +1,6 @@
 package com.mohamed.audioshelf
 
+import android.animation.ValueAnimator
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,6 +49,9 @@ import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
 internal const val LOUNGE_COLUMNS = 2
+
+/** Opposing, subtle jacket angles make the shelves read as physical objects. */
+internal fun shelfSleeveTilt(slot: Int): Float = if (slot % LOUNGE_COLUMNS == 0) -5.5f else 5.5f
 
 /** Show a minimum of four shelves while preserving room for larger libraries. */
 internal fun woodenShelfRowCount(bookCount: Int): Int =
@@ -68,6 +73,19 @@ fun WoodenShelfRow(
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2f)) {
         Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit)
+        // Light falls onto the rear wall before the jackets, giving each bay depth.
+        Canvas(Modifier.fillMaxSize()) {
+            drawRect(Brush.verticalGradient(
+                0f to Color(0x18080006),
+                .44f to Color.Transparent,
+                1f to Color(0x5A120A09),
+            ))
+            drawRect(Brush.radialGradient(
+                colors = listOf(Color(0x38FFE3B6), Color.Transparent),
+                center = Offset(size.width * .43f, size.height * .20f),
+                radius = size.width * .55f,
+            ))
+        }
         val sideInset = maxWidth * .06f
         val topInset = maxHeight * .157f
         val deckInset = maxHeight * .147f
@@ -80,9 +98,23 @@ fun WoodenShelfRow(
             repeat(LOUNGE_COLUMNS) { index ->
                 Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
                     val book = books.getOrNull(index)
-                    if (book != null) AlbumSleeve(book, progressFor(book), motion) { onBook(book) }
+                    if (book != null) AlbumSleeve(book, progressFor(book), motion, index) { onBook(book) }
                 }
             }
+        }
+        // The foreground lip frames the object rather than letting its cover
+        // appear to float above the photographed cabinet.
+        Canvas(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(maxHeight * .14f)) {
+            drawRect(Brush.verticalGradient(
+                0f to Color.Transparent,
+                .16f to Color(0x4A100B0A),
+                .43f to Color(0xBC271710),
+                1f to Color(0xE1110A08),
+            ))
+            drawLine(Color(0x99F1C08C),
+                Offset(0f, size.height * .18f),
+                Offset(size.width, size.height * .18f),
+                1.dp.toPx())
         }
     }
 }
@@ -92,18 +124,20 @@ private fun AlbumSleeve(
     book: AudioBook,
     progress: ListeningProgress,
     motion: Boolean,
+    slot: Int,
     onClick: () -> Unit,
 ) {
-    var isVisible by remember(book.id) { mutableStateOf(!motion) }
-    LaunchedEffect(book.id, motion) { isVisible = true }
+    val allowMotion = motion && ValueAnimator.areAnimatorsEnabled()
+    var isVisible by remember(book.id, allowMotion) { mutableStateOf(!allowMotion) }
+    LaunchedEffect(book.id, allowMotion) { isVisible = true }
     val scale by animateFloatAsState(
         targetValue = if (isVisible) 1f else .92f,
-        animationSpec = tween(durationMillis = 420),
+        animationSpec = tween(durationMillis = if (allowMotion) 470 else 0),
         label = "Book rising onto shelf",
     )
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 360),
+        animationSpec = tween(durationMillis = if (allowMotion) 390 else 0),
         label = "Shelf book fade",
     )
     Box(
@@ -112,11 +146,15 @@ private fun AlbumSleeve(
                 transformOrigin = TransformOrigin(0.5f, 1f)
                 scaleX = scale
                 scaleY = scale
+                cameraDistance = 900f
+                rotationY = shelfSleeveTilt(slot)
+                rotationX = -2f
+                rotationZ = if (slot == 0) -.65f else .65f
                 this.alpha = alpha
             }
             .clickable(onClick = onClick),
     ) {
-        CollectorSleeve(book, Modifier.fillMaxSize(), onShelf = true)
+        CollectorSleeve(book, Modifier.fillMaxSize(), motion = allowMotion, onShelf = true)
         val fraction = conceptProgress(progress)
         if (fraction > 0f) {
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)

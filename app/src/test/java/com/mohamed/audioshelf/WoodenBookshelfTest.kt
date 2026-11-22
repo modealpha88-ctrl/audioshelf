@@ -11,6 +11,13 @@ class WoodenBookshelfTest {
         assertEquals(4, woodenShelfRowCount(8))
     }
 
+    @Test fun sleevesHaveOpposingMildPerspectiveAcrossRows() {
+        assertEquals(-5.5f, shelfSleeveTilt(0))
+        assertEquals(5.5f, shelfSleeveTilt(1))
+        assertEquals(-5.5f, shelfSleeveTilt(2))
+        assertEquals(5.5f, shelfSleeveTilt(3))
+    }
+
     @Test fun largerLibrariesGrowWithoutTruncatingBooks() {
         assertEquals(5, woodenShelfRowCount(9))
         assertEquals(5, woodenShelfRowCount(10))
