@@ -18,40 +18,23 @@ def adb(*args, **kwargs):
 def put(local, remote):
     adb('shell', 'run-as', pkg, 'sh', '-c', f"'cat > {remote}'", stdin=local.open('rb'))
 
-def find(label, timeout=60):
-    end = time.monotonic() + timeout
-    while time.monotonic() < end:
-        result = adb('shell', 'uiautomator', 'dump', '/sdcard/shelf-window.xml', capture_output=True)
-        if b'dumped' in result.stdout:
-            xml = adb('exec-out', 'cat', '/sdcard/shelf-window.xml', capture_output=True).stdout
-            for node in ET.fromstring(xml).iter('node'):
-                values = (node.get('text', ''), node.get('content-desc', ''))
-                if any(v.lower() == label.lower() or v.startswith(label + ',') for v in values):
-                    x1,y1,x2,y2 = map(int, re.findall(r'\d+', node.attrib['bounds']))
-                    if x2 > x1 and y2 > y1:
-                        return str((x1+x2)//2), str((y1+y2)//2)
-        time.sleep(1)
-    raise RuntimeError(f'Target not visible: {label}')
+def tap(x, y):
+    adb('shell', 'input', 'tap', str(x), str(y))
 
-def tap(label):
-    adb('shell', 'input', 'tap', *find(label))
-
-def shot(name, label=None):
-    if label is not None:
-        find(label)
-    time.sleep(2)
+def shot(name, seconds=3):
+    time.sleep(seconds)
     result = adb('exec-out', 'screencap', '-p', capture_output=True).stdout
     if not result.startswith(b'\x89PNG'):
         raise RuntimeError(f'Invalid screenshot: {name}')
     (out / (name + '.png')).write_bytes(result)
 
-def launch(count, motion=True):
+def launch(count, motion=True, width=720, height=1600):
     adb('shell', 'am', 'force-stop', pkg)
     put(data / f'library-{count}.xml', 'shared_prefs/audio_shelf.xml')
     put(data / f'visual-{str(motion).lower()}.xml', 'shared_prefs/audio_shelf_library_visuals.xml')
     adb('shell', 'am', 'start', '-W', '-n', pkg + '/.MainActivity')
-    tap('Library')
-    find(f'{count} saved audiobooks')
+    time.sleep(6)
+    tap(width // 2, height - 150)
 
 adb('install', '-r', 'app/build/outputs/apk/debug/app-debug.apk')
 adb('shell', 'pm', 'grant', pkg, 'android.permission.POST_NOTIFICATIONS')
@@ -65,12 +48,12 @@ for count in (0, 1, 2, 9):
     launch(count)
     shot(f'narrow-dark-{count}')
     if count == 2:
-        tap('Frankenstein')
-        shot('collector-detail', 'Download all')
-        tap('Story mode')
-        shot('story-aurora', 'Import captions')
+        tap(180, 875)
+        shot('collector-detail', seconds=5)
+        tap(182, 810)
+        shot('story-aurora', seconds=5)
         time.sleep(4)
-        shot('story-aurora-later', 'Import captions')
+        shot('story-aurora-later')
     if count == 9:
         adb('shell', 'dumpsys', 'gfxinfo', pkg, 'reset', stdout=subprocess.DEVNULL)
         adb('shell', 'input', 'swipe', '350', '1370', '350', '410', '600')
@@ -82,11 +65,12 @@ adb('shell', 'cmd', 'uimode', 'night', 'no')
 adb('shell', 'wm', 'size', '1000x1850')
 for scale in ('animator_duration_scale', 'window_animation_scale', 'transition_animation_scale'):
     adb('shell', 'settings', 'put', 'global', scale, '0')
-launch(9, False)
-shot('wide-light-9-reduced-motion')
+launch(9, False, width=1000, height=1850)
+shot('wide-light-9-reduced-motion', seconds=5)
 
-tap('Frankenstein')
-tap('Story mode')
-shot('story-aurora-reduced-motion', 'Import captions')
+tap(240, 875)
 time.sleep(5)
-shot('story-aurora-reduced-motion-later', 'Import captions')
+tap(182, 810)
+shot('story-aurora-reduced-motion', seconds=5)
+time.sleep(5)
+shot('story-aurora-reduced-motion-later')
