@@ -1004,7 +1004,7 @@ private fun BookScreen(
                     visible = showPlayer && controller != null,
                     enter = fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 },
                 ) {
-                    if (controller != null) PlayerPanel(controller, chapters, sleepEndsAt, onProgress, onSleep)
+                    if (controller != null) PlayerPanel(controller, book, chapters, sleepEndsAt, onProgress, onSleep)
                 }
             }
         }
@@ -1014,6 +1014,7 @@ private fun BookScreen(
 @Composable
 private fun PlayerPanel(
     controller: MediaController,
+    book: AudioBook,
     chapters: List<AudioChapter>,
     sleepEndsAt: Long?,
     onProgress: (Int, Long) -> Unit,
@@ -1025,6 +1026,10 @@ private fun PlayerPanel(
     var chapterIndex by remember(controller) { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
     var speed by remember(controller) { mutableFloatStateOf(controller.playbackParameters.speed) }
     var sleepMenu by remember { mutableStateOf(false) }
+    var bookmarkMenu by remember { mutableStateOf(false) }
+    val bookmarkContext = LocalContext.current
+    val bookmarkStore = remember(bookmarkContext, book.id) { PlaybackBookmarkStore(bookmarkContext) }
+    var savedPositions by remember(book.id) { mutableStateOf(bookmarkStore.list(book)) }
     var scrubPosition by remember(controller) { mutableStateOf<Long?>(null) }
 
     DisposableEffect(controller) {
@@ -1121,6 +1126,58 @@ private fun PlayerPanel(
                 TextButton({ speed = if (speed >= 2f) .5f else speed + .25f; controller.setPlaybackSpeed(speed) }) { Text("${speed}x") }
                 IconButton({ controller.seekToPreviousMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipPrevious, "Previous chapter") }
                 IconButton({ controller.seekToNextMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipNext, "Next chapter") }
+                Box {
+                    IconButton({ bookmarkMenu = true }, enabled = canSeek) {
+                        Icon(Icons.Default.BookmarkBorder, "Save or revisit audiobook bookmarks")
+                    }
+                    DropdownMenu(bookmarkMenu, { bookmarkMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Save current position") },
+                            onClick = {
+                                val currentChapter = controller.currentMediaItemIndex
+                                if (currentChapter in chapters.indices) {
+                                    savedPositions = bookmarkStore.save(book, currentChapter,
+                                        controller.currentPosition.coerceAtLeast(0L),
+                                        chapters[currentChapter].title)
+                                }
+                                bookmarkMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Bookmark, null) },
+                        )
+                        if (savedPositions.isEmpty()) {
+                            DropdownMenuItem(text = { Text("No bookmarks yet") },
+                                enabled = false, onClick = {})
+                        }
+                        savedPositions.takeLast(12).asReversed().forEach { saved ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(saved.chapterTitle, maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis)
+                                        Text(StorySeek.clock(saved.positionMs),
+                                            style = MaterialTheme.typography.labelSmall)
+                                    }
+                                },
+                                onClick = {
+                                    if (saved.chapterIndex in 0 until controller.mediaItemCount) {
+                                        controller.seekTo(saved.chapterIndex, saved.positionMs)
+                                        chapterIndex = saved.chapterIndex
+                                        position = saved.positionMs
+                                        onProgress(saved.chapterIndex, saved.positionMs)
+                                    }
+                                    bookmarkMenu = false
+                                },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        savedPositions = bookmarkStore.remove(book, saved)
+                                    }) {
+                                        Icon(Icons.Default.Close, "Remove this bookmark")
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
                 Box {
                     IconButton({ sleepMenu = true }) { Icon(Icons.Default.Bedtime, "Sleep timer", tint = if (sleepEndsAt != null) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                     DropdownMenu(sleepMenu, { sleepMenu = false }) {
