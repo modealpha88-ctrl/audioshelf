@@ -145,7 +145,7 @@ private fun AlbumSleeve(
             .clickable(interactionSource = interaction, indication = null, role = Role.Button,
                 onClickLabel = "Open audiobook", onClick = onClick)
             .semantics(mergeDescendants = true) {
-                contentDescription = listOf(book.title, book.authors).filter { it.isNotBlank() }
+                contentDescription = listOf(book.title, book.authors).filter { it.isNotBlank() }.joinToString(", ")
                 progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
             },
     ) {
