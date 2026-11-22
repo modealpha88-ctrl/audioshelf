@@ -19,6 +19,7 @@ object SourceRegistry {
         LibriVoxSource(),
         InternetArchiveSource(),
         LocalFilesSource(),
+        TorrentAudioSource(),
         PublicRssSource(),
     ).associateBy { it.id }
     private val websiteImporter = ImportedWebsiteSource()
@@ -31,9 +32,10 @@ object SourceRegistry {
 
     fun bindLocalFiles(context: Context) {
         (builtIn.getValue("local_files") as LocalFilesSource).bind(context)
+        (builtIn.getValue("torrent_files") as TorrentAudioSource).bind(context)
     }
 
-    fun all(): List<AudioSource> = builtIn.values.filterNot { it.id == "local_files" || it.id == "public_rss" } + installed.values
+    fun all(): List<AudioSource> = builtIn.values.filterNot { it.id == "local_files" || it.id == "torrent_files" || it.id == "public_rss" } + installed.values
     fun get(id: String): AudioSource = requireNotNull(
         if (id == websiteImporter.id) websiteImporter else builtIn[id] ?: installed[id]
     ) { "Unknown source: $id" }
