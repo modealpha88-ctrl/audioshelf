@@ -203,6 +203,17 @@ private fun AudioShelfApp(
     Scaffold(
         bottomBar = {
             if (state.selectedBook == null) {
+                Column {
+                    CompactMiniPlayer(controller, libraryStyle, onOpen = {
+                        val title = controller?.mediaMetadata?.albumTitle?.toString()
+                        val playingBook = (state.library + state.browse)
+                            .firstOrNull { it.title == title && it.externalUrl.isBlank() }
+                        if (playingBook != null) {
+                            autoResumeKey = null
+                            showPlayerFor = "${playingBook.sourceId}:${playingBook.id}"
+                            viewModel.select(playingBook)
+                        }
+                    })
                 NavigationBar(
                     containerColor = when {
                         paperLibrary -> Color(0xFFF5E7D4)
@@ -232,6 +243,7 @@ private fun AudioShelfApp(
                         icon = { Icon(Icons.Default.Extension, null) },
                         label = { Text("Sources") },
                     )
+                }
                 }
             }
         },
@@ -329,6 +341,75 @@ private fun AudioShelfApp(
                     onRemove = viewModel::removeRepository,
                     onToggleProvider = viewModel::toggleProvider,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactMiniPlayer(
+    controller: MediaController?,
+    libraryStyle: String,
+    onOpen: () -> Unit,
+) {
+    if (controller == null) return
+    var bookTitle by remember(controller) {
+        mutableStateOf(controller.mediaMetadata.albumTitle?.toString().orEmpty())
+    }
+    var chapterTitle by remember(controller) {
+        mutableStateOf(controller.mediaMetadata.title?.toString().orEmpty())
+    }
+    var playing by remember(controller) { mutableStateOf(controller.isPlaying) }
+    DisposableEffect(controller) {
+        fun refresh() {
+            bookTitle = controller.mediaMetadata.albumTitle?.toString().orEmpty()
+            chapterTitle = controller.mediaMetadata.title?.toString().orEmpty()
+            playing = controller.isPlaying
+        }
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) { refresh() }
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) { refresh() }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { refresh() }
+        }
+        controller.addListener(listener)
+        refresh()
+        onDispose { controller.removeListener(listener) }
+    }
+    if (bookTitle.isBlank()) return
+    val light = libraryStyle == "Paper"
+    val ink = if (light) Color(0xFF3B3027) else Color(0xFFF9ECDB)
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClickLabel = "Open current audiobook") {
+            onOpen()
+        },
+        color = if (light) Color(0xFFFFF5E5) else Color(0xFF302831),
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                Modifier.size(42.dp).clip(RoundedCornerShape(12.dp))
+                    .background(if (light) Color(0xFFE2C7AA) else Color(0xFF5A3D51)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.Headphones, contentDescription = null, tint = ink)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(bookTitle, color = ink, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall)
+                Text(chapterTitle.ifBlank { "Tap to open player" },
+                    color = ink.copy(alpha = .7f), maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelSmall)
+            }
+            IconButton(onClick = { if (playing) controller.pause() else controller.play() }) {
+                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playing) "Pause audiobook" else "Resume audiobook",
+                    tint = ink)
             }
         }
     }
@@ -748,9 +829,9 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
             SubcomposeAsyncImage(
                 model = book.coverUrl,
                 contentDescription = "${book.title} cover",
-                contentScale = ContentScale.Crop,
-                loading = { CoverFallback() },
-                error = { CoverFallback() },
+                contentScale = ContentScale.Fit,
+                loading = { CoverFallback(book) },
+                error = { CoverFallback(book) },
                 modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Spacer(Modifier.width(14.dp))
@@ -766,9 +847,17 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
 }
 
 @Composable
-private fun CoverFallback() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Icon(Icons.Default.Headphones, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-}
+private fun CoverFallback(book: AudioBook? = null) =
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center) {
+        if (book != null) {
+            Text(book.title.take(2).uppercase(), fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMedium)
+        } else {
+            Icon(Icons.Default.Headphones, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 
 @Composable
 private fun BookScreen(
@@ -877,10 +966,14 @@ private fun BookScreen(
                                         Text("Story mode")
                                     }
                                 }
-                                if (book.externalUrl.isBlank()) {
+                                if (book.externalUrl.isBlank() && book.sourceId != "local_files") {
                                     OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
                                         Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
                                     }
+                                } else if (book.sourceId == "local_files") {
+                                    Text("Stored on this device · No download required",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 if (book.sourceId == "internet_archive") {
                                     OutlinedButton(onClick = onTorrent) {
