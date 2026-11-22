@@ -147,6 +147,9 @@ internal fun StoryMode(
     var reduceMotion by rememberSaveable(book.id) {
         mutableStateOf(storyPreferences.getBoolean("reduce_motion_" + book.id, false))
     }
+    val libraryMotion = context.getSharedPreferences(PREF_LIBRARY_VISUALS, 0)
+        .getBoolean("motion_enabled", true)
+    val allowBackgroundMotion = systemMotionEnabled() && libraryMotion && !reduceMotion
     LaunchedEffect(book.id, style, dimBackground, reduceMotion) {
         storyPreferences.edit()
             .putString("style_" + book.id, style)
@@ -273,20 +276,20 @@ internal fun StoryMode(
     }
 
     Box(Modifier.fillMaxSize().background(Color(0xFF050A18))) {
-        Crossfade(targetState = style, animationSpec = tween(450), label = "Change Story Mode background") { selected ->
+        Crossfade(targetState = style, animationSpec = tween(if (allowBackgroundMotion) 450 else 0), label = "Change Story Mode background") { selected ->
             val clip = StoryLicensedVideos.find(selected)
             val animation = StoryAnimation.find(selected)
             when {
                 animation != null -> StoryAnimatedBackground(
                     animation = animation,
                     modifier = Modifier.fillMaxSize(),
-                    moving = selected == style && !reduceMotion,
+                    moving = selected == style && allowBackgroundMotion,
                 )
                 selected == "My video" && videoUri != null ->
-                    LoopingVideoBackground(videoUri, videoPlaying = !reduceMotion)
+                    LoopingVideoBackground(videoUri, videoPlaying = selected == style && allowBackgroundMotion)
                 clip != null -> StoryLicensedVideoBackground(
                     clip = clip,
-                    reduceMotion = reduceMotion,
+                    reduceMotion = selected != style || !allowBackgroundMotion,
                     retryToken = videoRetry,
                     onStatus = { message, failed ->
                         if (selected == style) {
