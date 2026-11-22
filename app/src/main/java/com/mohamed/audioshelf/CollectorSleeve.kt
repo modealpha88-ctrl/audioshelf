@@ -142,9 +142,19 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                     val radius = minOf(faceW.toPx(), size.height) * .48f
                     val uncovered = faceW.toPx() * reveal.value
                     val center = Offset(faceW.toPx() + uncovered - radius, size.height * .5f)
-                    drawCircle(Brush.sweepGradient(
-                        colors = listOf(Color(0xFF101014), Color(0xFF555051), Color(0xFF141317),
-                            Color(0xFF252122), Color(0xFF101014)), center = center), radius, center)
+                    drawCircle(
+                        brush = Brush.linearGradient(
+                            0f to Color(0xFF100E12),
+                            .36f to Color(0xFF232023),
+                            .49f to Color(0xFF514950),
+                            .60f to Color(0xFF19171D),
+                            1f to Color(0xFF0D0C10),
+                            start = center - Offset(radius, radius * .7f),
+                            end = center + Offset(radius, radius * .7f),
+                        ),
+                        radius = radius,
+                        center = center,
+                    )
                     for (groove in 9..32) {
                         drawCircle(Color.White.copy(alpha = if (groove % 5 == 0) .20f else .09f),
                             radius * groove / 33f, center, style = Stroke(.45.dp.toPx()))
