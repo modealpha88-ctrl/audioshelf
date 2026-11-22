@@ -105,8 +105,9 @@ object TorrentDownloads {
 
     fun enqueue(context: Context, raw: String, title: String = "Torrent audiobook"): TorrentJob {
         val input = raw.trim()
-        require(input.startsWith("magnet:?xt=urn:btih:", true) ||
-            input.startsWith("magnet:?xt=urn:btmh:", true) ||
+        val magnet = input.startsWith("magnet:?", true) &&
+            Regex("(?:[?&])xt=urn:(?:btih|btmh):", RegexOption.IGNORE_CASE).containsMatchIn(input)
+        require(magnet ||
             (input.startsWith("https://", true) && Uri.parse(input).path.orEmpty().endsWith(".torrent", true))
         ) { "Paste a magnet link or an HTTPS .torrent file URL." }
         require(input.length <= 4096) { "Torrent link is too long." }
@@ -120,11 +121,13 @@ object TorrentDownloads {
         } ?: throw IllegalArgumentException("Cannot open the selected torrent file.")
         require(data.isNotEmpty()) { "Empty torrent file." }
         // Parse before queueing; rejects invalid .torrent documents.
-        TorrentInfo(data)
+        val info = TorrentInfo(data)
+        require(info.isValid()) { "Invalid torrent metadata." }
+        val name = info.name().take(140).ifBlank { "Imported audiobook" }
         val id = digest(data)
         val metadataDir = File(context.filesDir, "torrent_metadata").also { it.mkdirs() }
         File(metadataDir, "$id.torrent").writeBytes(data)
-        return add(context, id, "file:$id", "Imported audiobook")
+        return add(context, id, "file:$id", name)
     }
 
     private fun add(context: Context, id: String, input: String, title: String): TorrentJob {
@@ -139,6 +142,15 @@ object TorrentDownloads {
         }
         if (item.state != "completed") schedule(app, id)
         return item
+    }
+
+    fun titleFromMetadata(context: Context, id: String, torrentName: String) {
+        val title = torrentName.substringBeforeLast(".torrent").trim().take(140)
+        if (title.isBlank()) return
+        update(context, id) {
+            if (it.title == "Torrent audiobook" || it.title == "Imported audiobook")
+                it.copy(title = title) else it
+        }
     }
 
     fun pause(context: Context, id: String) {
@@ -266,6 +278,7 @@ class TorrentDownloadWorker(context: Context, params: WorkerParameters) : Corout
             } else {
                 val ti = TorrentInfo(TorrentDownloads.metadata(applicationContext, job.input))
                 val priorities = selectAudio(ti, destination)
+                TorrentDownloads.titleFromMetadata(applicationContext, id, ti.name())
                 native.download(ti, destination, null, priorities, null, torrent_flags_t())
                 checked = true
             }
@@ -283,6 +296,7 @@ class TorrentDownloadWorker(context: Context, params: WorkerParameters) : Corout
                     val info = handle.torrentFile()
                     if (info != null) {
                         handle.prioritizeFiles(selectAudio(info, destination))
+                        TorrentDownloads.titleFromMetadata(applicationContext, id, info.name())
                         checked = true
                     }
                 }
@@ -299,7 +313,8 @@ class TorrentDownloadWorker(context: Context, params: WorkerParameters) : Corout
                         val count = com.mohamed.audioshelf.data.source.TorrentAudioSource
                             .audioFiles(applicationContext, id).size
                         require(count > 0) { "Torrent completed without playable audiobook audio." }
-                        TorrentDownloads.finish(applicationContext, job, count)
+                        TorrentDownloads.finish(applicationContext,
+                            TorrentDownloads.get(applicationContext, id) ?: job, count)
                         break
                     }
                 } else {
