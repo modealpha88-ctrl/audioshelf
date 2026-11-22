@@ -1,5 +1,33 @@
 # AudioShelf
 
+## Native BitTorrent audiobook downloads (v0.5.25)
+
+AudioShelf can download audio using the **in-app libtorrent engine** without installing a
+separate torrent client. In **Sources → BitTorrent audiobook downloads**, paste a
+`magnet:?` link or an HTTPS `.torrent` URL, or use the Android file picker to
+select a `.torrent` file. Confirm that you have permission to download and share
+the recording before starting. The **Download torrent in AudioShelf** action on
+Internet Archive book details queues that item's own torrent.
+
+Downloads use Android WorkManager foreground work with a notification, a saved queue,
+progress and transfer speed. Pause cancels active work without deleting downloaded
+pieces; Resume verifies existing pieces and continues. Only supported audiobook
+audio files (MP3, M4A, M4B, AAC, OGG/Opus, FLAC and WAV) are selected; cover,
+video and executable files are not downloaded as requested payload. Torrent metadata
+is limited to 4 MB; selected audio is limited to 20 GB per torrent. A torrent with
+no supported audio is refused. Completed downloads are added automatically as
+**Downloaded torrents** to the regular Library, with multi-file chapters or embedded
+M4B chapter markers. Library listening progress, existing audio and repositories
+are preserved.
+
+Torrent pieces are stored under AudioShelf's app-specific **Music/Torrents** folder,
+which persists through app updates but is normally **deleted if the app is uninstalled**.
+Do not uninstall the app to resolve a signature mismatch unless you have backed up
+your downloaded files. Torrent peers and trackers may see your IP address; AudioShelf
+does not mask this traffic. Only use torrents you have the rights to distribute.
+Android may suspend long-running downloads due to network loss or background and
+foreground-service limits; Resume restarts piece verification.
+
 AudioShelf is a Tachiyomi-inspired Android audiobook reader: browse modular sources,
 save books to a local library, stream chapter audio, resume progress, change speed,
 and use a sleep timer.
