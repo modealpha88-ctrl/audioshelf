@@ -25,6 +25,7 @@ import com.mohamed.audioshelf.data.LibraryStore
 import com.mohamed.audioshelf.model.AudioBook
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
