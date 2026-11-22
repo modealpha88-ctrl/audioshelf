@@ -13,7 +13,7 @@ data = Path('/tmp/shelf-fixtures')
 art = Path('app/src/main/res/drawable-nodpi')
 
 def adb(*args, **kwargs):
-    return subprocess.run(['adb', *args], check=True, **kwargs)
+    return subprocess.run(['adb', *args], check=True, timeout=45, **kwargs)
 
 def put(local, remote):
     adb('shell', 'run-as', pkg, 'sh', '-c', f"'cat > {remote}'", stdin=local.open('rb'))
@@ -33,7 +33,7 @@ def launch(count, motion=True, width=720, height=1600):
     put(data / f'library-{count}.xml', 'shared_prefs/audio_shelf.xml')
     put(data / f'visual-{str(motion).lower()}.xml', 'shared_prefs/audio_shelf_library_visuals.xml')
     adb('shell', 'am', 'start', '-W', '-n', pkg + '/.MainActivity')
-    time.sleep(6)
+    time.sleep(10)
     tap(width // 2, height - 150)
 
 adb('install', '-r', 'app/build/outputs/apk/debug/app-debug.apk')
@@ -41,26 +41,7 @@ adb('shell', 'pm', 'grant', pkg, 'android.permission.POST_NOTIFICATIONS')
 adb('shell', 'run-as', pkg, 'mkdir', '-p', 'shared_prefs', 'files/covers')
 put(art / 'lounge_frankenstein_print.webp', 'files/covers/0.webp')
 put(art / 'lounge_dracula_print.webp', 'files/covers/1.webp')
-adb('shell', 'cmd', 'uimode', 'night', 'yes')
-adb('shell', 'wm', 'size', '720x1600')
 adb('shell', 'wm', 'density', '320')
-for count in (0, 1, 2, 9):
-    launch(count)
-    shot(f'narrow-dark-{count}')
-    if count == 2:
-        tap(180, 875)
-        shot('collector-detail', seconds=5)
-        tap(182, 810)
-        shot('story-aurora', seconds=5)
-        time.sleep(4)
-        shot('story-aurora-later')
-    if count == 9:
-        adb('shell', 'dumpsys', 'gfxinfo', pkg, 'reset', stdout=subprocess.DEVNULL)
-        adb('shell', 'input', 'swipe', '350', '1370', '350', '410', '600')
-        time.sleep(3)
-        shot('narrow-dark-9-scrolled')
-        adb('shell', 'dumpsys', 'gfxinfo', pkg, 'framestats',
-            stdout=(out / 'frame-stats.txt').open('wb'))
 adb('shell', 'cmd', 'uimode', 'night', 'no')
 adb('shell', 'wm', 'size', '1000x1850')
 for scale in ('animator_duration_scale', 'window_animation_scale', 'transition_animation_scale'):

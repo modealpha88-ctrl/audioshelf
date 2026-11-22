@@ -21,11 +21,11 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           arch: x86_64
-          target: google_apis
-          disable-animations: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          target: default
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader -cores 2 -memory 1536 -no-snapshot -noaudio -no-boot-anim
           script: python3 verification/shelf-fixtures.py && python3 verification/visual-shelf.py
       - uses: actions/upload-artifact@v4
         if: always()
