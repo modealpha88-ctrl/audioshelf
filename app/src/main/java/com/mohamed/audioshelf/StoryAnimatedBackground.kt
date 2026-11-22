@@ -61,7 +61,7 @@ internal fun StoryAnimatedBackground(
             var lastFrame = withFrameNanos { it }
             while (true) {
                 val frame = withFrameNanos { it }
-                if (frame - lastFrame >= 32_000_000L) {
+                if (frame - lastFrame >= 16_666_667L) {
                     time.floatValue += (frame - lastFrame).coerceAtMost(100_000_000L) / 1_000_000_000f
                     lastFrame = frame
                 }
@@ -80,8 +80,8 @@ private class StoryAnimationPainter(private val animation: StoryAnimation) {
         val color = if (index % 3 == 0) animation.accent else animation.tint
         Brush.verticalGradient(
             0f to Color.Transparent,
-            .22f to color.copy(alpha = .26f),
-            .48f to color.copy(alpha = .10f),
+            .22f to color.copy(alpha = .39f),
+            .48f to color.copy(alpha = .16f),
             .76f to Color.Transparent,
         )
     }
@@ -146,8 +146,8 @@ private class StoryAnimationPainter(private val animation: StoryAnimation) {
             val radius = scale * (.0015f + spark.depth * .0045f)
             val center = Offset(x * size.width, y * size.height)
             val color = if (spark.depth > .78f) animation.accent else animation.tint
-            drawCircle(color, radius * 2.3f, center, alpha = .075f * pulse * fade)
-            drawCircle(color, radius, center, alpha = .57f * pulse * fade)
+            drawCircle(color, radius * 2.9f, center, alpha = .13f * pulse * fade)
+            drawCircle(color, radius, center, alpha = .81f * pulse * fade)
         }
     }
 

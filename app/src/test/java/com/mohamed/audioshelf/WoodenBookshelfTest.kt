@@ -4,10 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WoodenBookshelfTest {
-    @Test fun smallLibrariesAlwaysHaveAFullBookcase() {
-        assertEquals(4, woodenShelfRowCount(0))
-        assertEquals(4, woodenShelfRowCount(1))
-        assertEquals(4, woodenShelfRowCount(2))
+    @Test fun smallLibrariesOnlyUseOccupiedRows() {
+        assertEquals(1, woodenShelfRowCount(0))
+        assertEquals(1, woodenShelfRowCount(1))
+        assertEquals(1, woodenShelfRowCount(2))
+        assertEquals(2, woodenShelfRowCount(3))
         assertEquals(4, woodenShelfRowCount(8))
     }
 

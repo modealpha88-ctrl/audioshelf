@@ -53,9 +53,9 @@ internal const val LOUNGE_COLUMNS = 2
 /** Opposing, subtle jacket angles make the shelves read as physical objects. */
 internal fun shelfSleeveTilt(slot: Int): Float = if (slot % LOUNGE_COLUMNS == 0) -5.5f else 5.5f
 
-/** Show a minimum of four shelves while preserving room for larger libraries. */
+/** Display only occupied shelf rows on small libraries; grow lazily with the collection. */
 internal fun woodenShelfRowCount(bookCount: Int): Int =
-    maxOf(4, (bookCount.coerceAtLeast(0) / LOUNGE_COLUMNS) + if (bookCount % LOUNGE_COLUMNS == 0) 0 else 1)
+    maxOf(1, (bookCount.coerceAtLeast(0) + LOUNGE_COLUMNS - 1) / LOUNGE_COLUMNS)
 
 /**
  * A portrait-friendly, actual three-dimensional bookshelf rather than a banner
@@ -73,17 +73,18 @@ fun WoodenShelfRow(
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2f)) {
         Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit)
-        // Light falls onto the rear wall before the jackets, giving each bay depth.
+        // Cabinet lighting sits BEHIND real, tappable sleeves, with warm overhead falloff.
         Canvas(Modifier.fillMaxSize()) {
             drawRect(Brush.verticalGradient(
-                0f to Color(0x18080006),
-                .44f to Color.Transparent,
-                1f to Color(0x5A120A09),
+                0f to Color(0x82120A06),
+                .32f to Color(0x221B0A06),
+                .66f to Color.Transparent,
+                1f to Color(0x6A120A09),
             ))
             drawRect(Brush.radialGradient(
-                colors = listOf(Color(0x38FFE3B6), Color.Transparent),
-                center = Offset(size.width * .43f, size.height * .20f),
-                radius = size.width * .55f,
+                colors = listOf(Color(0x64FFE2AC), Color(0x15BD8957), Color.Transparent),
+                center = Offset(size.width * .42f, size.height * .16f),
+                radius = size.width * .64f,
             ))
         }
         val sideInset = maxWidth * .06f

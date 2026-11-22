@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -82,6 +84,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -139,7 +144,16 @@ internal fun StoryMode(
         ))
     }
     var dimBackground by rememberSaveable(book.id) {
-        mutableStateOf(storyPreferences.getFloat("dim_" + book.id, .22f))
+        mutableStateOf(storyPreferences.getFloat("dim_" + book.id, .12f))
+    }
+    var captionMode by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getString("caption_mode_" + book.id, "Phrase") ?: "Phrase")
+    }
+    var captionScale by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getFloat("caption_scale_" + book.id, 1f).coerceIn(.75f, 1.35f))
+    }
+    var captionPosition by rememberSaveable(book.id) {
+        mutableStateOf(storyPreferences.getFloat("caption_position_" + book.id, .5f).coerceIn(0f, 1f))
     }
     var videoStatus by remember(style) { mutableStateOf<String?>(null) }
     var videoFailed by remember(style) { mutableStateOf(false) }
@@ -147,11 +161,15 @@ internal fun StoryMode(
     var reduceMotion by rememberSaveable(book.id) {
         mutableStateOf(storyPreferences.getBoolean("reduce_motion_" + book.id, false))
     }
-    LaunchedEffect(book.id, style, dimBackground, reduceMotion) {
+    LaunchedEffect(book.id, style, dimBackground, reduceMotion,
+        captionMode, captionScale, captionPosition) {
         storyPreferences.edit()
             .putString("style_" + book.id, style)
             .putFloat("dim_" + book.id, dimBackground)
             .putBoolean("reduce_motion_" + book.id, reduceMotion)
+            .putString("caption_mode_" + book.id, captionMode)
+            .putFloat("caption_scale_" + book.id, captionScale)
+            .putFloat("caption_position_" + book.id, captionPosition)
             .apply()
     }
     var absoluteM4bTime by rememberSaveable { mutableStateOf(true) }
@@ -337,11 +355,6 @@ internal fun StoryMode(
                             Icon(Icons.Default.FolderOpen, "Pick background gameplay video", tint = Color.White)
                         }
                     }
-                    StoryBackdropSelector(
-                        style = style,
-                        onSelect = { style = it },
-                        onPickVideo = onPickVideo,
-                    )
                     videoStatus?.let { message ->
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -387,17 +400,55 @@ internal fun StoryMode(
                         )),
                 )
                 if (cue != null && displayWord.isNotBlank()) {
-                    AnimatedContent(targetState = displayWord, label = "spoken word") { word ->
+                    val lift = ((captionPosition - .5f) * 130f).dp
+                    if (captionMode == "Word") {
+                        AnimatedContent(
+                            targetState = displayWord,
+                            modifier = Modifier.offset(y = lift),
+                            transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
+                            label = "spoken word",
+                        ) { word ->
+                            Text(
+                                word,
+                                textAlign = TextAlign.Center,
+                                maxLines = 3,
+                                color = Color.White,
+                                style = TextStyle(
+                                    fontSize = 38.sp * captionScale,
+                                    fontWeight = FontWeight.Black,
+                                    lineHeight = 45.sp * captionScale,
+                                    shadow = Shadow(Color.Black, Offset(3f, 5f), 10f),
+                                ),
+                            )
+                        }
+                    } else {
+                        // Retain context while emphasizing the timed word; show a short rolling
+                        // window instead of flashing unrelated single-word captions.
+                        val words = cue.text.split(Regex("""\s+""")).filter { it.isNotBlank() }
+                        val active = TimedCaptionParser.wordAt(cue, filePositionMs).second
+                        val start = (active - 3).coerceAtLeast(0)
+                            .coerceAtMost((words.size - 8).coerceAtLeast(0))
+                        val visible = words.drop(start).take(8)
+                        val highlighted = buildAnnotatedString {
+                            visible.forEachIndexed { index, word ->
+                                if (index > 0) append(" ")
+                                withStyle(SpanStyle(
+                                    color = if (start + index == active) Color(0xFF8BF5DF)
+                                        else Color.White.copy(alpha = .90f),
+                                    fontWeight = if (start + index == active) FontWeight.Black
+                                        else FontWeight.SemiBold,
+                                )) { append(word) }
+                            }
+                        }
                         Text(
-                            word,
+                            text = highlighted,
+                            modifier = Modifier.offset(y = lift).padding(horizontal = 10.dp),
                             textAlign = TextAlign.Center,
                             maxLines = 3,
-                            color = Color.White,
                             style = TextStyle(
-                                fontSize = 38.sp,
-                                fontWeight = FontWeight.Black,
-                                lineHeight = 45.sp,
-                                shadow = Shadow(Color.Black, Offset(3f, 5f), 10f),
+                                fontSize = 30.sp * captionScale,
+                                lineHeight = 39.sp * captionScale,
+                                shadow = Shadow(Color.Black, Offset(2f, 4f), 9f),
                             ),
                         )
                     }
@@ -557,11 +608,41 @@ internal fun StoryMode(
                                         .verticalScroll(rememberScrollState()),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
-                                    Text(
-                                        "Background · " + style,
-                                        modifier = Modifier.padding(top = 2.dp),
-                                        color = Color(0xFFD9E4F3),
-                                        style = MaterialTheme.typography.labelMedium,
+                                    Text("Captions", color = Color(0xFFD9E4F3),
+                                        style = MaterialTheme.typography.titleSmall)
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        listOf("Phrase", "Word").forEach { mode ->
+                                            FilterChip(
+                                                selected = captionMode == mode,
+                                                onClick = { captionMode = mode },
+                                                label = { Text(if (mode == "Phrase") "Rolling phrase" else "One word") },
+                                            )
+                                        }
+                                    }
+                                    Text("Caption size", color = Color.White,
+                                        style = MaterialTheme.typography.bodySmall)
+                                    Slider(
+                                        value = captionScale,
+                                        onValueChange = { captionScale = it },
+                                        valueRange = .75f..1.35f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Text("Caption position", color = Color.White,
+                                        style = MaterialTheme.typography.bodySmall)
+                                    Slider(
+                                        value = captionPosition,
+                                        onValueChange = { captionPosition = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Text("Scene · " + style, color = Color(0xFFD9E4F3),
+                                        style = MaterialTheme.typography.titleSmall)
+                                    StoryBackdropSelector(
+                                        style = style,
+                                        onSelect = { style = it },
+                                        onPickVideo = onPickVideo,
                                     )
                                     Text("Background dimming", color = Color.White,
                                         style = MaterialTheme.typography.bodySmall,

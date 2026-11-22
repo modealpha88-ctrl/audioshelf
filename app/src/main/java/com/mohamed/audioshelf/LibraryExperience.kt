@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -119,14 +120,20 @@ fun AnimatedLibraryScreen(
     val (style, _, onStyle) = rememberedVisuals()
     var motion by rememberSaveable { mutableStateOf(prefs.getBoolean("motion_enabled", true)) }
     var search by rememberSaveable { mutableStateOf("") }
-    val filtered = remember(search, books) {
-        books.filter {
+    var appearanceExpanded by rememberSaveable { mutableStateOf(false) }
+    var sortByTitle by rememberSaveable { mutableStateOf(false) }
+    val filtered = remember(search, books, sortByTitle) {
+        val matched = books.filter {
             it.title.contains(search, ignoreCase = true) ||
                 it.authors.contains(search, ignoreCase = true)
         }
+        if (sortByTitle) matched.sortedBy { it.title.lowercase() } else matched
     }
-    // Keep a full bookcase visible on portrait phones even if only one book is saved.
-    // Shelves are laid out lazily so larger libraries do not compose every cover.
+    val resumeBook = books.firstOrNull { book ->
+        val progress = progressFor(book)
+        book.externalUrl.isBlank() && (progress.chapterIndex > 0 || progress.positionMs > 0L)
+    }
+    // Only compose occupied rows, so small libraries no longer show entire empty cabinets.
     val shelfRows = remember(filtered) { filtered.chunked(LOUNGE_COLUMNS) }
     val shelfCount = woodenShelfRowCount(filtered.size)
 
@@ -185,15 +192,75 @@ fun AnimatedLibraryScreen(
                 }
             }
         }
+        if (resumeBook != null) {
+            item(key = "continue-listening") {
+                val progress = progressFor(resumeBook)
+                val accent = if (style == LibraryVisualStyle.Paper) Color(0xFFAA7241)
+                    else Color(0xFFFFC78E)
+                Card(
+                    onClick = { onResumeBook(resumeBook) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    colors = CardDefaults.cardColors(containerColor =
+                        if (style == LibraryVisualStyle.Paper) Color(0xFFFFF8EC)
+                        else Color(0xFF2A2631)),
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = resumeBook.coverUrl,
+                            contentDescription = "${resumeBook.title} cover",
+                            contentScale = ContentScale.Fit,
+                            loading = { ShelfTextCover(resumeBook, Modifier.fillMaxSize()) },
+                            error = { ShelfTextCover(resumeBook, Modifier.fillMaxSize()) },
+                            modifier = Modifier.size(width = 70.dp, height = 92.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                        )
+                        Column(Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text("CONTINUE LISTENING", color = accent,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold)
+                            Text(resumeBook.title, color = conceptInk(style),
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text("${(conceptProgress(progress) * 100).toInt()}% completed",
+                                color = conceptInk(style).copy(alpha = .75f),
+                                style = MaterialTheme.typography.labelSmall)
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { conceptProgress(progress) },
+                                modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
+                                color = accent,
+                                trackColor = accent.copy(alpha = .16f),
+                            )
+                        }
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Default.Headphones,
+                            contentDescription = "Resume listening",
+                            tint = accent,
+                            modifier = Modifier.size(27.dp),
+                        )
+                    }
+                }
+            }
+        }
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text("Library appearance", Modifier.weight(1f),
+                Text("Library appearance", Modifier.weight(1f)
+                    .clickable { appearanceExpanded = !appearanceExpanded },
                     style = MaterialTheme.typography.titleSmall,
                     color = conceptInk(style),
                     fontFamily = if (style == LibraryVisualStyle.Paper)
                         androidx.compose.ui.text.font.FontFamily.Serif
                         else androidx.compose.ui.text.font.FontFamily.Default)
+                androidx.compose.material3.TextButton(onClick = {
+                    appearanceExpanded = !appearanceExpanded
+                }) { Text(if (appearanceExpanded) "Hide styles" else "Change style",
+                    color = conceptInk(style)) }
                 Text("Motion", style = MaterialTheme.typography.labelMedium,
                     color = conceptInk(style))
                 Spacer(Modifier.width(8.dp))
@@ -202,7 +269,7 @@ fun AnimatedLibraryScreen(
                     prefs.edit().putBoolean("motion_enabled", it).apply()
                 })
             }
-            LazyRow(
+            if (appearanceExpanded) LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp),
             ) {
@@ -226,6 +293,19 @@ fun AnimatedLibraryScreen(
             }
         }
         item {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("${filtered.size} shown", color = conceptInk(style).copy(alpha = .76f),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = { sortByTitle = !sortByTitle }) {
+                    Text(if (sortByTitle) "Sort: Title" else "Sort: Saved",
+                        color = conceptInk(style))
+                }
+            }
             OutlinedTextField(
                 value = search, onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

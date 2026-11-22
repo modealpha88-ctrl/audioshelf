@@ -203,6 +203,17 @@ private fun AudioShelfApp(
     Scaffold(
         bottomBar = {
             if (state.selectedBook == null) {
+                Column {
+                    CompactMiniPlayer(controller, libraryStyle, onOpen = {
+                        val title = controller?.mediaMetadata?.albumTitle?.toString()
+                        val playingBook = (state.library + state.browse)
+                            .firstOrNull { it.title == title && it.externalUrl.isBlank() }
+                        if (playingBook != null) {
+                            autoResumeKey = null
+                            showPlayerFor = "${playingBook.sourceId}:${playingBook.id}"
+                            viewModel.select(playingBook)
+                        }
+                    })
                 NavigationBar(
                     containerColor = when {
                         paperLibrary -> Color(0xFFF5E7D4)
@@ -232,6 +243,7 @@ private fun AudioShelfApp(
                         icon = { Icon(Icons.Default.Extension, null) },
                         label = { Text("Sources") },
                     )
+                }
                 }
             }
         },
@@ -329,6 +341,75 @@ private fun AudioShelfApp(
                     onRemove = viewModel::removeRepository,
                     onToggleProvider = viewModel::toggleProvider,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactMiniPlayer(
+    controller: MediaController?,
+    libraryStyle: String,
+    onOpen: () -> Unit,
+) {
+    if (controller == null) return
+    var bookTitle by remember(controller) {
+        mutableStateOf(controller.mediaMetadata.albumTitle?.toString().orEmpty())
+    }
+    var chapterTitle by remember(controller) {
+        mutableStateOf(controller.mediaMetadata.title?.toString().orEmpty())
+    }
+    var playing by remember(controller) { mutableStateOf(controller.isPlaying) }
+    DisposableEffect(controller) {
+        fun refresh() {
+            bookTitle = controller.mediaMetadata.albumTitle?.toString().orEmpty()
+            chapterTitle = controller.mediaMetadata.title?.toString().orEmpty()
+            playing = controller.isPlaying
+        }
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) { refresh() }
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) { refresh() }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { refresh() }
+        }
+        controller.addListener(listener)
+        refresh()
+        onDispose { controller.removeListener(listener) }
+    }
+    if (bookTitle.isBlank()) return
+    val light = libraryStyle == "Paper"
+    val ink = if (light) Color(0xFF3B3027) else Color(0xFFF9ECDB)
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClickLabel = "Open current audiobook") {
+            onOpen()
+        },
+        color = if (light) Color(0xFFFFF5E5) else Color(0xFF302831),
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                Modifier.size(42.dp).clip(RoundedCornerShape(12.dp))
+                    .background(if (light) Color(0xFFE2C7AA) else Color(0xFF5A3D51)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.Headphones, contentDescription = null, tint = ink)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(bookTitle, color = ink, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall)
+                Text(chapterTitle.ifBlank { "Tap to open player" },
+                    color = ink.copy(alpha = .7f), maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelSmall)
+            }
+            IconButton(onClick = { if (playing) controller.pause() else controller.play() }) {
+                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playing) "Pause audiobook" else "Resume audiobook",
+                    tint = ink)
             }
         }
     }
@@ -748,9 +829,9 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
             SubcomposeAsyncImage(
                 model = book.coverUrl,
                 contentDescription = "${book.title} cover",
-                contentScale = ContentScale.Crop,
-                loading = { CoverFallback() },
-                error = { CoverFallback() },
+                contentScale = ContentScale.Fit,
+                loading = { CoverFallback(book) },
+                error = { CoverFallback(book) },
                 modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Spacer(Modifier.width(14.dp))
@@ -766,8 +847,39 @@ private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
 }
 
 @Composable
-private fun CoverFallback() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Icon(Icons.Default.Headphones, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun CoverFallback(book: AudioBook? = null) =
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center) {
+        if (book != null) {
+            Text(book.title.take(2).uppercase(), fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMedium)
+        } else {
+            Icon(Icons.Default.Headphones, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+
+private fun bookDetailColors(style: String): ColorScheme = when (style) {
+    "Walnut" -> darkColorScheme(
+        primary = Color(0xFFF7C58B), secondary = Color(0xFFDEB58E),
+        background = Color(0xFF1D1512), surface = Color(0xFF2A211E),
+        onSurface = Color(0xFFF9E9D8), onBackground = Color(0xFFF9E9D8),
+    )
+    "Cinema" -> darkColorScheme(
+        primary = Color(0xFF91BEDA), secondary = Color(0xFFBDD5E8),
+        background = Color(0xFF0B1724), surface = Color(0xFF1B2B3B),
+        onSurface = Color(0xFFEDF5FA), onBackground = Color(0xFFEDF5FA),
+    )
+    "Paper" -> lightColorScheme(
+        primary = Color(0xFF845E3F), secondary = Color(0xFF9F7F65),
+        background = Color(0xFFF7ECD9), surface = Color(0xFFFFF8EB),
+        onSurface = Color(0xFF3B3027), onBackground = Color(0xFF3B3027),
+    )
+    else -> darkColorScheme(
+        primary = Color(0xFF77E6E1), secondary = Color(0xFFC3A8F7),
+        background = Color(0xFF081425), surface = Color(0xFF17243B),
+        onSurface = Color(0xFFF7F3FF), onBackground = Color(0xFFF7F3FF),
+    )
 }
 
 @Composable
@@ -813,6 +925,12 @@ private fun BookScreen(
     }
     BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
+    val detailContext = LocalContext.current
+    val detailStyle = remember(book.id) {
+        detailContext.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
+            .getString("visual_style", "Aurora") ?: "Aurora"
+    }
+    val detailColors = remember(detailStyle) { bookDetailColors(detailStyle) }
     AnimatedContent(
         targetState = storyOpen && controller != null,
         transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
@@ -838,7 +956,8 @@ private fun BookScreen(
                 onProgress = onProgress,
             )
         } else {
-            Column(Modifier.fillMaxSize()) {
+            MaterialTheme(colorScheme = detailColors) {
+            Column(Modifier.fillMaxSize().background(detailColors.background)) {
                 TopAppBar(
                     title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     navigationIcon = { IconButton(navigateBack) { Icon(Icons.Default.ArrowBack, null) } },
@@ -877,10 +996,14 @@ private fun BookScreen(
                                         Text("Story mode")
                                     }
                                 }
-                                if (book.externalUrl.isBlank()) {
+                                if (book.externalUrl.isBlank() && book.sourceId != "local_files") {
                                     OutlinedButton(onClick = onDownload, enabled = chapters.isNotEmpty()) {
                                         Icon(Icons.Default.Download, null); Spacer(Modifier.width(6.dp)); Text("Download all")
                                     }
+                                } else if (book.sourceId == "local_files") {
+                                    Text("Stored on this device · No download required",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 if (book.sourceId == "internet_archive") {
                                     OutlinedButton(onClick = onTorrent) {
@@ -911,8 +1034,9 @@ private fun BookScreen(
                     visible = showPlayer && controller != null,
                     enter = fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 },
                 ) {
-                    if (controller != null) PlayerPanel(controller, chapters, sleepEndsAt, onProgress, onSleep)
+                    if (controller != null) PlayerPanel(controller, book, chapters, sleepEndsAt, onProgress, onSleep)
                 }
+            }
             }
         }
     }
@@ -921,6 +1045,7 @@ private fun BookScreen(
 @Composable
 private fun PlayerPanel(
     controller: MediaController,
+    book: AudioBook,
     chapters: List<AudioChapter>,
     sleepEndsAt: Long?,
     onProgress: (Int, Long) -> Unit,
@@ -932,6 +1057,10 @@ private fun PlayerPanel(
     var chapterIndex by remember(controller) { mutableIntStateOf(controller.currentMediaItemIndex.coerceAtLeast(0)) }
     var speed by remember(controller) { mutableFloatStateOf(controller.playbackParameters.speed) }
     var sleepMenu by remember { mutableStateOf(false) }
+    var bookmarkMenu by remember { mutableStateOf(false) }
+    val bookmarkContext = LocalContext.current
+    val bookmarkStore = remember(bookmarkContext, book.id) { PlaybackBookmarkStore(bookmarkContext) }
+    var savedPositions by remember(book.id) { mutableStateOf(bookmarkStore.list(book)) }
     var scrubPosition by remember(controller) { mutableStateOf<Long?>(null) }
 
     DisposableEffect(controller) {
@@ -1028,6 +1157,58 @@ private fun PlayerPanel(
                 TextButton({ speed = if (speed >= 2f) .5f else speed + .25f; controller.setPlaybackSpeed(speed) }) { Text("${speed}x") }
                 IconButton({ controller.seekToPreviousMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipPrevious, "Previous chapter") }
                 IconButton({ controller.seekToNextMediaItem() }, enabled = canSeek) { Icon(Icons.Default.SkipNext, "Next chapter") }
+                Box {
+                    IconButton({ bookmarkMenu = true }, enabled = canSeek) {
+                        Icon(Icons.Default.BookmarkBorder, "Save or revisit audiobook bookmarks")
+                    }
+                    DropdownMenu(bookmarkMenu, { bookmarkMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Save current position") },
+                            onClick = {
+                                val currentChapter = controller.currentMediaItemIndex
+                                if (currentChapter in chapters.indices) {
+                                    savedPositions = bookmarkStore.save(book, currentChapter,
+                                        controller.currentPosition.coerceAtLeast(0L),
+                                        chapters[currentChapter].title)
+                                }
+                                bookmarkMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Bookmark, null) },
+                        )
+                        if (savedPositions.isEmpty()) {
+                            DropdownMenuItem(text = { Text("No bookmarks yet") },
+                                enabled = false, onClick = {})
+                        }
+                        savedPositions.takeLast(12).asReversed().forEach { saved ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(saved.chapterTitle, maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis)
+                                        Text(StorySeek.clock(saved.positionMs),
+                                            style = MaterialTheme.typography.labelSmall)
+                                    }
+                                },
+                                onClick = {
+                                    if (saved.chapterIndex in 0 until controller.mediaItemCount) {
+                                        controller.seekTo(saved.chapterIndex, saved.positionMs)
+                                        chapterIndex = saved.chapterIndex
+                                        position = saved.positionMs
+                                        onProgress(saved.chapterIndex, saved.positionMs)
+                                    }
+                                    bookmarkMenu = false
+                                },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        savedPositions = bookmarkStore.remove(book, saved)
+                                    }) {
+                                        Icon(Icons.Default.Close, "Remove this bookmark")
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
                 Box {
                     IconButton({ sleepMenu = true }) { Icon(Icons.Default.Bedtime, "Sleep timer", tint = if (sleepEndsAt != null) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                     DropdownMenu(sleepMenu, { sleepMenu = false }) {
