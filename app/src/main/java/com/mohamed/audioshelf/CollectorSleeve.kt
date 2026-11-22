@@ -1,7 +1,12 @@
 package com.mohamed.audioshelf
 
+import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -98,8 +103,23 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
     val portrait = ratio < .86f
     var open by remember(book.id) { mutableStateOf(false) }
     LaunchedEffect(detail, motion, book.id) { open = detail }
+    val allowMotion = motion && ValueAnimator.areAnimatorsEnabled()
     val reveal by animateFloatAsState(if (open) .22f else if (onShelf) .20f else .095f,
-        tween(if (motion) 420 else 0), label = "Record reveal")
+        tween(if (allowMotion) 420 else 0), label = "Record reveal")
+    // Sweep the same studio light over cover art AND approved edition artwork.
+    // No bitmap edits: all reflections are composited on top of the real art.
+    val lightTravel = if (onShelf && allowMotion) {
+        val transition = rememberInfiniteTransition(label = "Collector studio reflection")
+        val position by transition.animateFloat(
+            initialValue = -.65f,
+            targetValue = 1.35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 5800, easing = LinearEasing),
+            ),
+            label = "Cover reflection travel",
+        )
+        position
+    } else .24f
     BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
         val spine = if (onShelf) .18f else .076f
         val pages = if (onShelf) .052f else .024f
@@ -139,7 +159,7 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                     .background(Brush.horizontalGradient(listOf(Color(0xFF46232A), Color(0xFF874451), Color(0xFF47282C)))))
                 val face = Modifier.width(faceW).fillMaxHeight()
                     .border(.7.dp, glow, RoundedCornerShape(1.dp))
-                    .then(if (onShelf && conceptPrint == null) Modifier.loungePrintLight(portrait) else Modifier)
+                    .then(if (onShelf) Modifier.loungePrintLight(portrait, lightTravel) else Modifier)
                 if (conceptPrint != null) Image(painterResource(conceptPrint), book.title, face,
                     contentScale = ContentScale.FillBounds)
                 else if (drawable != null) Image(painter, book.title, face, contentScale = ContentScale.Fit)
@@ -153,23 +173,37 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
     }
 }
 
-/** Diffuse overhead light on cloth-bound print, a broader satin reflection on LP board. */
-private fun Modifier.loungePrintLight(portrait: Boolean) = drawWithCache {
-    val light = Brush.linearGradient(
-        0f to Color(0xFFFFD399).copy(alpha = if (portrait) .15f else .24f),
-        .32f to Color(0xFFFFDDAD).copy(alpha = if (portrait) .025f else .075f),
-        .60f to Color.Transparent, 1f to Color.Black.copy(alpha = .12f),
-        start = Offset(size.width * .38f, 0f),
-        end = Offset(size.width * .66f, size.height))
-    val hinge = Brush.horizontalGradient(listOf(Color.Black.copy(alpha = .25f), Color.Transparent),
-        endX = (size.width * .026f).coerceAtLeast(1f))
+/** A soft grazing light and a moving satin sheen, drawn over the actual cover. */
+private fun Modifier.loungePrintLight(portrait: Boolean, position: Float) = drawWithCache {
+    val ambient = Brush.linearGradient(
+        0f to Color(0xFFFFD399).copy(alpha = if (portrait) .14f else .21f),
+        .32f to Color(0xFFFFDDAD).copy(alpha = if (portrait) .025f else .06f),
+        .68f to Color.Transparent,
+        1f to Color.Black.copy(alpha = .14f),
+        start = Offset(size.width * .24f, 0f),
+        end = Offset(size.width * .76f, size.height),
+    )
+    val specular = Brush.linearGradient(
+        0f to Color.Transparent,
+        .38f to Color.Transparent,
+        .50f to Color(0xFFFFF6DE).copy(alpha = if (portrait) .11f else .19f),
+        .61f to Color.Transparent,
+        1f to Color.Transparent,
+        start = Offset(size.width * (position - .35f), 0f),
+        end = Offset(size.width * (position + .35f), size.height),
+    )
+    val hinge = Brush.horizontalGradient(
+        listOf(Color.Black.copy(alpha = .30f), Color.Transparent),
+        endX = (size.width * .033f).coerceAtLeast(1f),
+    )
     onDrawWithContent {
         drawContent()
-        drawRect(light)
+        drawRect(ambient)
+        drawRect(specular)
         if (portrait) drawRect(hinge)
-        drawLine(Color(0xFFFFDFB1).copy(alpha = .58f), Offset.Zero,
+        drawLine(Color(0xFFFFDFB1).copy(alpha = .63f), Offset.Zero,
             Offset(size.width, 0f), .85.dp.toPx())
-        drawLine(Color.Black.copy(alpha = .46f), Offset(0f, size.height),
+        drawLine(Color.Black.copy(alpha = .55f), Offset(0f, size.height),
             Offset(size.width, size.height), 1.dp.toPx())
     }
 }
