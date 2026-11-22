@@ -69,6 +69,8 @@ import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
 import com.mohamed.audioshelf.model.ListeningProgress
 import com.mohamed.audioshelf.data.OfflineDownloads
+import com.mohamed.audioshelf.data.torrent.TorrentDownloads
+import com.mohamed.audioshelf.data.torrent.TorrentJob
 import com.mohamed.audioshelf.data.source.SourceRegistry
 import com.mohamed.audioshelf.data.source.SourceProviderDefinition
 import com.mohamed.audioshelf.data.source.SourceRepository
@@ -104,6 +106,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val torrentFilePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { TorrentDownloads.enqueueDocument(this, uri) }
+                .onFailure { android.widget.Toast.makeText(this, it.message ?: "Invalid torrent file", android.widget.Toast.LENGTH_LONG).show() }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -115,6 +124,7 @@ class MainActivity : ComponentActivity() {
                     viewModel,
                     onExit = { finish() },
                     onPickLocalAudio = { localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream")) },
+                    onPickTorrentFile = { torrentFilePicker.launch(arrayOf("application/x-bittorrent", "application/octet-stream", "*/*")) },
                     onPickTranscript = { book, index ->
                         captionTarget = book to index
                         captionPicker.launch(arrayOf("*/*"))
@@ -135,6 +145,7 @@ private fun AudioShelfApp(
     viewModel: MainViewModel,
     onExit: () -> Unit,
     onPickLocalAudio: () -> Unit,
+    onPickTorrentFile: () -> Unit,
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
     videoRevision: Int,
@@ -142,6 +153,12 @@ private fun AudioShelfApp(
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(3000)
+            viewModel.refreshLibrary()
+        }
+    }
     var tabHistory by rememberSaveable { mutableStateOf(arrayListOf(HomeTab.Browse)) }
     val tab = tabHistory.last()
     fun selectTab(next: HomeTab) {
@@ -328,7 +345,22 @@ private fun AudioShelfApp(
                                 playBook(context, controller, selected, pageState.chapters, index, progress.positionMs)
                             },
                             onDownload = { OfflineDownloads(context).downloadBook(selected, pageState.chapters) },
-                            onTorrent = { openArchiveTorrent(context, selected) },
+                            onTorrent = {
+                                runCatching {
+                                    val identifier = Uri.encode(selected.id)
+                                    TorrentDownloads.enqueue(
+                                        context,
+                                        "https://archive.org/download/$identifier/${identifier}_archive.torrent",
+                                        selected.title,
+                                    )
+                                }.onSuccess {
+                                    closeBook()
+                                    selectTab(HomeTab.Sources)
+                                }.onFailure {
+                                    android.widget.Toast.makeText(context, it.message ?: "Could not queue torrent",
+                                        android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            },
                             onProgress = { index, position -> viewModel.saveProgress(selected, pageState.chapters, index, position) },
                             onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
                         )
@@ -360,6 +392,7 @@ private fun AudioShelfApp(
                             onImport = viewModel::importWebsiteBook,
                             onImportFeed = viewModel::importRssFeed,
                             onPickLocalAudio = onPickLocalAudio,
+                            onPickTorrentFile = onPickTorrentFile,
                             onRefresh = viewModel::refreshRepository,
                             onRemove = viewModel::removeRepository,
                             onToggleProvider = viewModel::toggleProvider,
@@ -511,6 +544,7 @@ private fun SourcesScreen(
     onImport: (String) -> Unit,
     onImportFeed: (String) -> Unit,
     onPickLocalAudio: () -> Unit,
+    onPickTorrentFile: () -> Unit,
     onRefresh: (SourceRepository) -> Unit,
     onRemove: (SourceRepository) -> Unit,
     onToggleProvider: (SourceProviderDefinition) -> Unit,
@@ -659,6 +693,7 @@ private fun SourcesScreen(
                     Spacer(Modifier.width(8.dp))
                     Text("Choose MP3 or M4B file")
                 }
+                TorrentPanel(onPickTorrentFile)
                 state.importError?.let {
                     Spacer(Modifier.height(8.dp))
                     Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -681,6 +716,102 @@ private fun SourcesScreen(
 
         items(state.repositories, key = SourceRepository::url) { repository ->
             RepositoryCard(repository, isInstalled, onRefresh, onRemove, onToggleProvider)
+        }
+    }
+}
+
+@Composable
+private fun TorrentPanel(onPickTorrentFile: () -> Unit) {
+    val context = LocalContext.current
+    var link by rememberSaveable { mutableStateOf("") }
+    var permitted by rememberSaveable { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var jobs by remember { mutableStateOf(TorrentDownloads.jobs(context)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            jobs = TorrentDownloads.jobs(context)
+            delay(1500)
+        }
+    }
+    HorizontalDivider(Modifier.padding(vertical = 14.dp))
+    Text("BitTorrent audiobook downloads", style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold)
+    Text("Download permitted MP3/M4B audiobooks using BitTorrent. Only audio files are selected; completed books automatically appear in Library. Peer connections share your network IP.",
+        style = MaterialTheme.typography.bodySmall)
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = link, onValueChange = { link = it },
+        label = { Text("Magnet link or HTTPS .torrent URL") },
+        placeholder = { Text("magnet:?xt=urn:btih:…") },
+        modifier = Modifier.fillMaxWidth(), minLines = 1, maxLines = 3,
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = permitted, onCheckedChange = { permitted = it })
+        Text("I have permission to download and share this audiobook.",
+            style = MaterialTheme.typography.bodySmall)
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(
+            enabled = permitted && link.isNotBlank(),
+            onClick = {
+                runCatching { TorrentDownloads.enqueue(context, link) }
+                    .onSuccess { link = ""; error = null; jobs = TorrentDownloads.jobs(context) }
+                    .onFailure { error = it.message ?: "Could not queue torrent." }
+            },
+            modifier = Modifier.weight(1f),
+        ) {
+            Icon(Icons.Default.Download, null)
+            Spacer(Modifier.width(6.dp))
+            Text("Start torrent")
+        }
+        OutlinedButton(onClick = onPickTorrentFile, enabled = permitted) {
+            Icon(Icons.Default.FolderOpen, null)
+            Spacer(Modifier.width(6.dp))
+            Text(".torrent")
+        }
+    }
+    error?.let { Text(it, color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall) }
+    if (jobs.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+        Text("Torrent downloads", style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold)
+        jobs.forEach { job ->
+            ElevatedCard(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(job.title, style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    val status = when (job.state) {
+                        "completed" -> "Saved to Library · ${job.audioFiles} audio files"
+                        "metadata" -> "Finding torrent metadata and peers…"
+                        "queued" -> "Queued, waiting for connection…"
+                        "downloading" -> "Downloading · ${job.progress}% · ${job.speedBytes / 1024} KiB/s"
+                        "paused" -> "Paused · ${job.progress}%"
+                        "failed" -> "Failed · ${job.error}"
+                        else -> job.state
+                    }
+                    Text(status, style = MaterialTheme.typography.bodySmall,
+                        color = if (job.state == "failed") MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant)
+                    LinearProgressIndicator(progress = { job.progress / 100f },
+                        modifier = Modifier.fillMaxWidth())
+                    if (job.state != "completed") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (job.state == "paused" || job.state == "failed") {
+                                TextButton(onClick = {
+                                    TorrentDownloads.resume(context, job.id)
+                                    jobs = TorrentDownloads.jobs(context)
+                                }) { Icon(Icons.Default.PlayArrow, null); Text("Resume") }
+                            } else {
+                                TextButton(onClick = {
+                                    TorrentDownloads.pause(context, job.id)
+                                    jobs = TorrentDownloads.jobs(context)
+                                }) { Icon(Icons.Default.Pause, null); Text("Pause") }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -1034,7 +1165,7 @@ private fun BookScreen(
                                     OutlinedButton(onClick = onTorrent) {
                                         Icon(Icons.Default.CloudDownload, null)
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Open torrent")
+                                        Text("Download torrent in AudioShelf")
                                     }
                                     Text("Open/public-domain item", style = MaterialTheme.typography.labelSmall)
                                 }
@@ -1282,7 +1413,8 @@ private fun rememberMediaController(): MediaController? {
 private fun playBook(context: Context, controller: MediaController?, book: AudioBook, chapters: List<AudioChapter>, index: Int, positionMs: Long) {
     if (controller == null || chapters.isEmpty()) return
     val downloads = OfflineDownloads(context)
-    val embeddedM4b = book.sourceId == "local_files" && chapters.size > 1
+    val embeddedM4b = (book.sourceId == "local_files" || book.sourceId == "torrent_files") &&
+        chapters.size > 1 && chapters.all { it.audioUrl == chapters.first().audioUrl }
     val mediaItems = chapters.mapIndexed { chapterIndex, chapter ->
         val item = MediaItem.Builder()
             .setMediaId(chapter.id)
@@ -1300,14 +1432,6 @@ private fun playBook(context: Context, controller: MediaController?, book: Audio
     controller.setMediaItems(mediaItems, index.coerceIn(chapters.indices), positionMs.coerceAtLeast(0))
     controller.prepare()
     controller.play()
-}
-
-private fun openArchiveTorrent(context: Context, book: AudioBook) {
-    if (book.sourceId != "internet_archive") return
-    val identifier = Uri.encode(book.id)
-    val torrent = Uri.parse("https://archive.org/download/$identifier/${identifier}_archive.torrent")
-    val intent = Intent(Intent.ACTION_VIEW, torrent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(intent) }
 }
 
 private fun formatTime(ms: Long): String {
