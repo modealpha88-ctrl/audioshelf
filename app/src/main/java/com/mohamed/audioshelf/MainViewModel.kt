@@ -393,6 +393,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         resolveMissingCovers(_state.value.library)
     }
 
+    /** Refresh saved items added by the background torrent downloader. */
+    fun refreshLibrary() {
+        val current = store.books()
+        if (current != _state.value.library) {
+            _state.value = _state.value.copy(library = current)
+            resolveMissingCovers(current, limit = 4)
+        }
+    }
+
     fun isSaved(book: AudioBook) = _state.value.library.any { it.id == book.id && it.sourceId == book.sourceId }
     fun progress(book: AudioBook) = store.progress(book)
     fun saveProgress(book: AudioBook, chapters: List<AudioChapter>, chapter: Int, positionMs: Long) {

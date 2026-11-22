@@ -13,8 +13,8 @@ android {
         applicationId = "com.mohamed.audioshelf"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "0.5.24"
+        versionCode = 32
+        versionName = "0.5.25"
     }
 
     buildFeatures { compose = true }
@@ -77,6 +77,8 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.work:work-runtime-ktx:2.12.0")
+    // Full Android libtorrent engine (Java bindings + all supported native ABIs).
+    implementation("com.frostwire:jlibtorrent-android:2.0.15.3@aar")
     // Android AARs carry required JNI binaries: JNA's libjnidispatch.so and Vosk's libvosk.so.
     // The plain JNA JAR omits Android native binaries (see official vosk-android-demo).
     implementation("net.java.dev.jna:jna:5.18.1@aar")

@@ -57,6 +57,8 @@ jobs:
         run: gradle :app:assembleRelease
       - name: Verify Vosk/JNA native libraries in signed release APK
         run: python3 scripts/verify_vosk_apk.py app/build/outputs/apk/release/app-release.apk
+      - name: Verify native BitTorrent engine in release APK
+        run: python3 scripts/verify_torrent_apk.py app/build/outputs/apk/release/app-release.apk
       - name: Verify and name APK
         env:
           RELEASE_VERSION: ${{ steps.release_version.outputs.value }}
