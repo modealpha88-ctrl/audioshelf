@@ -1,5 +1,18 @@
 # AudioShelf
 
+## Android magnet-link integration (v0.5.26)
+
+AudioShelf registers as an Android handler for `magnet:` links and
+`application/x-bittorrent` files. Tap a magnet link in a browser, choose
+**AudioShelf** in Android's **Open with** chooser, then confirm that you have
+permission to download and share the recording. AudioShelf opens its Sources
+screen and adds the approved torrent to the existing in-app download queue.
+No download starts from an external link without explicit consent. The handler
+also accepts text shares containing magnet links or HTTPS `.torrent` URLs.
+Existing file-picker, torrent storage, library and playback behavior remain
+unchanged. Some Android browsers or file managers may continue to download a
+`.torrent` as a file; choose **Open with** or import it through Sources.
+
 ## Native BitTorrent audiobook downloads (v0.5.25)
 
 AudioShelf can download audio using the **in-app libtorrent engine** without installing a

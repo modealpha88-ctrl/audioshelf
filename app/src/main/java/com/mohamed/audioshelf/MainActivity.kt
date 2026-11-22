@@ -76,9 +76,62 @@ import com.mohamed.audioshelf.data.source.SourceProviderDefinition
 import com.mohamed.audioshelf.data.source.SourceRepository
 import com.mohamed.audioshelf.player.PlaybackService
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToLong
 
+/** An Android deep link or shared torrent is only a draft until the user confirms. */
+private sealed interface IncomingTorrent {
+    data class Link(val url: String) : IncomingTorrent
+    data class Document(val uri: Uri) : IncomingTorrent
+}
+
+private fun incomingTorrent(intent: Intent?): IncomingTorrent? {
+    if (intent == null) return null
+    fun fromLink(text: String?): IncomingTorrent.Link? {
+        val value = text?.trim().orEmpty()
+        val candidate = if (value.startsWith("magnet:?", ignoreCase = true) ||
+            value.startsWith("https://", ignoreCase = true)) value else {
+            Regex("""magnet:\?[^\s<>]+|https://[^\s<>]+\.torrent(?:\?[^\s<>]+)?""",
+                RegexOption.IGNORE_CASE).find(value)?.value.orEmpty()
+        }
+        if (candidate.length !in 1..4096) return null
+        val uri = Uri.parse(candidate)
+        val valid = (uri.scheme.equals("magnet", true) &&
+            Regex("(?:[?&])xt=urn:(?:btih|btmh):", RegexOption.IGNORE_CASE)
+                .containsMatchIn(candidate)) ||
+            (uri.scheme.equals("https", true) &&
+                uri.path.orEmpty().endsWith(".torrent", ignoreCase = true))
+        return candidate.takeIf { valid }?.let { IncomingTorrent.Link(it) }
+    }
+    return when (intent.action) {
+        Intent.ACTION_VIEW -> {
+            val uri = intent.data ?: return null
+            when {
+                uri.scheme.equals("magnet", true) ||
+                    uri.scheme.equals("https", true) -> fromLink(uri.toString())
+                (uri.scheme == "content" || uri.scheme == "file") &&
+                    intent.type.equals("application/x-bittorrent", true) ->
+                    IncomingTorrent.Document(uri)
+                else -> null
+            }
+        }
+        Intent.ACTION_SEND -> {
+            fromLink(intent.getStringExtra(Intent.EXTRA_TEXT)) ?: run {
+                @Suppress("DEPRECATION")
+                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                uri?.takeIf { (it.scheme == "content" || it.scheme == "file") &&
+                    intent.type.equals("application/x-bittorrent", true) }
+                    ?.let { IncomingTorrent.Document(it) }
+            }
+        }
+        else -> null
+    }
+}
+
 class MainActivity : ComponentActivity() {
+    private var externalTorrent by mutableStateOf<IncomingTorrent?>(null)
     private val viewModel: MainViewModel by viewModels()
     private var captionTarget: Pair<AudioBook, Int>? = null
     private var videoRevision by mutableIntStateOf(0)
@@ -115,6 +168,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        externalTorrent = incomingTorrent(intent)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -125,6 +179,12 @@ class MainActivity : ComponentActivity() {
                     onExit = { finish() },
                     onPickLocalAudio = { localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream")) },
                     onPickTorrentFile = { torrentFilePicker.launch(arrayOf("application/x-bittorrent", "application/octet-stream", "*/*")) },
+                    incomingTorrent = externalTorrent,
+                    onIncomingTorrentHandled = {
+                        externalTorrent = null
+                        // Do not display a dismissed link again after Activity recreation.
+                        setIntent(Intent(Intent.ACTION_MAIN))
+                    },
                     onPickTranscript = { book, index ->
                         captionTarget = book to index
                         captionPicker.launch(arrayOf("*/*"))
@@ -134,6 +194,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        externalTorrent = incomingTorrent(intent)
     }
 }
 
@@ -146,6 +212,8 @@ private fun AudioShelfApp(
     onExit: () -> Unit,
     onPickLocalAudio: () -> Unit,
     onPickTorrentFile: () -> Unit,
+    incomingTorrent: IncomingTorrent?,
+    onIncomingTorrentHandled: () -> Unit,
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
     videoRevision: Int,
@@ -153,6 +221,7 @@ private fun AudioShelfApp(
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMediaController()
+    val torrentScope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         while (true) {
             delay(3000)
@@ -181,10 +250,74 @@ private fun AudioShelfApp(
     }
     BackHandler {
         when {
+            incomingTorrent != null -> onIncomingTorrentHandled()
             state.selectedBook != null -> closeBook()
             tabHistory.size > 1 -> tabHistory = ArrayList(tabHistory.dropLast(1))
             else -> confirmExit = true
         }
+    }
+    LaunchedEffect(incomingTorrent) {
+        if (incomingTorrent != null) {
+            closeBook()
+            selectTab(HomeTab.Sources)
+        }
+    }
+    var torrentPermission by remember(incomingTorrent) { mutableStateOf(false) }
+    var torrentSubmitting by remember(incomingTorrent) { mutableStateOf(false) }
+    var torrentImportError by remember(incomingTorrent) { mutableStateOf<String?>(null) }
+    if (incomingTorrent != null) {
+        val request = incomingTorrent
+        AlertDialog(
+            onDismissRequest = { if (!torrentSubmitting) onIncomingTorrentHandled() },
+            title = { Text("Open torrent in AudioShelf?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Download audiobook audio into your AudioShelf library using the built-in BitTorrent engine.")
+                    Text(
+                        when (request) {
+                            is IncomingTorrent.Link -> request.url.take(150)
+                            is IncomingTorrent.Document -> "Torrent file received from another app"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = torrentPermission, enabled = !torrentSubmitting,
+                            onCheckedChange = { torrentPermission = it })
+                        Text("I have permission to download and share this recording.",
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                    torrentImportError?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = torrentPermission && !torrentSubmitting,
+                    onClick = {
+                        torrentSubmitting = true
+                        torrentScope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    when (request) {
+                                        is IncomingTorrent.Link -> TorrentDownloads.enqueue(context, request.url)
+                                        is IncomingTorrent.Document -> TorrentDownloads.enqueueDocument(context, request.uri)
+                                    }
+                                }
+                            }
+                            torrentSubmitting = false
+                            result.onSuccess { onIncomingTorrentHandled() }
+                                .onFailure { torrentImportError = it.message ?: "Could not import torrent." }
+                        }
+                    },
+                ) { Text(if (torrentSubmitting) "Adding…" else "Download audiobook") }
+            },
+            dismissButton = {
+                TextButton(onClick = onIncomingTorrentHandled, enabled = !torrentSubmitting) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
     if (confirmExit) {
         AlertDialog(
