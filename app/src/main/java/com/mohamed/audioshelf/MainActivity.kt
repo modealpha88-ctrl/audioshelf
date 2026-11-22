@@ -15,6 +15,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -127,6 +130,7 @@ class MainActivity : ComponentActivity() {
 private enum class HomeTab { Browse, Library, Sources }
 
 @Composable
+@OptIn(ExperimentalSharedTransitionApi::class)
 private fun AudioShelfApp(
     viewModel: MainViewModel,
     onExit: () -> Unit,
@@ -148,7 +152,7 @@ private fun AudioShelfApp(
     }
     var confirmExit by rememberSaveable { mutableStateOf(false) }
     var libraryStyle by remember {
-        mutableStateOf(context.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
+        mutableStateOf(context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE)
             .getString("visual_style", "Aurora") ?: "Aurora")
     }
     var autoResumeKey by remember { mutableStateOf<String?>(null) }
@@ -236,99 +240,120 @@ private fun AudioShelfApp(
             }
         },
     ) { padding ->
-        AnimatedContent(
-            targetState = tab to state,
-            modifier = Modifier.padding(padding).fillMaxSize(),
-            contentKey = { (pageTab, pageState) -> pageState.selectedBook?.id ?: pageTab },
-            transitionSpec = {
-                val direction = when {
-                    targetState.second.selectedBook != null -> 1
-                    initialState.second.selectedBook != null -> -1
-                    targetState.first.ordinal > initialState.first.ordinal -> 1
-                    else -> -1
+        val systemMotion = systemMotionEnabled()
+        SharedTransitionLayout(Modifier.padding(padding).fillMaxSize()) {
+            AnimatedContent(
+                targetState = tab to state,
+                modifier = Modifier.fillMaxSize(),
+                contentKey = { (pageTab, pageState) ->
+                    pageState.selectedBook?.let { "${it.sourceId}:${it.id}" } ?: pageTab
+                },
+                transitionSpec = {
+                    val libraryNavigation = targetState.first == HomeTab.Library &&
+                        (targetState.second.selectedBook != null || initialState.second.selectedBook != null)
+                    val motion = systemMotion && (!libraryNavigation ||
+                        context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE)
+                            .getBoolean("motion_enabled", true))
+                    if (!motion) {
+                        return@AnimatedContent androidx.compose.animation.EnterTransition.None togetherWith
+                            androidx.compose.animation.ExitTransition.None
+                    }
+                    if (libraryNavigation && libraryStyle == LibraryVisualStyle.Walnut.name) {
+                        return@AnimatedContent fadeIn(tween(220)) togetherWith fadeOut(tween(170))
+                    }
+                    val direction = when {
+                        targetState.second.selectedBook != null -> 1
+                        initialState.second.selectedBook != null -> -1
+                        targetState.first.ordinal > initialState.first.ordinal -> 1
+                        else -> -1
+                    }
+                    (fadeIn(tween(220)) + slideInHorizontally(tween(240)) { it / 10 * direction })
+                        .togetherWith(fadeOut(tween(160)) + slideOutHorizontally(tween(220)) { -it / 10 * direction })
+                },
+                label = "AudioShelf pages",
+            ) { (pageTab, pageState) ->
+                val transition = if (pageTab == HomeTab.Library && libraryStyle == LibraryVisualStyle.Walnut.name)
+                    WalnutTransition(this@SharedTransitionLayout, this) else null
+                CompositionLocalProvider(LocalWalnutTransition provides transition) {
+                    val selected = pageState.selectedBook
+                    if (selected != null) {
+                        BookScreen(
+                            book = selected,
+                            listeningProgress = viewModel.progress(selected),
+                            openPlayerInitially = showPlayerFor ==
+                                "${selected.sourceId}:${selected.id}",
+                            chapters = pageState.chapters,
+                            loading = pageState.loading,
+                            error = pageState.error,
+                            saved = viewModel.isSaved(selected),
+                            controller = controller,
+                            sleepEndsAt = pageState.sleepEndsAt,
+                            transcriptRevision = pageState.transcriptRevision,
+                            transcriptError = pageState.transcriptError,
+                            sttBusy = pageState.sttBusy,
+                            sttModelReady = pageState.sttModelReady,
+                            sttMessage = pageState.sttMessage,
+                            sttNativeUnavailable = pageState.sttNativeUnavailable,
+                            onDownloadSttModel = viewModel::downloadSttModel,
+                            onTranscribeNearby = { index, ms -> viewModel.transcribeNearby(selected, index, ms) },
+                            videoRevision = videoRevision,
+                            onPickTranscript = { index -> onPickTranscript(selected, index) },
+                            onPickVideo = onPickVideo,
+                            onBack = ::closeBook,
+                            onToggleSaved = { viewModel.toggleLibrary(selected) },
+                            onOpenExternal = {
+                                if (selected.externalUrl.startsWith("https://")) {
+                                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
+                                }
+                            },
+                            onPlay = { index ->
+                                val progress = viewModel.progress(selected)
+                                playBook(context, controller, selected, pageState.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
+                            },
+                            onResume = {
+                                val progress = viewModel.progress(selected)
+                                val index = progress.chapterIndex.coerceIn(pageState.chapters.indices)
+                                playBook(context, controller, selected, pageState.chapters, index, progress.positionMs)
+                            },
+                            onDownload = { OfflineDownloads(context).downloadBook(selected, pageState.chapters) },
+                            onTorrent = { openArchiveTorrent(context, selected) },
+                            onProgress = { index, position -> viewModel.saveProgress(selected, pageState.chapters, index, position) },
+                            onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
+                        )
+                    } else when (pageTab) {
+                        HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
+                        HomeTab.Library -> AnimatedLibraryScreen(
+                            books = pageState.library,
+                            progressFor = viewModel::progress,
+                            onBook = { book ->
+                                autoResumeKey = null
+                                showPlayerFor = null
+                                viewModel.select(book)
+                            },
+                            onResumeBook = { book ->
+                                if (book.externalUrl.isBlank()) {
+                                    val key = "${book.sourceId}:${book.id}"
+                                    autoResumeKey = key
+                                    showPlayerFor = key
+                                }
+                                viewModel.select(book)
+                            },
+                            onRefreshCovers = viewModel::refreshMissingCovers,
+                            onStyleSelected = { libraryStyle = it },
+                        )
+                        HomeTab.Sources -> SourcesScreen(
+                            state = pageState,
+                            isInstalled = viewModel::isProviderInstalled,
+                            onAdd = viewModel::addRepository,
+                            onImport = viewModel::importWebsiteBook,
+                            onImportFeed = viewModel::importRssFeed,
+                            onPickLocalAudio = onPickLocalAudio,
+                            onRefresh = viewModel::refreshRepository,
+                            onRemove = viewModel::removeRepository,
+                            onToggleProvider = viewModel::toggleProvider,
+                        )
+                    }
                 }
-                (fadeIn(tween(220)) + slideInHorizontally(tween(240)) { it / 10 * direction })
-                    .togetherWith(fadeOut(tween(160)) + slideOutHorizontally(tween(220)) { -it / 10 * direction })
-            },
-            label = "AudioShelf pages",
-        ) { (pageTab, pageState) ->
-            val selected = pageState.selectedBook
-            if (selected != null) {
-                BookScreen(
-                    book = selected,
-                    listeningProgress = viewModel.progress(selected),
-                    openPlayerInitially = showPlayerFor ==
-                        "${selected.sourceId}:${selected.id}",
-                    chapters = pageState.chapters,
-                    loading = pageState.loading,
-                    error = pageState.error,
-                    saved = viewModel.isSaved(selected),
-                    controller = controller,
-                    sleepEndsAt = pageState.sleepEndsAt,
-                    transcriptRevision = pageState.transcriptRevision,
-                    transcriptError = pageState.transcriptError,
-                    sttBusy = pageState.sttBusy,
-                    sttModelReady = pageState.sttModelReady,
-                    sttMessage = pageState.sttMessage,
-                    sttNativeUnavailable = pageState.sttNativeUnavailable,
-                    onDownloadSttModel = viewModel::downloadSttModel,
-                    onTranscribeNearby = { index, ms -> viewModel.transcribeNearby(selected, index, ms) },
-                    videoRevision = videoRevision,
-                    onPickTranscript = { index -> onPickTranscript(selected, index) },
-                    onPickVideo = onPickVideo,
-                    onBack = ::closeBook,
-                    onToggleSaved = { viewModel.toggleLibrary(selected) },
-                    onOpenExternal = {
-                        if (selected.externalUrl.startsWith("https://")) {
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
-                        }
-                    },
-                    onPlay = { index ->
-                        val progress = viewModel.progress(selected)
-                        playBook(context, controller, selected, pageState.chapters, index, if (index == progress.chapterIndex) progress.positionMs else 0)
-                    },
-                    onResume = {
-                        val progress = viewModel.progress(selected)
-                        val index = progress.chapterIndex.coerceIn(pageState.chapters.indices)
-                        playBook(context, controller, selected, pageState.chapters, index, progress.positionMs)
-                    },
-                    onDownload = { OfflineDownloads(context).downloadBook(selected, pageState.chapters) },
-                    onTorrent = { openArchiveTorrent(context, selected) },
-                    onProgress = { index, position -> viewModel.saveProgress(selected, pageState.chapters, index, position) },
-                    onSleep = { minutes -> viewModel.setSleepTimer(minutes) { controller?.pause() } },
-                )
-            } else when (pageTab) {
-                HomeTab.Browse -> BrowseScreen(pageState, viewModel::search, viewModel::selectSource, viewModel::browse, viewModel::select)
-                HomeTab.Library -> AnimatedLibraryScreen(
-                    books = pageState.library,
-                    progressFor = viewModel::progress,
-                    onBook = { book ->
-                        autoResumeKey = null
-                        showPlayerFor = null
-                        viewModel.select(book)
-                    },
-                    onResumeBook = { book ->
-                        if (book.externalUrl.isBlank()) {
-                            val key = "${book.sourceId}:${book.id}"
-                            autoResumeKey = key
-                            showPlayerFor = key
-                        }
-                        viewModel.select(book)
-                    },
-                    onRefreshCovers = viewModel::refreshMissingCovers,
-                    onStyleSelected = { libraryStyle = it },
-                )
-                HomeTab.Sources -> SourcesScreen(
-                    state = pageState,
-                    isInstalled = viewModel::isProviderInstalled,
-                    onAdd = viewModel::addRepository,
-                    onImport = viewModel::importWebsiteBook,
-                    onImportFeed = viewModel::importRssFeed,
-                    onPickLocalAudio = onPickLocalAudio,
-                    onRefresh = viewModel::refreshRepository,
-                    onRemove = viewModel::removeRepository,
-                    onToggleProvider = viewModel::toggleProvider,
-                )
             }
         }
     }

@@ -1,11 +1,22 @@
 package com.mohamed.audioshelf
 
-import android.animation.ValueAnimator
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,20 +31,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -43,8 +47,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
@@ -57,11 +59,7 @@ internal fun shelfSleeveTilt(slot: Int): Float = if (slot % LOUNGE_COLUMNS == 0)
 internal fun woodenShelfRowCount(bookCount: Int): Int =
     maxOf(4, (bookCount.coerceAtLeast(0) / LOUNGE_COLUMNS) + if (bookCount % LOUNGE_COLUMNS == 0) 0 else 1)
 
-/**
- * A portrait-friendly, actual three-dimensional bookshelf rather than a banner
- * over ordinary list cards. Each book remains independently clickable.
- * Rendered with native Compose; no remote decorative assets or extra permissions.
- */
+internal val coverSettle = CubicBezierEasing(.16f, 1f, .3f, 1f)
 @Composable
 fun WoodenShelfRow(
     books: List<AudioBook>,
@@ -74,21 +72,25 @@ fun WoodenShelfRow(
         Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit)
         // Light falls onto the rear wall before the jackets, giving each bay depth.
-        Canvas(Modifier.fillMaxSize()) {
-            drawRect(Brush.verticalGradient(
+        Box(Modifier.fillMaxSize().drawWithCache {
+            val shade = Brush.verticalGradient(
                 0f to Color(0x18080006),
                 .44f to Color.Transparent,
-                1f to Color(0x5A120A09),
-            ))
-            drawRect(Brush.radialGradient(
+                1f to Color(0x38120A09),
+            )
+            val key = Brush.radialGradient(
                 colors = listOf(Color(0x38FFE3B6), Color.Transparent),
                 center = Offset(size.width * .43f, size.height * .20f),
                 radius = size.width * .55f,
-            ))
-        }
+            )
+            onDrawBehind {
+                drawRect(shade)
+                drawRect(key)
+            }
+        })
         val sideInset = maxWidth * .06f
-        val topInset = maxHeight * .157f
-        val deckInset = maxHeight * .147f
+        val topInset = maxHeight * .134f
+        val deckInset = maxHeight * .128f
         Row(
             Modifier.fillMaxSize().padding(start = sideInset, end = sideInset,
                 top = topInset, bottom = deckInset),
@@ -102,20 +104,22 @@ fun WoodenShelfRow(
                 }
             }
         }
-        // The foreground lip frames the object rather than letting its cover
-        // appear to float above the photographed cabinet.
-        Canvas(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(maxHeight * .14f)) {
-            drawRect(Brush.verticalGradient(
-                0f to Color.Transparent,
-                .16f to Color(0x4A100B0A),
-                .43f to Color(0xBC271710),
-                1f to Color(0xE1110A08),
-            ))
-            drawLine(Color(0x99F1C08C),
-                Offset(0f, size.height * .18f),
-                Offset(size.width, size.height * .18f),
-                1.dp.toPx())
-        }
+        // Preserve the walnut grain while lighting the front bevel separately.
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(maxHeight * .113f)
+            .drawWithCache {
+                val bevel = Brush.verticalGradient(
+                    0f to Color(0x45FFCC91),
+                    .09f to Color(0x16FFC78D),
+                    .23f to Color.Transparent,
+                    1f to Color(0x70100604),
+                )
+                onDrawBehind {
+                    val inset = size.width * .022f
+                    drawRect(bevel, topLeft = Offset(inset, 0f),
+                        size = Size(size.width - inset * 2f, size.height))
+                }
+            })
+
     }
 }
 
@@ -127,38 +131,45 @@ private fun AlbumSleeve(
     slot: Int,
     onClick: () -> Unit,
 ) {
-    val allowMotion = motion && ValueAnimator.areAnimatorsEnabled()
-    var isVisible by remember(book.id, allowMotion) { mutableStateOf(!allowMotion) }
-    LaunchedEffect(book.id, allowMotion) { isVisible = true }
-    val scale by animateFloatAsState(
-        targetValue = if (isVisible) 1f else .92f,
-        animationSpec = tween(durationMillis = if (allowMotion) 470 else 0),
-        label = "Book rising onto shelf",
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val focused by interaction.collectIsFocusedAsState()
+    val settle by animateFloatAsState(
+        if (motion && pressed) 1f else 0f,
+        tween(if (!motion) 0 else if (pressed) 110 else 290, easing = coverSettle),
+        label = "Sleeve selection",
     )
-    val alpha by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = if (allowMotion) 390 else 0),
-        label = "Shelf book fade",
-    )
+    val fraction = conceptProgress(progress)
     Box(
         Modifier.fillMaxSize()
-            .graphicsLayer {
-                transformOrigin = TransformOrigin(0.5f, 1f)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button,
+                onClickLabel = "Open audiobook", onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                contentDescription = listOf(book.title, book.authors).filter { it.isNotBlank() }.joinToString(", ")
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+            },
+    ) {
+        CollectorSleeve(
+            book, Modifier.fillMaxSize(), motion = motion, onShelf = true,
+            pose = Modifier.graphicsLayer {
+                transformOrigin = TransformOrigin(.5f, 1f)
+                val scale = 1f - settle * .035f
                 scaleX = scale
                 scaleY = scale
-                cameraDistance = 900f
-                rotationY = shelfSleeveTilt(slot)
-                rotationX = -2f
-                rotationZ = if (slot == 0) -.65f else .65f
-                this.alpha = alpha
-            }
-            .clickable(onClick = onClick),
-    ) {
-        CollectorSleeve(book, Modifier.fillMaxSize(), motion = allowMotion, onShelf = true)
-        val fraction = conceptProgress(progress)
+                cameraDistance = 160.dp.toPx()
+                rotationY = shelfSleeveTilt(slot) * (1f - settle * .6f)
+                rotationX = -2f + 4f * settle
+            },
+        )
+        if (focused || pressed) {
+            Box(Modifier.matchParentSize().padding(2.dp)
+                .border(1.dp, Color(0xFFD6AD77).copy(alpha = if (focused) .95f else .42f)))
+        }
         if (fraction > 0f) {
-            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)
-                .height(2.dp).background(Color(0xFFFFCA8B)))
+            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 18.dp)
+                .fillMaxWidth().height(3.dp).background(Color(0xFF3E2518))) {
+                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(Color(0xFFFFCA8B)))
+            }
         }
     }
 }
