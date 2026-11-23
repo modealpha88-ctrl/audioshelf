@@ -74,6 +74,13 @@ object TorrentDownloads {
         return path.substringAfterLast('.', "").lowercase() in audioExtensions
     }
 
+    /** Only harmless, bounded image formats are selected alongside playable torrent audio. */
+    fun isArtworkPath(path: String): Boolean {
+        if (path.isBlank() || path.startsWith("/") || '\\' in path) return false
+        if (path.split('/').any { it == "." || it == ".." || it.isBlank() }) return false
+        return path.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp")
+    }
+
     fun directory(context: Context, id: String): File {
         require(id.matches(Regex("[a-f0-9]{32}"))) { "Invalid torrent ID." }
         val music = context.getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: context.filesDir
@@ -343,16 +350,30 @@ class TorrentDownloadWorker(context: Context, params: WorkerParameters) : Corout
         require(fs.numFiles() in 1..5000) { "Unsupported torrent file count." }
         var audioBytes = 0L
         var audioCount = 0
+        var artworkCount = 0
+        var artworkBytes = 0L
         val base = folder.canonicalPath + File.separator
         val selected = Array(fs.numFiles()) { index ->
             val path = fs.filePath(index)
-            val allowed = TorrentDownloads.isAudioPath(path) &&
-                File(folder, path).canonicalPath.startsWith(base)
-            if (allowed) {
-                audioCount++
-                audioBytes += fs.fileSize(index)
-                Priority.NORMAL
-            } else Priority.IGNORE
+            val bytes = fs.fileSize(index)
+            val safe = File(folder, path).canonicalPath.startsWith(base)
+            when {
+                safe && TorrentDownloads.isAudioPath(path) -> {
+                    audioCount++
+                    audioBytes += bytes
+                    Priority.NORMAL
+                }
+                // Previously all cover.jpg/folder.png files were discarded by the torrent
+                // engine. Download only a small, safe amount of companion cover art.
+                safe && TorrentDownloads.isArtworkPath(path) &&
+                    bytes in 1_024L..8_388_608L && artworkCount < 12 &&
+                    artworkBytes + bytes <= 24L * 1024 * 1024 -> {
+                    artworkCount++
+                    artworkBytes += bytes
+                    Priority.NORMAL
+                }
+                else -> Priority.IGNORE
+            }
         }
         require(audioCount > 0) { "This torrent contains no supported audiobook audio (MP3, M4B, M4A, AAC, OGG, FLAC or WAV)." }
         require(audioBytes <= 20L * 1024 * 1024 * 1024) { "Selected audio is larger than 20 GB." }
