@@ -102,12 +102,7 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
     val drawable = (painter.state as? AsyncImagePainter.State.Success)?.result?.drawable
     val ratio = if (drawable != null && drawable.intrinsicHeight > 0)
         drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight else .67f
-    val conceptPrint = remember(drawable, book.title, walnut) {
-        if (walnut) (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let {
-            matchingLoungePrint(book.title, it)
-        } else null
-    }
-    val portrait = ratio < .86f
+   val portrait = ratio < .86f
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val allowMotion = motion && lifecycle.isAtLeast(Lifecycle.State.RESUMED)
     val extension = if (detail) .24f else if (onShelf) .23f else .095f
@@ -196,9 +191,9 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                 val face = Modifier.width(faceW).fillMaxHeight()
                     .border(.7.dp, glow, RoundedCornerShape(1.dp))
                     .then(if (walnut) Modifier.loungePrintLight(portrait, lightTravel) else Modifier)
-                if (conceptPrint != null) Image(painterResource(conceptPrint), book.title, face,
-                    contentScale = ContentScale.Fit)
-                else if (drawable != null) Image(painter, book.title, face, contentScale = ContentScale.Fit)
+                // Always show the book's actual cover, not a title-matched decorative print.
+                // Keep studio highlights layered above the real artwork.
+                if (drawable != null) Image(painter, book.title, face, contentScale = ContentScale.Fit)
                 else ShelfTextCover(book, face)
                 if (portrait && walnut) Image(painterResource(R.drawable.lounge_pages), null,
                     Modifier.width(faceW * pages).fillMaxHeight().pageEdge(), contentScale = ContentScale.FillBounds)
