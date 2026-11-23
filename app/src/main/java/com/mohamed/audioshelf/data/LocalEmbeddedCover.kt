@@ -149,7 +149,11 @@ class LocalEmbeddedCover(private val context: Context) {
         require(kind != null && validImage(bytes)) {
             "Choose a valid JPG, PNG or WebP cover image."
         }
-        val target = cachedCoverFile(book, "custom." + kind)
+        // Content-addressed URL prevents Coil from displaying a stale cached jacket
+        // when the user selects a different image for the same saved book.
+        val revision = MessageDigest.getInstance("SHA-256").digest(bytes).take(8)
+            .joinToString("") { "%02x".format(it) }
+        val target = cachedCoverFile(book, "custom-$revision." + kind)
         val temp = File.createTempFile("chosen-", ".tmp", target.parentFile)
         try {
             temp.writeBytes(bytes)
