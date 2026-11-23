@@ -762,6 +762,8 @@ private fun SourcesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 HorizontalDivider(Modifier.padding(vertical = 18.dp))
+                AudioarrSource()
+                HorizontalDivider(Modifier.padding(vertical = 18.dp))
                 Text("Import audiobook by URL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
                     "Paste an individual audiobook page or direct audio URL, not a website homepage. Only sites allowing third-party access are supported.",
