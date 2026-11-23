@@ -63,28 +63,27 @@ fun WoodenShelfRow(
     motion: Boolean,
     onBook: (AudioBook) -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)) {
-        val bookHeight = (maxWidth * .52f).coerceIn(136.dp, 228.dp)
-        val spineWidth = (maxWidth * .14f).coerceIn(48.dp, 64.dp)
-        Column {
-            Row(Modifier.fillMaxWidth().height(bookHeight).padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val sceneHeight = (maxWidth * .72f).coerceIn(186.dp, 320.dp)
+        // The photographed plank occupies 68–77% of the scene. Place the
+        // bottom edges midway across its top surface, in front of the wall.
+        val baseline = sceneHeight * .722f
+        val spineWidth = (maxWidth * .124f).coerceIn(48.dp, 68.dp)
+        Box(Modifier.fillMaxWidth().height(sceneHeight)) {
+            Image(painterResource(R.drawable.floating_walnut), null, Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds)
+            Row(Modifier.fillMaxWidth().height(baseline).padding(start = 20.dp, end = 14.dp),
+                verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
                 books.dropLast(1).forEachIndexed { index, book ->
-                    Box(Modifier.width(spineWidth).fillMaxHeight(if (index == 0) .97f else 1f)) {
+                    Box(Modifier.width(spineWidth).fillMaxHeight(if (index == 0) .91f else .96f)) {
                         WalnutSpine(book, progressFor(book), index, motion) { onBook(book) }
                     }
                 }
                 books.lastOrNull()?.let { book ->
-                    Box(Modifier.width(bookHeight * 1.12f).fillMaxHeight()) {
+                    Box(Modifier.width(baseline * 1.12f).fillMaxHeight(.93f)) {
                         AlbumSleeve(book, progressFor(book), motion, books.lastIndex) { onBook(book) }
                     }
                 }
-            }
-            Box(Modifier.fillMaxWidth().height(12.dp).shadow(5.dp, RoundedCornerShape(2.dp))) {
-                Image(painterResource(R.drawable.walnut_plank), null, Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds)
-                Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x66FFCE91)))
             }
         }
     }
@@ -93,11 +92,10 @@ fun WoodenShelfRow(
 @Composable
 private fun WalnutSpine(book: AudioBook, progress: ListeningProgress, slot: Int,
     motion: Boolean, onOpen: () -> Unit) {
-    val cloth = when (book.title.hashCode() and 3) {
-        0 -> Color(0xFF234050)
-        1 -> Color(0xFF624136)
-        2 -> Color(0xFF65313A)
-        else -> Color(0xFF415040)
+    val cloth = if (slot == 0) {
+        if (book.title.hashCode() and 1 == 0) R.drawable.cloth_navy else R.drawable.cloth_green
+    } else {
+        if (book.title.hashCode() and 1 == 0) R.drawable.cloth_umber else R.drawable.cloth_burgundy
     }
     val fraction = conceptProgress(progress)
     val foil = Color(0xFFFFE5B6)
@@ -108,25 +106,22 @@ private fun WalnutSpine(book: AudioBook, progress: ListeningProgress, slot: Int,
         }.then(walnutSharedSleeve(book, motion))
         .graphicsLayer {
             transformOrigin = TransformOrigin(.5f, 1f)
-            rotationZ = if (slot == 0) 3f else 1f
+            rotationZ = if (slot == 0) 5f else 1.7f
         }.padding(horizontal = 1.dp)
-        .shadow(2.dp, RoundedCornerShape(2.dp))
-        .background(Brush.horizontalGradient(listOf(Color(0xFF261E1A), cloth, cloth, Color(0xFF332522)))),
+        .shadow(3.dp, RoundedCornerShape(2.dp)),
         contentAlignment = Alignment.Center) {
-        for (edge in listOf(Alignment.TopCenter, Alignment.BottomCenter)) {
-            Box(Modifier.align(edge).padding(vertical = 8.dp).fillMaxWidth(.86f)
-                .height(1.dp).background(foil))
-        }
+        Image(painterResource(cloth), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         Text(book.title, modifier = Modifier.layout { measurable, limits ->
             val label = measurable.measure(androidx.compose.ui.unit.Constraints(
-                maxWidth = (limits.maxHeight - 24.dp.roundToPx()).coerceAtLeast(0),
+                maxWidth = (limits.maxHeight - 40.dp.roundToPx()).coerceAtLeast(0),
                 maxHeight = limits.maxWidth))
             layout(label.height, label.width) {
                 label.placeWithLayer((label.height - label.width) / 2, (label.width - label.height) / 2) {
                     rotationZ = 90f
                 }
             }
-        }, color = foil, style = MaterialTheme.typography.titleSmall,
+        }, color = foil, style = MaterialTheme.typography.titleMedium,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
             maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
         if (fraction > 0f) {
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)

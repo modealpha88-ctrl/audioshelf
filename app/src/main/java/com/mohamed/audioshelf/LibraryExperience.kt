@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -116,6 +117,7 @@ fun AnimatedLibraryScreen(
     val animateVisuals = systemMotionEnabled() && motion
     var search by rememberSaveable { mutableStateOf("") }
     var sortByTitle by rememberSaveable { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
     val filtered = remember(search, books, sortByTitle) {
         val matched = books.filter {
             it.title.contains(search, ignoreCase = true) ||
@@ -135,29 +137,40 @@ fun AnimatedLibraryScreen(
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
                 item {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Text("Library", style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold, color = walnutColors.onSurface)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Library", Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold, color = walnutColors.onSurface)
+                            Box {
+                                androidx.compose.material3.IconButton(onClick = { menuOpen = true }) {
+                                    Icon(Icons.Default.MoreVert, "Library controls", tint = walnutColors.onSurface)
+                                }
+                                androidx.compose.material3.DropdownMenu(menuOpen, { menuOpen = false }) {
+                                    androidx.compose.material3.DropdownMenuItem(
+                                        text = { Text(if (sortByTitle) "Sort by saved order" else "Sort by title") },
+                                        onClick = { sortByTitle = !sortByTitle; menuOpen = false })
+                                    androidx.compose.material3.DropdownMenuItem(
+                                        text = { Text("Motion") }, trailingIcon = { Switch(motion, null) },
+                                        onClick = {
+                                            motion = !motion
+                                            prefs.edit().putBoolean("motion_enabled", motion).apply()
+                                            menuOpen = false
+                                        })
+                                    if (books.any { it.coverUrl.isBlank() }) {
+                                        androidx.compose.material3.DropdownMenuItem(text = { Text("Find covers") },
+                                            onClick = { menuOpen = false; onRefreshCovers() })
+                                    }
+                                    if (resumeBook != null) {
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text("Resume " + resumeBook.title, maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis) },
+                                            onClick = { menuOpen = false; onResumeBook(resumeBook) })
+                                    }
+                                }
+                            }
+                        }
                         OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
                             singleLine = true, placeholder = { Text("Search your books") },
                             leadingIcon = { Icon(Icons.Default.Search, null) })
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            androidx.compose.material3.TextButton(onClick = { sortByTitle = !sortByTitle }) {
-                                Text(if (sortByTitle) "Sort: Title" else "Sort: Saved")
-                            }
-                            Spacer(Modifier.weight(1f))
-                            Text("Motion", color = walnutColors.onSurface)
-                            Switch(motion, { motion = it
-                                prefs.edit().putBoolean("motion_enabled", it).apply()
-                            })
-                        }
-                        if (books.any { it.coverUrl.isBlank() }) {
-                            androidx.compose.material3.TextButton(onClick = onRefreshCovers) { Text("Find covers") }
-                        }
-                        if (resumeBook != null && search.isBlank()) {
-                            androidx.compose.material3.TextButton(onClick = { onResumeBook(resumeBook) }) {
-                                Text("Resume " + resumeBook.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
                     }
                 }
                 if (filtered.isEmpty()) {
