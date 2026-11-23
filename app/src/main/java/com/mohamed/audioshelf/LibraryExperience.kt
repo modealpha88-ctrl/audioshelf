@@ -200,7 +200,7 @@ fun AnimatedLibraryScreen(
         ),
     ) {
         item {
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp)) {
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp)) {
                 if (style == LibraryVisualStyle.Cinema) {
                     ConceptHero(style, animateVisuals, Modifier.fillMaxWidth().height(74.dp))
                 } else {
@@ -209,9 +209,9 @@ fun AnimatedLibraryScreen(
                         LibraryVisualStyle.Aurora -> R.drawable.aurora_sky
                         else -> R.drawable.paper_lamp
                     }
-                    Box(Modifier.fillMaxWidth().heightIn(min = 90.dp)) {
+                    Box(Modifier.fillMaxWidth().heightIn(min = 76.dp)) {
                         androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(art), null,
-                            Modifier.align(Alignment.CenterEnd).fillMaxWidth(.56f).height(90.dp),
+                            Modifier.align(Alignment.CenterEnd).fillMaxWidth(.56f).height(76.dp),
                             contentScale = ContentScale.Crop)
                         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(
                             0f to conceptSurface(style), .45f to conceptSurface(style),
@@ -261,14 +261,9 @@ fun AnimatedLibraryScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        SubcomposeAsyncImage(
-                            model = resumeBook.coverUrl,
-                            contentDescription = "${resumeBook.title} cover",
-                            contentScale = ContentScale.Fit,
-                            loading = { ShelfTextCover(resumeBook, Modifier.fillMaxSize()) },
-                            error = { ShelfTextCover(resumeBook, Modifier.fillMaxSize()) },
-                            modifier = Modifier.size(width = 70.dp, height = 92.dp)
-                                .clip(RoundedCornerShape(8.dp)),
+                        LibraryCover(
+                            resumeBook,
+                            Modifier.size(width = 70.dp, height = 92.dp),
                         )
                         Column(Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -281,12 +276,12 @@ fun AnimatedLibraryScreen(
                             Text("${(conceptProgress(progress) * 100).toInt()}% completed",
                                 color = conceptInk(style).copy(alpha = .75f),
                                 style = MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.LinearProgressIndicator(
-                                progress = { conceptProgress(progress) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
-                                color = accent,
-                                trackColor = accent.copy(alpha = .16f),
-                            )
+                            Box(Modifier.fillMaxWidth().padding(top = 6.dp)
+                                .height(5.dp).clip(RoundedCornerShape(5.dp))
+                                .background(accent.copy(alpha = .16f))) {
+                                Box(Modifier.fillMaxWidth(conceptProgress(progress))
+                                    .fillMaxHeight().background(accent))
+                            }
                         }
                         androidx.compose.material3.Icon(
                             androidx.compose.material.icons.Icons.Default.Headphones,
@@ -556,30 +551,7 @@ private fun AnimatedLibraryTile(
 @Composable
 internal fun LibraryCover(book: AudioBook, modifier: Modifier = Modifier) {
     val fallback: @Composable () -> Unit = {
-        Box(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(
-                listOf(Color(0xFF445567), Color(0xFF262D43))
-            )).padding(10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("AUDIOBOOK", color = Color(0xFFE1D0B9),
-                    style = MaterialTheme.typography.labelSmall)
-                Spacer(Modifier.height(7.dp))
-                Text(book.title, color = Color.White,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold, maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                if (book.authors.isNotBlank()) {
-                    Spacer(Modifier.height(7.dp))
-                    Text(book.authors, color = Color(0xFFDDDAE4),
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                }
-            }
-        }
+        ShelfTextCover(book, Modifier.fillMaxSize())
     }
     if (book.coverUrl.isBlank()) {
         Box(modifier.clip(RoundedCornerShape(12.dp))) { fallback() }

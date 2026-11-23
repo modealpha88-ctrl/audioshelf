@@ -12,6 +12,18 @@ class TorrentDownloadsTest {
         }
     }
 
+    @Test fun acceptsOnlySafeCompanionArtwork() {
+        for (name in listOf("cover.jpg", "folder.png", "book/Cover.JPEG",
+            "chapters/artwork.webp", "disc/front.jpg")) {
+            assertTrue("Expected cover artwork: $name", TorrentDownloads.isArtworkPath(name))
+        }
+        for (name in listOf("../cover.jpg", "/cover.png", "disc/../../cover.webp",
+            "disc\\cover.jpg", "a//cover.png", "a/./cover.png",
+            "install.apk", "chapter.mp3", "cover.svg", "cover.gif", "")) {
+            assertFalse("Rejected cover payload: $name", TorrentDownloads.isArtworkPath(name))
+        }
+    }
+
     @Test fun rejectsUnwantedAndUnsafePaths() {
         for (name in listOf("../escape.mp3", "/absolute.mp3", "disc/../../escape.m4b",
             "disc\\escape.mp3", "disc//part.mp3", "cover.jpg", "install.apk",

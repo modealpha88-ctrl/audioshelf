@@ -134,6 +134,20 @@ class MainActivity : ComponentActivity() {
     private var externalTorrent by mutableStateOf<IncomingTorrent?>(null)
     private val viewModel: MainViewModel by viewModels()
     private var captionTarget: Pair<AudioBook, Int>? = null
+    private var coverTarget: AudioBook? = null
+    private val coverPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val book = coverTarget
+        coverTarget = null
+        if (uri != null && book != null) {
+            viewModel.setCustomCover(book, uri) { error ->
+                android.widget.Toast.makeText(
+                    this,
+                    error ?: "Cover updated for ${book.title}",
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
     private var videoRevision by mutableIntStateOf(0)
     private val captionPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) captionTarget?.let { (book, index) ->
@@ -190,6 +204,10 @@ class MainActivity : ComponentActivity() {
                         captionPicker.launch(arrayOf("*/*"))
                     },
                     onPickVideo = { videoPicker.launch(arrayOf("video/*")) },
+                    onPickCover = { book ->
+                        coverTarget = book
+                        coverPicker.launch(arrayOf("image/*"))
+                    },
                     videoRevision = videoRevision,
                 )
             }
@@ -216,6 +234,7 @@ private fun AudioShelfApp(
     onIncomingTorrentHandled: () -> Unit,
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
+    onPickCover: (AudioBook) -> Unit,
     videoRevision: Int,
 ) {
     val context = LocalContext.current
@@ -463,6 +482,7 @@ private fun AudioShelfApp(
                             onPickVideo = onPickVideo,
                             onBack = ::closeBook,
                             onToggleSaved = { viewModel.toggleLibrary(selected) },
+                            onPickCover = { onPickCover(selected) },
                             onOpenExternal = {
                                 if (selected.externalUrl.startsWith("https://")) {
                                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
@@ -1195,6 +1215,7 @@ private fun BookScreen(
     onPickVideo: () -> Unit,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
+    onPickCover: () -> Unit,
     onOpenExternal: () -> Unit,
     onPlay: (Int) -> Unit,
     onResume: () -> Unit,
@@ -1261,6 +1282,16 @@ private fun BookScreen(
                         LibraryBookDetailCard(book, listeningProgress)
                         Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                             Column(Modifier.fillMaxWidth()) {
+                                OutlinedButton(onClick = onPickCover, enabled = saved) {
+                                    Icon(Icons.Default.Image, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(if (book.coverUrl.isBlank()) "Add cover image" else "Change cover image")
+                                }
+                                if (!saved) {
+                                    Text("Save this book to your library to set its cover.",
+                                        style = MaterialTheme.typography.labelSmall)
+                                }
+                                Spacer(Modifier.height(8.dp))
                                 if (book.externalUrl.isNotBlank()) {
                                     Button(onClick = onOpenExternal) {
                                         Icon(Icons.Default.OpenInBrowser, null)

@@ -387,6 +387,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** User-selected artwork overrides metadata artwork and remains private to this device. */
+    fun setCustomCover(book: AudioBook, uri: Uri, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            runCatching {
+                require(store.contains(book)) { "Save the audiobook to your library first." }
+                val cover = embeddedCover.importChosenCover(book, uri)
+                store.updateCover(book, cover, replaceExisting = true)
+                val snapshot = _state.value
+                val sameBook: (AudioBook) -> Boolean = {
+                    it.sourceId == book.sourceId && it.id == book.id
+                }
+                _state.value = snapshot.copy(
+                    library = store.books(),
+                    browse = snapshot.browse.map { if (sameBook(it)) it.copy(coverUrl = cover) else it },
+                    selectedBook = snapshot.selectedBook?.let {
+                        if (sameBook(it)) it.copy(coverUrl = cover) else it
+                    },
+                )
+            }.onSuccess { onResult(null) }
+                .onFailure { onResult(it.message ?: "Could not save this cover image.") }
+        }
+    }
+
     /** Give offline or previously unmatched books another artwork lookup attempt. */
     fun refreshMissingCovers() {
         coverAttempts.clear()
