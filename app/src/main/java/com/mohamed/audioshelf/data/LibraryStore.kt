@@ -29,7 +29,7 @@ class LibraryStore(context: Context) {
     }
 
     /** Persist matched artwork without changing the saved book's identity or progress. */
-    fun updateCover(book: AudioBook, coverUrl: String) {
+    fun updateCover(book: AudioBook, coverUrl: String, replaceExisting: Boolean = false) {
         val trustedOpenLibrary = coverUrl.matches(
             Regex("""https://covers\.openlibrary\.org/b/id/\d+-L\.jpg"""))
         val trustedLocal = if (coverUrl.startsWith("file://")) runCatching {
@@ -39,7 +39,7 @@ class LibraryStore(context: Context) {
         if (!trustedOpenLibrary && !trustedLocal) return
         val items = books().toMutableList()
         val index = items.indexOfFirst { it.id == book.id && it.sourceId == book.sourceId }
-        if (index < 0 || items[index].coverUrl.isNotBlank()) return
+        if (index < 0 || (!replaceExisting && items[index].coverUrl.isNotBlank())) return
         items[index] = items[index].copy(coverUrl = coverUrl)
         val array = JSONArray().apply { items.forEach { put(it.toJson()) } }
         prefs.edit().putString(KEY_BOOKS, array.toString()).apply()
