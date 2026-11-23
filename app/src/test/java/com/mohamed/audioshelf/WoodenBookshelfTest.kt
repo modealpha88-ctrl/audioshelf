@@ -5,11 +5,15 @@ import org.junit.Test
 
 class WoodenBookshelfTest {
     @Test fun smallLibrariesOnlyUseOccupiedRows() {
-        assertEquals(1, woodenShelfRowCount(0))
+        assertEquals(0, woodenShelfRowCount(0))
         assertEquals(1, woodenShelfRowCount(1))
         assertEquals(1, woodenShelfRowCount(2))
-        assertEquals(2, woodenShelfRowCount(3))
-        assertEquals(4, woodenShelfRowCount(8))
+        assertEquals(1, woodenShelfRowCount(3))
+        assertEquals(3, woodenShelfRowCount(8))
+    }
+
+    @Test fun narrowShelvesWrapAfterTwoBooks() {
+        assertEquals(5, woodenShelfRowCount(9, 2))
     }
 
     @Test fun sleevesHaveOpposingMildPerspectiveAcrossRows() {
@@ -20,9 +24,9 @@ class WoodenBookshelfTest {
     }
 
     @Test fun largerLibrariesGrowWithoutTruncatingBooks() {
-        assertEquals(5, woodenShelfRowCount(9))
-        assertEquals(5, woodenShelfRowCount(10))
-        assertEquals(6, woodenShelfRowCount(11))
-        assertEquals(50, woodenShelfRowCount(100))
+        assertEquals(3, woodenShelfRowCount(9))
+        assertEquals(4, woodenShelfRowCount(10))
+        assertEquals(4, woodenShelfRowCount(11))
+        assertEquals(34, woodenShelfRowCount(100))
     }
 }

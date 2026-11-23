@@ -49,46 +49,12 @@ The bundled sources are **LibriVox** and open/public-domain audio from the
 **Internet Archive**. Source adapters are deliberately opt-in: only integrate a website when
 its API, licence, or written permission allows third-party clients.
 
-## Library concepts and immersive themes (v0.5.18)
+## Floating Walnut library
 
-AudioShelf now implements three distinct Compose library presentations from the
-approved visual concepts, alongside the existing Walnut Shelf:
-
-- **Aurora Gallery**: animated cyan/violet atmosphere, responsive two-column
-  cover gallery, luminous card edges, and optimized approved concept banner.
-- **Cinema Stack**: moody, illustrated landscape cards, projector banner,
-  optimized visual scenes for Dracula and The Final Empire, and a resume-playback
-  button which opens the player after chapter loading.
-- **Paper Library**: warm parchment background, editorial serif book titles,
-  matching light bottom navigation, optimized reading-room banner, readable
-  progress indicators, and a working details/resume menu.
-
-All screens retain live search, real audiobook metadata, cover lookup, progress,
-and the saved library. The Motion setting controls ambient and entrance animation;
-the selected library theme persists. The original Walnut shelves remain available.
-The packaged visual assets are compressed, generated artwork from the approved
-concepts. Other cover art comes from the existing provider/metadata path; unknown
-titles still get the app's safe fallback, rather than falsely assigning artwork.
-
-The artistic landscapes and background motions adapt the approved static mockups
-to real scrolling Android UI. They are not a pixel-perfect screenshot overlay.
-
-## Full portrait bookshelves and complete cover art (v0.5.17)
-
-Walnut Shelf now displays at least four continuous wood shelves in portrait mode,
-even when only one or two books are saved, instead of leaving the remainder of
-the screen empty. Larger collections grow to additional rows lazily. Cover
-images use **Fit** rather than **Crop**, so book titles and artwork are fully
-visible, and the standing-book proportions are adjusted. Book taps, progress,
-and the existing Motion toggle remain intact.
-
-## Wooden bookcases and resilient covers (v0.5.16)
-
-The **Walnut Shelf** layout now displays upright clickable cover images inside
-actual wooden bookcases with shelf depth and optional entrance animation, inspired
-by traditional portrait bookshelf readers. Aurora, Cinema and Paper styles are
-still available through a compact style selector. In **Paper Library**, progress
-labels have readable dark contrast and progress bars no longer show an end dot.
+AudioShelf opens on a cream wall with floating walnut shelves. Each row holds
+leaning book spines and a face-out cover. Tap either to open the audiobook.
+Search by title or author for a text list, or use the Motion switch to reduce
+animation. Earlier library style preferences automatically give way to this layout.
 
 Cover lookup now prefers *embedded cover art* from local MP3/M4B files (including
 older imports) before title-and-author searching. It strips audiobook marketing
@@ -96,14 +62,6 @@ suffixes such as "Book 1 (Unabridged)" and has a **Find covers** retry action
 in Library. Existing artwork and listening progress are preserved. If neither
 embedded art nor a verified online cover is available, the app shows a styled
 book-title placeholder.
-
-## Animated library and automatic covers (v0.5.15)
-
-The Library has four built-in, selectable styles: **Walnut Shelf**, **Aurora Gallery**,
-**Cinema Stack**, and **Paper Library**. Each style supports subtle motion; turn
-**Motion** off from the Library header to disable ambient and entry animations.
-Search saved audiobooks by title or author. Opening a book shows a larger artwork
-and listening-progress card before the player and chapter controls.
 
 Books missing artwork are matched by title and author against
 [Open Library's public Search API](https://openlibrary.org/dev/docs/api/search).

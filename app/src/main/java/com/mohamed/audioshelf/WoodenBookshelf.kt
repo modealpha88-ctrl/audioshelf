@@ -6,9 +6,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.border
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -30,7 +32,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -50,14 +50,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 
-internal const val LOUNGE_COLUMNS = 2
+internal fun shelfSleeveTilt(slot: Int): Float = if (slot % 2 == 0) -5.5f else 5.5f
 
-/** Opposing, subtle jacket angles make the shelves read as physical objects. */
-internal fun shelfSleeveTilt(slot: Int): Float = if (slot % LOUNGE_COLUMNS == 0) -5.5f else 5.5f
-
-/** Display only occupied shelf rows on small libraries; grow lazily with the collection. */
-internal fun woodenShelfRowCount(bookCount: Int): Int =
-    maxOf(1, (bookCount.coerceAtLeast(0) + LOUNGE_COLUMNS - 1) / LOUNGE_COLUMNS)
+internal fun woodenShelfRowCount(bookCount: Int, columns: Int = 3): Int =
+    if (bookCount <= 0) 0 else 1 + (bookCount - 1) / columns
 
 internal val coverSettle = CubicBezierEasing(.16f, 1f, .3f, 1f)
 @Composable
@@ -67,59 +63,75 @@ fun WoodenShelfRow(
     motion: Boolean,
     onBook: (AudioBook) -> Unit,
 ) {
-    // The cabinet is 2:1. The deck spans 83–89% of its height.
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2f)) {
-        Image(painterResource(R.drawable.lounge_bay), null, Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit)
-        // Cabinet lighting sits BEHIND real, tappable sleeves, with warm overhead falloff.
-        Box(Modifier.fillMaxSize().drawWithCache {
-            val shade = Brush.verticalGradient(
-                0f to Color(0x18080006),
-                .44f to Color.Transparent,
-                1f to Color(0x38120A09),
-            )
-            val key = Brush.radialGradient(
-                colors = listOf(Color(0x64FFE2AC), Color(0x15BD8957), Color.Transparent),
-                center = Offset(size.width * .42f, size.height * .16f),
-                radius = size.width * .64f,
-            )
-            onDrawBehind {
-                drawRect(shade)
-                drawRect(key)
-            }
-        })
-        val sideInset = maxWidth * .06f
-        val topInset = maxHeight * .134f
-        val deckInset = maxHeight * .128f
-        Row(
-            Modifier.fillMaxSize().padding(start = sideInset, end = sideInset,
-                top = topInset, bottom = deckInset),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            repeat(LOUNGE_COLUMNS) { index ->
-                Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
-                    val book = books.getOrNull(index)
-                    if (book != null) AlbumSleeve(book, progressFor(book), motion, index) { onBook(book) }
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)) {
+        val bookHeight = (maxWidth * .52f).coerceIn(136.dp, 228.dp)
+        val spineWidth = (maxWidth * .14f).coerceIn(48.dp, 64.dp)
+        Column {
+            Row(Modifier.fillMaxWidth().height(bookHeight).padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.Center) {
+                books.dropLast(1).forEachIndexed { index, book ->
+                    Box(Modifier.width(spineWidth).fillMaxHeight(if (index == 0) .97f else 1f)) {
+                        WalnutSpine(book, progressFor(book), index, motion) { onBook(book) }
+                    }
                 }
+                books.lastOrNull()?.let { book ->
+                    Box(Modifier.width(bookHeight * 1.12f).fillMaxHeight()) {
+                        AlbumSleeve(book, progressFor(book), motion, books.lastIndex) { onBook(book) }
+                    }
+                }
+            }
+            Box(Modifier.fillMaxWidth().height(12.dp).shadow(5.dp, RoundedCornerShape(2.dp))) {
+                Image(painterResource(R.drawable.walnut_plank), null, Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds)
+                Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x66FFCE91)))
             }
         }
-        // Preserve the walnut grain while lighting the front bevel separately.
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(maxHeight * .113f)
-            .drawWithCache {
-                val bevel = Brush.verticalGradient(
-                    0f to Color(0x45FFCC91),
-                    .09f to Color(0x16FFC78D),
-                    .23f to Color.Transparent,
-                    1f to Color(0x70100604),
-                )
-                onDrawBehind {
-                    val inset = size.width * .022f
-                    drawRect(bevel, topLeft = Offset(inset, 0f),
-                        size = Size(size.width - inset * 2f, size.height))
-                }
-            })
+    }
+}
 
+@Composable
+private fun WalnutSpine(book: AudioBook, progress: ListeningProgress, slot: Int,
+    motion: Boolean, onOpen: () -> Unit) {
+    val cloth = when (book.title.hashCode() and 3) {
+        0 -> Color(0xFF234050)
+        1 -> Color(0xFF624136)
+        2 -> Color(0xFF65313A)
+        else -> Color(0xFF415040)
+    }
+    val fraction = conceptProgress(progress)
+    val foil = Color(0xFFFFE5B6)
+    Box(Modifier.fillMaxSize().clickable(role = Role.Button, onClick = onOpen)
+        .semantics(mergeDescendants = true) {
+            contentDescription = listOf(book.title, book.authors).filter { it.isNotBlank() }.joinToString(", ")
+            progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+        }.then(walnutSharedSleeve(book, motion))
+        .graphicsLayer {
+            transformOrigin = TransformOrigin(.5f, 1f)
+            rotationZ = if (slot == 0) 3f else 1f
+        }.padding(horizontal = 1.dp)
+        .shadow(2.dp, RoundedCornerShape(2.dp))
+        .background(Brush.horizontalGradient(listOf(Color(0xFF261E1A), cloth, cloth, Color(0xFF332522)))),
+        contentAlignment = Alignment.Center) {
+        for (edge in listOf(Alignment.TopCenter, Alignment.BottomCenter)) {
+            Box(Modifier.align(edge).padding(vertical = 8.dp).fillMaxWidth(.86f)
+                .height(1.dp).background(foil))
+        }
+        Text(book.title, modifier = Modifier.layout { measurable, limits ->
+            val label = measurable.measure(androidx.compose.ui.unit.Constraints(
+                maxWidth = (limits.maxHeight - 24.dp.roundToPx()).coerceAtLeast(0),
+                maxHeight = limits.maxWidth))
+            layout(label.height, label.width) {
+                label.placeWithLayer((label.height - label.width) / 2, (label.width - label.height) / 2) {
+                    rotationZ = 90f
+                }
+            }
+        }, color = foil, style = MaterialTheme.typography.titleSmall,
+            maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+        if (fraction > 0f) {
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(fraction)
+                .height(3.dp).background(foil))
+        }
     }
 }
 

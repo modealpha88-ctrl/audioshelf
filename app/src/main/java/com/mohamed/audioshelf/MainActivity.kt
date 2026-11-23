@@ -247,7 +247,7 @@ private fun AudioShelfApp(
             viewModel.refreshLibrary()
         }
     }
-    var tabHistory by rememberSaveable { mutableStateOf(arrayListOf(HomeTab.Browse)) }
+    var tabHistory by rememberSaveable { mutableStateOf(arrayListOf(HomeTab.Library)) }
     val tab = tabHistory.last()
     fun selectTab(next: HomeTab) {
         if (tab == next) return
@@ -256,10 +256,6 @@ private fun AudioShelfApp(
             else ArrayList(tabHistory + next)
     }
     var confirmExit by rememberSaveable { mutableStateOf(false) }
-    var libraryStyle by remember {
-        mutableStateOf(context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE)
-            .getString("visual_style", "Aurora") ?: "Aurora")
-    }
     var autoResumeKey by remember { mutableStateOf<String?>(null) }
     var showPlayerFor by remember { mutableStateOf<String?>(null) }
     fun closeBook() {
@@ -346,20 +342,13 @@ private fun AudioShelfApp(
             dismissButton = { TextButton(onClick = { confirmExit = false }) { Text("Stay") } },
         )
     }
-    val paperLibrary = tab == HomeTab.Library && state.selectedBook == null &&
-        libraryStyle == "Paper"
-    val loungeLibrary = tab == HomeTab.Library && state.selectedBook == null && libraryStyle == "Walnut"
-    val conceptLibrary = tab == HomeTab.Library && state.selectedBook == null &&
-        (libraryStyle == "Aurora" || libraryStyle == "Cinema")
-    val navInk = if (paperLibrary) Color(0xFF4B3225) else
-        if (loungeLibrary) Color(0xFFF3E2CC) else if (conceptLibrary) Color(0xFFF1ECFD) else MaterialTheme.colorScheme.onSurfaceVariant
+    val onShelf = tab == HomeTab.Library && state.selectedBook == null
+    val navInk = if (onShelf) Color(0xFF432F22) else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
         unselectedIconColor = navInk.copy(alpha = .8f),
         unselectedTextColor = navInk.copy(alpha = .8f),
-        indicatorColor = if (paperLibrary) Color(0xFFE0CAD2) else
-            if (loungeLibrary) Color(0xFF67472D) else if (conceptLibrary) Color(0xFF51416C)
-            else MaterialTheme.colorScheme.secondaryContainer,
+        indicatorColor = if (onShelf) Color(0xFFDDBF99) else MaterialTheme.colorScheme.secondaryContainer,
     )
     LaunchedEffect(autoResumeKey, state.selectedBook?.id,
         state.selectedBook?.sourceId, state.chapters, controller) {
@@ -377,7 +366,7 @@ private fun AudioShelfApp(
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
-                    CompactMiniPlayer(controller, libraryStyle, onOpen = {
+                    CompactMiniPlayer(controller, onOpen = {
                         val title = controller?.mediaMetadata?.albumTitle?.toString()
                         val playingBook = (state.library + state.browse)
                             .firstOrNull { it.title == title && it.externalUrl.isBlank() }
@@ -388,12 +377,7 @@ private fun AudioShelfApp(
                         }
                     })
                 NavigationBar(
-                    containerColor = when {
-                        paperLibrary -> Color(0xFFF5E7D4)
-                        loungeLibrary -> Color(0xFF201815)
-                        conceptLibrary -> Color(0xFF0E192B)
-                        else -> MaterialTheme.colorScheme.surfaceContainer
-                    },
+                    containerColor = if (onShelf) Color(0xFFF1E2CF) else MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     NavigationBarItem(
                         colors = navColors,
@@ -439,7 +423,7 @@ private fun AudioShelfApp(
                         return@AnimatedContent androidx.compose.animation.EnterTransition.None togetherWith
                             androidx.compose.animation.ExitTransition.None
                     }
-                    if (libraryNavigation && libraryStyle == LibraryVisualStyle.Walnut.name) {
+                    if (libraryNavigation) {
                         return@AnimatedContent fadeIn(tween(220)) togetherWith fadeOut(tween(170))
                     }
                     val direction = when {
@@ -453,7 +437,7 @@ private fun AudioShelfApp(
                 },
                 label = "AudioShelf pages",
             ) { (pageTab, pageState) ->
-                val transition = if (pageTab == HomeTab.Library && libraryStyle == LibraryVisualStyle.Walnut.name)
+                val transition = if (pageTab == HomeTab.Library)
                     WalnutTransition(this@SharedTransitionLayout, this) else null
                 CompositionLocalProvider(LocalWalnutTransition provides transition) {
                     val selected = pageState.selectedBook
@@ -536,7 +520,6 @@ private fun AudioShelfApp(
                                 viewModel.select(book)
                             },
                             onRefreshCovers = viewModel::refreshMissingCovers,
-                            onStyleSelected = { libraryStyle = it },
                         )
                         HomeTab.Sources -> SourcesScreen(
                             state = pageState,
@@ -560,7 +543,6 @@ private fun AudioShelfApp(
 @Composable
 private fun CompactMiniPlayer(
     controller: MediaController?,
-    libraryStyle: String,
     onOpen: () -> Unit,
 ) {
     if (controller == null) return
@@ -587,13 +569,12 @@ private fun CompactMiniPlayer(
         onDispose { controller.removeListener(listener) }
     }
     if (bookTitle.isBlank()) return
-    val light = libraryStyle == "Paper"
-    val ink = if (light) Color(0xFF3B3027) else Color(0xFFF9ECDB)
+    val ink = Color(0xFFF9ECDB)
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClickLabel = "Open current audiobook") {
             onOpen()
         },
-        color = if (light) Color(0xFFFFF5E5) else Color(0xFF302831),
+        color = Color(0xFF302831),
         tonalElevation = 4.dp,
     ) {
         Row(
@@ -603,7 +584,7 @@ private fun CompactMiniPlayer(
         ) {
             Box(
                 Modifier.size(42.dp).clip(RoundedCornerShape(12.dp))
-                    .background(if (light) Color(0xFFE2C7AA) else Color(0xFF5A3D51)),
+                    .background(Color(0xFF5A3D51)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Headphones, contentDescription = null, tint = ink)
@@ -1170,28 +1151,11 @@ private fun CoverFallback(book: AudioBook? = null) =
         }
     }
 
-private fun bookDetailColors(style: String): ColorScheme = when (style) {
-    "Walnut" -> darkColorScheme(
-        primary = Color(0xFFF7C58B), secondary = Color(0xFFDEB58E),
-        background = Color(0xFF1D1512), surface = Color(0xFF2A211E),
-        onSurface = Color(0xFFF9E9D8), onBackground = Color(0xFFF9E9D8),
-    )
-    "Cinema" -> darkColorScheme(
-        primary = Color(0xFF91BEDA), secondary = Color(0xFFBDD5E8),
-        background = Color(0xFF0B1724), surface = Color(0xFF1B2B3B),
-        onSurface = Color(0xFFEDF5FA), onBackground = Color(0xFFEDF5FA),
-    )
-    "Paper" -> lightColorScheme(
-        primary = Color(0xFF845E3F), secondary = Color(0xFF9F7F65),
-        background = Color(0xFFF7ECD9), surface = Color(0xFFFFF8EB),
-        onSurface = Color(0xFF3B3027), onBackground = Color(0xFF3B3027),
-    )
-    else -> darkColorScheme(
-        primary = Color(0xFF77E6E1), secondary = Color(0xFFC3A8F7),
-        background = Color(0xFF081425), surface = Color(0xFF17243B),
-        onSurface = Color(0xFFF7F3FF), onBackground = Color(0xFFF7F3FF),
-    )
-}
+internal val walnutColors = lightColorScheme(
+    primary = Color(0xFF795234), secondary = Color(0xFF715A49),
+    background = Color(0xFFF2E3CF), surface = Color(0xFFF8EDDE),
+    onSurface = Color(0xFF36271E), onBackground = Color(0xFF36271E),
+)
 
 @Composable
 private fun BookScreen(
@@ -1237,12 +1201,7 @@ private fun BookScreen(
     }
     BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
-    val detailContext = LocalContext.current
-    val detailStyle = remember(book.id) {
-        detailContext.getSharedPreferences("audio_shelf_library_visuals", Context.MODE_PRIVATE)
-            .getString("visual_style", "Aurora") ?: "Aurora"
-    }
-    val detailColors = remember(detailStyle) { bookDetailColors(detailStyle) }
+    val detailColors = walnutColors
     AnimatedContent(
         targetState = storyOpen && controller != null,
         transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
