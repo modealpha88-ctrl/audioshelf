@@ -58,6 +58,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.browser:browser:1.8.0")
     implementation(platform("androidx.compose:compose-bom:2025.02.00"))
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation("androidx.core:core-ktx:1.15.0")
