@@ -204,6 +204,10 @@ class MainActivity : ComponentActivity() {
                         captionPicker.launch(arrayOf("*/*"))
                     },
                     onPickVideo = { videoPicker.launch(arrayOf("video/*")) },
+                    onPickCover = { book ->
+                        coverTarget = book
+                        coverPicker.launch(arrayOf("image/*"))
+                    },
                     videoRevision = videoRevision,
                 )
             }
@@ -230,6 +234,7 @@ private fun AudioShelfApp(
     onIncomingTorrentHandled: () -> Unit,
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
+    onPickCover: (AudioBook) -> Unit,
     videoRevision: Int,
 ) {
     val context = LocalContext.current
@@ -477,10 +482,7 @@ private fun AudioShelfApp(
                             onPickVideo = onPickVideo,
                             onBack = ::closeBook,
                             onToggleSaved = { viewModel.toggleLibrary(selected) },
-                            onPickCover = {
-                                coverTarget = selected
-                                coverPicker.launch(arrayOf("image/*"))
-                            },
+                            onPickCover = { onPickCover(selected) },
                             onOpenExternal = {
                                 if (selected.externalUrl.startsWith("https://")) {
                                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
