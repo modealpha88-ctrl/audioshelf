@@ -191,7 +191,7 @@ fun AnimatedLibraryScreen(
                     items(woodenShelfRowCount(filtered.size, columns)) { index ->
                         val start = index * columns
                         WoodenShelfRow(filtered.subList(start, minOf(start + columns, filtered.size)),
-                            progressFor, animateVisuals, onBook)
+                            index % 2 == 1, progressFor, animateVisuals, onBook)
                     }
                 }
             }

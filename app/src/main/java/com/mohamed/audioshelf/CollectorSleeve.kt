@@ -92,7 +92,7 @@ internal fun coverMatteBounds(pixels: IntArray, w: Int, h: Int): MatteBounds? {
 @Composable
 internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = Color.Transparent,
     detail: Boolean = false, motion: Boolean = false, onShelf: Boolean = false,
-    walnut: Boolean = onShelf, pose: Modifier = Modifier) {
+    walnut: Boolean = onShelf, listened: Float = 0f, pressed: Boolean = false, pose: Modifier = Modifier) {
     val context = LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null }).size(480, 480)
@@ -105,7 +105,7 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
    val portrait = ratio < .86f
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val allowMotion = motion && lifecycle.isAtLeast(Lifecycle.State.RESUMED)
-    val extension = if (detail) .24f else if (onShelf) .23f else .095f
+    val extension = if (allowMotion && (detail || pressed)) .24f else .095f
     val reveal = remember(book.sourceId, book.id, allowMotion) {
         Animatable(if (detail && allowMotion) .10f else extension)
     }
@@ -124,7 +124,7 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
     BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
         val spine = if (walnut) .18f else .076f
         val pages = if (walnut) .052f else .024f
-        val extra = if (portrait) spine + pages else extension
+        val extra = if (portrait) spine + pages else if (onShelf || detail) .24f else extension
         val faceW = minOf(maxWidth / (1f + extra), maxHeight * ratio)
         val faceH = faceW / ratio
         Box(Modifier.width(faceW * (1f + extra)).height(faceH)
@@ -193,8 +193,16 @@ internal fun CollectorSleeve(book: AudioBook, modifier: Modifier, glow: Color = 
                     .then(if (walnut) Modifier.loungePrintLight(portrait, lightTravel) else Modifier)
                 // Always show the book's actual cover, not a title-matched decorative print.
                 // Keep studio highlights layered above the real artwork.
-                if (drawable != null) Image(painter, book.title, face, contentScale = ContentScale.Fit)
-                else ShelfTextCover(book, face)
+                Box(face) {
+                    if (drawable != null) Image(painter, book.title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                    else ShelfTextCover(book, Modifier.fillMaxSize())
+                    if (listened > 0f) {
+                        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth(.92f)
+                            .padding(bottom = 2.dp).height(3.dp).background(Color(0xDD30231F))) {
+                            Box(Modifier.fillMaxWidth(listened).fillMaxHeight().background(Color(0xFFFFD594)))
+                        }
+                    }
+                }
                 if (portrait && walnut) Image(painterResource(R.drawable.lounge_pages), null,
                     Modifier.width(faceW * pages).fillMaxHeight().pageEdge(), contentScale = ContentScale.FillBounds)
                 else if (portrait) Box(Modifier.width(faceW * pages).fillMaxHeight()

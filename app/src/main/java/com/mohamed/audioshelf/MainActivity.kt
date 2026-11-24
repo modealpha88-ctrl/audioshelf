@@ -190,6 +190,7 @@ class MainActivity : ComponentActivity() {
             AudioShelfTheme {
                 AudioShelfApp(
                     viewModel,
+                    window = window,
                     onExit = { finish() },
                     onPickLocalAudio = { localAudioPicker.launch(arrayOf("audio/*", "application/octet-stream")) },
                     onPickTorrentFile = { torrentFilePicker.launch(arrayOf("application/x-bittorrent", "application/octet-stream", "*/*")) },
@@ -227,6 +228,7 @@ private enum class HomeTab { Browse, Library, Sources }
 @OptIn(ExperimentalSharedTransitionApi::class)
 private fun AudioShelfApp(
     viewModel: MainViewModel,
+    window: android.view.Window,
     onExit: () -> Unit,
     onPickLocalAudio: () -> Unit,
     onPickTorrentFile: () -> Unit,
@@ -343,6 +345,19 @@ private fun AudioShelfApp(
         )
     }
     val onShelf = tab == HomeTab.Library && state.selectedBook == null
+    if (onShelf) {
+        DisposableEffect(window) {
+            val bars = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            val originalIcons = bars.isAppearanceLightStatusBars
+            val originalColor = window.statusBarColor
+            bars.isAppearanceLightStatusBars = true
+            if (Build.VERSION.SDK_INT < 35) window.statusBarColor = android.graphics.Color.rgb(241, 226, 207)
+            onDispose {
+                bars.isAppearanceLightStatusBars = originalIcons
+                if (Build.VERSION.SDK_INT < 35) window.statusBarColor = originalColor
+            }
+        }
+    }
     val navInk = if (onShelf) Color(0xFF432F22) else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
@@ -363,6 +378,7 @@ private fun AudioShelfApp(
     }
 
     Scaffold(
+        containerColor = if (onShelf) Color(0xFFF1E2CF) else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
