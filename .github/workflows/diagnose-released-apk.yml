@@ -20,7 +20,7 @@ jobs:
           sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           bt="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
           echo "Android build-tools: $bt"
-          for ver in 0.5.27 0.5.30; do
+          for ver in 0.5.22 0.5.24 0.5.26 0.5.27 0.5.30; do
             url="https://github.com/modealpha88-ctrl/audioshelf/releases/download/v$ver/AudioShelf-v$ver.apk"
             echo "::group::Download and diagnose v$ver"
             curl -fsSL --retry 3 --connect-timeout 20 --max-time 180 -o "AudioShelf-v$ver.apk" "$url"
