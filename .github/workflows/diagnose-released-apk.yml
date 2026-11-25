@@ -1,0 +1,45 @@
+name: Diagnose published APK installability
+on:
+  push:
+    branches:
+      - diagnostic/android-apk-install-20261126
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify released APK signing and archive alignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          bt="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          echo "Android build-tools: $bt"
+          for ver in 0.5.27 0.5.30; do
+            url="https://github.com/modealpha88-ctrl/audioshelf/releases/download/v$ver/AudioShelf-v$ver.apk"
+            echo "::group::Download and diagnose v$ver"
+            curl -fsSL --retry 3 --connect-timeout 20 --max-time 180 -o "AudioShelf-v$ver.apk" "$url"
+            ls -lh "AudioShelf-v$ver.apk"
+            sha256sum "AudioShelf-v$ver.apk"
+            if "$bt/apksigner" verify --verbose --print-certs --min-sdk-version 26 "AudioShelf-v$ver.apk"; then
+              echo "APK_SIGNATURE_RESULT v$ver PASS"
+            else
+              echo "APK_SIGNATURE_RESULT v$ver FAIL"
+            fi
+            "$bt/aapt" dump badging "AudioShelf-v$ver.apk" | grep -E '^(package:|sdkVersion:|targetSdkVersion:|native-code:)' || true
+            if "$bt/zipalign" -c -P 16 -v 4 "AudioShelf-v$ver.apk" >/tmp/align.log 2>&1; then
+              echo "APK_16KB_ZIPALIGN v$ver PASS"
+            else
+              echo "APK_16KB_ZIPALIGN v$ver FAIL"
+              tail -35 /tmp/align.log
+            fi
+            echo "::endgroup::"
+          done
+          echo "::group::Repository debug signer"
+          keytool -list -v -keystore app/debug.keystore -storepass android -alias androiddebugkey | grep -E 'SHA256:|Owner:|Issuer:' | head -8
+          echo "::endgroup::"
