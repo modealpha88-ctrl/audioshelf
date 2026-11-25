@@ -55,6 +55,25 @@ jobs:
           AUDIOSHELF_KEY_ALIAS: audioshelf
           AUDIOSHELF_KEY_PASSWORD: ${{ secrets.AUDIOSHELF_RELEASE_STORE_PASSWORD }}
         run: gradle :app:assembleRelease
+      - name: Verify installable APK signature, release certificate, and 16 KB alignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          bt="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$bt/apksigner" verify --verbose --print-certs --min-sdk-version 26 "$apk" > /tmp/signature-report.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/signature-report.txt
+          # Prevent an accidental key change that would strand existing installations.
+          expected_cert="ee1540d83c0fb7c0d0826351bd7f127d72ffb53a199b698caee1685b55430637"
+          grep -Fq "V2 Signer: certificate SHA-256 digest: $expected_cert" /tmp/signature-report.txt
+          "$bt/zipalign" -c -P 16 4 "$apk"
+          "$bt/aapt" dump badging "$apk" > /tmp/apk-badging.txt
+          grep -Fq "package: name='com.mohamed.audioshelf'" /tmp/apk-badging.txt
+          release_name="$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          grep -Fq "versionName='$release_name'" /tmp/apk-badging.txt
+          echo "APK signature valid (v2), release signer unchanged, 16 KB aligned, package identity and version verified."
       - name: Verify Vosk/JNA native libraries in signed release APK
         run: python3 scripts/verify_vosk_apk.py app/build/outputs/apk/release/app-release.apk
       - name: Verify native BitTorrent engine in release APK
