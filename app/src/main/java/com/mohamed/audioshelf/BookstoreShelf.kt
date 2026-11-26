@@ -66,6 +66,10 @@ internal fun bookstoreFaceOutIndex(books: List<AudioBook>, faceOnLeft: Boolean):
         else withArtwork.lastOrNull() ?: -1
 }
 
+/** Slightly different binding widths make imported titles feel like physical volumes. */
+internal fun bookstoreSpineWidthVariation(title: String): Int =
+    ((title.lowercase(java.util.Locale.ROOT).hashCode() and Int.MAX_VALUE) % 6) * 3
+
 /** Long metadata cannot fit on a physical spine; full titles remain in accessibility semantics. */
 internal fun bookstoreSpineTitle(title: String): String =
     title.replace(Regex("""(?i)\s+(?:complete\s+)?audiobook\s+collection\b.*$"""), "")
@@ -149,7 +153,8 @@ internal fun BookstoreShelfRow(
                                 BookstoreFaceOut(book, progressFor(book), motion) { onBook(book) }
                             }
                         } else {
-                            Box(Modifier.width(spineSlotWidth).height(bookZoneHeight)) {
+                            Box(Modifier.width(spineSlotWidth + bookstoreSpineWidthVariation(book.title).dp)
+                                .height(bookZoneHeight)) {
                                 BookstoreSpine(book, progressFor(book), position, motion, spineRevision) { onBook(book) }
                             }
                         }
