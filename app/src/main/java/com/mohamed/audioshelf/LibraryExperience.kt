@@ -133,12 +133,12 @@ fun AnimatedLibraryScreen(
     }
     MaterialTheme(colorScheme = walnutColors) {
         androidx.compose.foundation.layout.BoxWithConstraints(
-            Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-                Color(0xFFE1CEB7), Color(0xFFF3E5D2), Color(0xFFEBD8C1))))) {
+            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+                Color(0xFF0A0B10), Color(0xFF1B1A20), Color(0xFF0C0D13))))) {
             val columns = if (maxWidth < 320.dp) 2 else 3
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
                 item {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Column(Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text("Library", Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold, color = walnutColors.onSurface)
@@ -172,7 +172,19 @@ fun AnimatedLibraryScreen(
                         }
                         OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
                             singleLine = true, placeholder = { Text("Search your books") },
-                            leadingIcon = { Icon(Icons.Default.Search, null) })
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            shape = RoundedCornerShape(14.dp),
+                        )
+                        Spacer(Modifier.height(15.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("THE COLLECTION · ${books.size} TITLES",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFD0AF83))
+                            Spacer(Modifier.width(14.dp))
+                            Box(Modifier.weight(1f).height(1.dp)
+                                .background(Color(0xFF56483F)))
+                        }
                     }
                 }
                 if (filtered.isEmpty()) {
