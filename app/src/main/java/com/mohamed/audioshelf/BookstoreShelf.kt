@@ -245,7 +245,7 @@ private fun BookstoreFaceOut(
     val context = androidx.compose.ui.platform.LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(560).allowHardware(false).transformations(CoverMatte).build()
+            .size(560, 560).allowHardware(false).transformations(CoverMatte).build()
     }
     val painter = rememberAsyncImagePainter(request)
     val drawable = (painter.state as? AsyncImagePainter.State.Success)?.result?.drawable
