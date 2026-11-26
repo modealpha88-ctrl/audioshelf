@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
@@ -152,6 +153,13 @@ private fun BookstoreSpine(
 ) {
     val texture = remember(book.title) { bookstoreCloth(book) }
     val ink = bookstoreInk(texture)
+    val context = LocalContext.current
+    val coverRequest = remember(context, book.coverUrl) {
+        ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
+            .size(180, 450).build()
+    }
+    val coverPainter = rememberAsyncImagePainter(coverRequest)
+    val hasPublishedArt = coverPainter.state is AsyncImagePainter.State.Success
     val fraction = conceptProgress(progress)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -187,11 +195,19 @@ private fun BookstoreSpine(
             }
             .shadow(5.dp, RoundedCornerShape(2.dp))
             .background(Color(0xFF30241F))) {
-            Image(painterResource(texture), null, Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds)
+            // The published jacket supplies the spine's actual palette and print texture;
+            // generic cloth is used only when no cover is available. This is a cover-based
+            // spine treatment, not a claim to reproduce the physical publisher's spine.
+            if (hasPublishedArt) {
+                Image(coverPainter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .54f)))
+            } else {
+                Image(painterResource(texture), null, Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds)
+            }
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-                Color.Black.copy(alpha = .26f), Color.Transparent,
-                Color.White.copy(alpha = .11f), Color.Black.copy(alpha = .22f),
+                Color.Black.copy(alpha = .31f), Color.Transparent,
+                Color.White.copy(alpha = .13f), Color.Black.copy(alpha = .27f),
             ))))
             Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 5.dp)
                 .padding(top = 10.dp).height(1.dp).background(ink.copy(alpha = .65f)))
