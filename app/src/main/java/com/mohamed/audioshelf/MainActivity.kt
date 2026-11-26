@@ -69,6 +69,7 @@ import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.AudioChapter
 import com.mohamed.audioshelf.model.ListeningProgress
 import com.mohamed.audioshelf.data.OfflineDownloads
+import com.mohamed.audioshelf.data.SpineBindingMode
 import com.mohamed.audioshelf.data.torrent.TorrentDownloads
 import com.mohamed.audioshelf.data.torrent.TorrentJob
 import com.mohamed.audioshelf.data.source.SourceRegistry
@@ -148,6 +149,18 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    private var spineTarget: AudioBook? = null
+    private val spinePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val book = spineTarget
+        spineTarget = null
+        if (uri != null && book != null) {
+            viewModel.importSpineArtwork(book, uri) { error ->
+                android.widget.Toast.makeText(
+                    this, error ?: "Spine image saved", android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
     private var videoRevision by mutableIntStateOf(0)
     private val captionPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) captionTarget?.let { (book, index) ->
@@ -209,6 +222,10 @@ class MainActivity : ComponentActivity() {
                         coverTarget = book
                         coverPicker.launch(arrayOf("image/*"))
                     },
+                    onPickSpine = { book ->
+                        spineTarget = book
+                        spinePicker.launch(arrayOf("image/*"))
+                    },
                     videoRevision = videoRevision,
                 )
             }
@@ -237,6 +254,7 @@ private fun AudioShelfApp(
     onPickTranscript: (AudioBook, Int) -> Unit,
     onPickVideo: () -> Unit,
     onPickCover: (AudioBook) -> Unit,
+    onPickSpine: (AudioBook) -> Unit,
     videoRevision: Int,
 ) {
     val context = LocalContext.current
@@ -478,11 +496,22 @@ private fun AudioShelfApp(
                             onDownloadSttModel = viewModel::downloadSttModel,
                             onTranscribeNearby = { index, ms -> viewModel.transcribeNearby(selected, index, ms) },
                             videoRevision = videoRevision,
+                            spineRevision = pageState.spineRevision,
                             onPickTranscript = { index -> onPickTranscript(selected, index) },
                             onPickVideo = onPickVideo,
                             onBack = ::closeBook,
                             onToggleSaved = { viewModel.toggleLibrary(selected) },
                             onPickCover = { onPickCover(selected) },
+                            onPickSpine = { onPickSpine(selected) },
+                            onSetSpineMode = { mode ->
+                                viewModel.setSpineMode(selected, mode) { error ->
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        error ?: "Book binding updated",
+                                        android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
                             onChooseCatalogCover = { url ->
                                 viewModel.setCatalogCover(selected, url) { error ->
                                     android.widget.Toast.makeText(
@@ -545,6 +574,7 @@ private fun AudioShelfApp(
                                 viewModel.select(book)
                             },
                             onRefreshCovers = viewModel::refreshMissingCovers,
+                            spineRevision = pageState.spineRevision,
                         )
                         HomeTab.Sources -> SourcesScreen(
                             state = pageState,
@@ -1202,11 +1232,14 @@ private fun BookScreen(
     onDownloadSttModel: () -> Unit,
     onTranscribeNearby: (Int, Long) -> Unit,
     videoRevision: Int,
+    spineRevision: Int,
     onPickTranscript: (Int) -> Unit,
     onPickVideo: () -> Unit,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
     onPickCover: () -> Unit,
+    onPickSpine: () -> Unit,
+    onSetSpineMode: (SpineBindingMode) -> Unit,
     onChooseCatalogCover: (String) -> Unit,
     onOpenExternal: () -> Unit,
     onPlay: (Int) -> Unit,
@@ -1219,6 +1252,19 @@ private fun BookScreen(
     var showPlayer by remember(book.id) { mutableStateOf(openPlayerInitially) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
     var showPublishedCovers by remember(book.sourceId, book.id) { mutableStateOf(false) }
+    var showSpineAppearance by remember(book.sourceId, book.id) { mutableStateOf(false) }
+    if (showSpineAppearance) {
+        SpineAppearanceDialog(
+            book = book,
+            revision = spineRevision,
+            onDismiss = { showSpineAppearance = false },
+            onMode = onSetSpineMode,
+            onPickCustom = {
+                showSpineAppearance = false
+                onPickSpine()
+            },
+        )
+    }
     if (showPublishedCovers) {
         PublishedCoverPicker(
             book = book,
@@ -1293,6 +1339,15 @@ private fun BookScreen(
                                     Icon(Icons.Default.Image, null)
                                     Spacer(Modifier.width(6.dp))
                                     Text(if (book.coverUrl.isBlank()) "Add cover image" else "Change cover image")
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                OutlinedButton(
+                                    onClick = { showSpineAppearance = true },
+                                    enabled = saved,
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Book appearance · spine")
                                 }
                                 if (!saved) {
                                     Text("Save this book to your library to set its cover.",
