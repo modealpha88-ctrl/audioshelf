@@ -60,6 +60,7 @@ internal fun bookstoreFaceOutIndex(books: List<AudioBook>, faceOnLeft: Boolean):
 /** Long metadata cannot fit on a physical spine; full titles remain in accessibility semantics. */
 internal fun bookstoreSpineTitle(title: String): String =
     title.replace(Regex("""(?i)\s+(?:complete\s+)?audiobook\s+collection\b.*$"""), "")
+        .replace(Regex("""(?i):\s*(?:mistborn|(?:book|volume)\s*\d+).*$"""), "")
         .replace(Regex("""(?i)\s*\((?:unabridged|audiobook)\)"""), "")
         .trim().ifBlank { title }
 
@@ -73,9 +74,6 @@ private fun bookstoreCloth(book: AudioBook): Int {
             R.drawable.cloth_green, R.drawable.cloth_burgundy)[(name.hashCode() and Int.MAX_VALUE) % 4]
     }
 }
-
-private fun bookstoreInk(texture: Int): Color =
-    if (texture == R.drawable.cloth_umber) Color(0xFFF8E8C4) else Color(0xFFFFD99E)
 
 private fun bookDescription(book: AudioBook): String =
     listOf(book.title, book.authors.takeUnless { it.isBlank() || it.startsWith("Local ", true) })
@@ -152,14 +150,18 @@ private fun BookstoreSpine(
     motion: Boolean, onOpen: () -> Unit,
 ) {
     val texture = remember(book.title) { bookstoreCloth(book) }
-    val ink = bookstoreInk(texture)
     val context = LocalContext.current
     val coverRequest = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(180, 450).build()
+            .size(180, 240).allowHardware(false).build()
     }
     val coverPainter = rememberAsyncImagePainter(coverRequest)
-    val hasPublishedArt = coverPainter.state is AsyncImagePainter.State.Success
+    val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)
+        ?.result?.drawable
+    val spinePalette = remember(book.title, texture, coverDrawable) {
+        bookstoreSpineColors(book.title, coverDrawable, texture)
+    }
+    val ink = spinePalette.ink
     val fraction = conceptProgress(progress)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -195,16 +197,9 @@ private fun BookstoreSpine(
             }
             .shadow(5.dp, RoundedCornerShape(2.dp))
             .background(Color(0xFF30241F))) {
-            // The published jacket supplies the spine's actual palette and print texture;
-            // generic cloth is used only when no cover is available. This is a cover-based
-            // spine treatment, not a claim to reproduce the physical publisher's spine.
-            if (hasPublishedArt) {
-                Image(coverPainter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .54f)))
-            } else {
-                Image(painterResource(texture), null, Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds)
-            }
+            // Front cover stays on face-out books. The spine is an ORIGINAL printed
+            // binding using colors sampled from the cover, never a stretched photo.
+            BookstorePrintedSpine(book.title, texture, spinePalette, Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
                 Color.Black.copy(alpha = .31f), Color.Transparent,
                 Color.White.copy(alpha = .13f), Color.Black.copy(alpha = .27f),
