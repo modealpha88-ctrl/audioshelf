@@ -58,10 +58,12 @@ class SpineBindingStore(private val context: Context) {
     fun customArtwork(book: AudioBook): String? {
         val uri = prefs.getString("custom-${bookKey(book)}", null) ?: return null
         if (!uri.startsWith("file://")) return null
-        val file = runCatching { File(requireNotNull(Uri.parse(uri).path)) }.getOrNull() ?: return null
-        return if (file.isFile && file.length() in 100..6_000_000 &&
-            file.canonicalPath.startsWith(artDirectory.canonicalPath + File.separator)
-        ) uri else null
+        return runCatching {
+            val file = File(requireNotNull(Uri.parse(uri).path))
+            if (file.isFile && file.length() in 100..6_000_000 &&
+                file.canonicalPath.startsWith(artDirectory.canonicalPath + File.separator)
+            ) uri else null
+        }.getOrNull()
     }
 
     /**
