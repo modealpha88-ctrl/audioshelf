@@ -387,22 +387,39 @@ private fun BookstoreFaceOut(
         contentDescription = bookDescription(book)
         progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
     }, contentAlignment = Alignment.BottomCenter) {
-        val coverHeight = minOf(maxHeight * .95f, (maxWidth - 8.dp) / ratio)
+        val coverHeight = minOf(maxHeight * .90f, (maxWidth - 21.dp) / ratio)
         val coverWidth = coverHeight * ratio
-        Box(Modifier.width(coverWidth + 6.dp).height(coverHeight)
+        Box(Modifier.width(coverWidth + 13.dp).height(coverHeight)
             .graphicsLayer {
                 transformOrigin = TransformOrigin(.5f, 1f)
                 scaleX = selectScale
                 scaleY = selectScale
+                rotationY = -12f
+                rotationZ = if ((book.title.hashCode() and 1) == 0) -3.5f else 3f
+                cameraDistance = 36f * density
             }
-            .shadow(8.dp, RoundedCornerShape(2.dp))
-            .background(Color(0xFFE4D5B9))) {
-            Box(Modifier.align(Alignment.CenterEnd).width(5.dp).fillMaxHeight()
+            .shadow(17.dp, RoundedCornerShape(3.dp))
+            .background(Color(0xFF27212A))) {
+            // Visible page block catches the cabinet light along the edge of the cover.
+            Box(Modifier.align(Alignment.CenterEnd).width(13.dp).fillMaxHeight()
                 .background(Brush.horizontalGradient(listOf(
-                    Color(0xFF997B5A), Color(0xFFF0E1C5), Color(0xFFB29B79),
-                ))))
+                    Color(0xFF6B584A), Color(0xFFEBDDC4), Color(0xFF5B483C),
+                )))) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val gap = 2.6.dp.toPx()
+                    var y = gap
+                    while (y < size.height) {
+                        drawLine(Color(0x4C55483F),
+                            androidx.compose.ui.geometry.Offset(1.dp.toPx(), y),
+                            androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), y),
+                            strokeWidth = .5.dp.toPx())
+                        y += gap
+                    }
+                }
+            }
             Box(Modifier.fillMaxHeight().width(coverWidth)
-                .background(Color(0xFF463329))) {
+                .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 3.dp))
+                .background(Color(0xFF27212A))) {
                 if (drawable != null) {
                     Image(painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 } else {
