@@ -30,6 +30,80 @@ class BookCoverLookup {
         }
     }
 
+
+    /**
+     * Show real Open Library jackets for user selection. A collection title may suggest
+     * its individual volumes, but those are NEVER applied automatically to the set.
+     */
+    suspend fun suggestions(book: AudioBook): List<CoverSuggestion> {
+        if (book.title.isBlank()) return emptyList()
+        return requestMutex.withLock {
+            delay(750)
+            withContext(Dispatchers.IO) {
+                runCatching { lookupSuggestions(book) }.getOrDefault(emptyList())
+            }
+        }
+    }
+
+    private fun lookupSuggestions(book: AudioBook): List<CoverSuggestion> {
+        val variants = coverSuggestionSearchTitles(book.title)
+        val found = linkedMapOf<String, Pair<Int, CoverSuggestion>>()
+        val author = canonicalCoverText(book.authors)
+        val usefulAuthor = author.isNotBlank() && author !in setOf(
+            "local audiobook", "local torrent audiobook", "unknown", "unknown author",
+            "various", "anonymous",
+        )
+        for ((qIndex, query) in variants.withIndex()) {
+            if (qIndex > 0) Thread.sleep(750)
+            val encoded = URLEncoder.encode(query.take(150), "UTF-8")
+            val address = "https://openlibrary.org/search.json?title=$encoded&fields=title,author_name,cover_i,first_publish_year&limit=20"
+            val connection = URL(address).openConnection() as HttpURLConnection
+            try {
+                connection.connectTimeout = 6500
+                connection.readTimeout = 6500
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("User-Agent",
+                    "AudioShelf/0.5 (https://github.com/modealpha88-ctrl/audioshelf)")
+                if (connection.responseCode !in 200..299) continue
+                val docs = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                    .optJSONArray("docs") ?: continue
+                for (i in 0 until minOf(docs.length(), 20)) {
+                    val doc = docs.optJSONObject(i) ?: continue
+                    val id = doc.optLong("cover_i", 0L)
+                    if (id <= 0L) continue
+                    val title = doc.optString("title").trim()
+                    val authorsJson = doc.optJSONArray("author_name")
+                    val candidates = if (authorsJson == null) emptyList() else
+                        (0 until authorsJson.length()).map { authorsJson.optString(it) }
+                    val score = scoreCoverCandidate(book.title, book.authors, title, candidates)
+                    // A deliberately broad collection search is allowed only in the picker.
+                    // Keep the published title visible so users can identify the right volume.
+                    val prefix = canonicalCoverText(query)
+                    val titleText = canonicalCoverText(title)
+                    val seriesRelated = prefix.length >= 6 &&
+                        (titleText == prefix || titleText.startsWith("$prefix "))
+                    if (score == 0 && !seriesRelated) continue
+                    if (usefulAuthor && score == 0) {
+                        val words = author.split(' ').filter { it.length >= 3 }
+                        if (candidates.none { candidate ->
+                            val normalized = canonicalCoverText(candidate)
+                            normalized == author ||
+                                (words.isNotEmpty() && words.last() in normalized.split(' '))
+                        }) continue
+                    }
+                    val url = "https://covers.openlibrary.org/b/id/$id-L.jpg"
+                    val year = doc.optInt("first_publish_year", 0).takeIf { it in 1400..2100 }
+                    val suggestion = CoverSuggestion(title, candidates.joinToString(", "), url, year)
+                    val rank = score + if (seriesRelated) 20 else 0
+                    if (rank > (found[url]?.first ?: -1)) found[url] = rank to suggestion
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+        return found.values.sortedByDescending { it.first }.map { it.second }.take(12)
+    }
+
     private fun lookup(book: AudioBook): String? {
         // Search canonical book titles first rather than edition marketing labels
         // such as "The Final Empire: Mistborn, Book 1 (Unabridged)".
@@ -75,6 +149,28 @@ class BookCoverLookup {
         }
         return null
     }
+}
+
+
+/** A real catalogued book jacket. This is an edition choice, not an inferred audiobook cover. */
+data class CoverSuggestion(
+    val title: String,
+    val authors: String,
+    val coverUrl: String,
+    val firstPublished: Int? = null,
+)
+
+/** Remove collection advertising only for interactive suggestions; never auto-apply a volume cover. */
+internal fun coverSuggestionSearchTitles(rawTitle: String): List<String> {
+    val precise = coverSearchTitles(rawTitle)
+    val collection = rawTitle.replace(
+        Regex("""(?i)\s*(?:the\s+)?(?:complete|full|entire)?\s*(?:audiobook|audio\s*book|book)?\s*(?:collection|series|box\s*set|bundle)\s*$"""),
+        "",
+    ).trim()
+    return (precise + collection).map { it.trim() }
+        .filter { it.length >= 4 }
+        .distinctBy { it.lowercase(Locale.ROOT) }
+        .take(3)
 }
 
 /** Title variations are used only for bibliographic matching, never for audio access. */

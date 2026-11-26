@@ -410,6 +410,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** An explicit selection may override an imperfect provider cover, never the audio/progress. */
+    fun setCatalogCover(book: AudioBook, coverUrl: String, onResult: (String?) -> Unit) {
+        runCatching {
+            require(coverUrl.matches(
+                Regex("""https://covers\.openlibrary\.org/b/id/\d+-L\.jpg""")
+            )) { "The cover URL is not a trusted Open Library image." }
+            require(store.contains(book)) { "Save the audiobook to the library first." }
+            store.updateCover(book, coverUrl, replaceExisting = true)
+            val saved = store.books()
+            require(saved.any {
+                it.id == book.id && it.sourceId == book.sourceId && it.coverUrl == coverUrl
+            }) { "Could not save this published cover." }
+            val snapshot = _state.value
+            val sameBook: (AudioBook) -> Boolean = {
+                it.sourceId == book.sourceId && it.id == book.id
+            }
+            _state.value = snapshot.copy(
+                library = saved,
+                browse = snapshot.browse.map { if (sameBook(it)) it.copy(coverUrl = coverUrl) else it },
+                selectedBook = snapshot.selectedBook?.let {
+                    if (sameBook(it)) it.copy(coverUrl = coverUrl) else it
+                },
+            )
+        }.onSuccess { onResult(null) }
+            .onFailure { onResult(it.message ?: "Could not apply this book cover.") }
+    }
+
     /** Give offline or previously unmatched books another artwork lookup attempt. */
     fun refreshMissingCovers() {
         coverAttempts.clear()
