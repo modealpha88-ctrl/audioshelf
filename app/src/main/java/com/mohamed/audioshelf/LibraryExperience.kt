@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -190,8 +191,10 @@ fun AnimatedLibraryScreen(
                 } else {
                     items(woodenShelfRowCount(filtered.size, columns)) { index ->
                         val start = index * columns
-                        WoodenShelfRow(filtered.subList(start, minOf(start + columns, filtered.size)),
-                            index % 2 == 1, progressFor, animateVisuals, onBook)
+                        BookstoreShelfRow(
+                            filtered.subList(start, minOf(start + columns, filtered.size)),
+                            index, progressFor, animateVisuals, onBook,
+                        )
                     }
                 }
             }
@@ -231,16 +234,16 @@ internal fun conceptProgress(progress: ListeningProgress): Float {
 /** A larger book-detail card opens when a library item is tapped. */
 @Composable
 fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
-    val context = LocalContext.current
-    val prefs = remember(context) {
-        context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE)
-    }
-    val motion = systemMotionEnabled() && prefs.getBoolean("motion_enabled", true)
     Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = walnutColors.surface,
         shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            CollectorSleeve(book, Modifier.width(116.dp).height(145.dp), detail = true,
-                motion = motion, walnut = true)
+            // Concept C uses a physical book jacket in details too: no vinyl behind square art.
+            Box(Modifier.width(116.dp).height(145.dp)
+                .shadow(5.dp, RoundedCornerShape(3.dp))
+                .background(Color(0xFFE6D5B7))
+                .padding(start = 5.dp, end = 3.dp, top = 3.dp, bottom = 3.dp)) {
+                LibraryCover(book, Modifier.fillMaxSize())
+            }
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("AUDIOBOOK", color = walnutColors.onSurface.copy(alpha = .75f),
