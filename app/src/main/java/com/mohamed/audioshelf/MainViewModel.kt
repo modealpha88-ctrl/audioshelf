@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.mohamed.audioshelf.data.BookCoverLookup
 import com.mohamed.audioshelf.data.LocalEmbeddedCover
 import com.mohamed.audioshelf.data.LibraryStore
+import com.mohamed.audioshelf.data.SpineBindingMode
+import com.mohamed.audioshelf.data.SpineBindingStore
 import com.mohamed.audioshelf.data.captions.TimedCaptionStore
 import com.mohamed.audioshelf.data.captions.OfflineSpeechModel
 import com.mohamed.audioshelf.data.captions.OnDeviceTranscriber
@@ -49,12 +51,14 @@ data class AudioShelfState(
     val sttBusy: Boolean = false,
     val sttMessage: String? = null,
     val sttNativeUnavailable: Boolean = false,
+    val spineRevision: Int = 0,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val store = LibraryStore(application)
     private val coverLookup = BookCoverLookup()
     private val embeddedCover = LocalEmbeddedCover(application)
+    private val spineBindings = SpineBindingStore(application)
     private val coverAttempts = mutableSetOf<String>()
     private val repositoryStore = ProviderRepositoryStore(application)
     private val _state = MutableStateFlow(
@@ -435,6 +439,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         }.onSuccess { onResult(null) }
             .onFailure { onResult(it.message ?: "Could not apply this book cover.") }
+    }
+
+    /** Update only rendering preferences; never touch audiobook identity or playback. */
+    fun setSpineMode(book: AudioBook, mode: SpineBindingMode, onResult: (String?) -> Unit) {
+        runCatching {
+            require(store.contains(book)) { "Save the audiobook before changing its binding." }
+            spineBindings.setMode(book, mode)
+            _state.value = _state.value.copy(spineRevision = _state.value.spineRevision + 1)
+        }.onSuccess { onResult(null) }
+            .onFailure { onResult(it.message ?: "Could not set this book appearance.") }
+    }
+
+    /** A custom spine image is copied into private storage, not substituted for a book cover. */
+    fun importSpineArtwork(book: AudioBook, uri: Uri, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            runCatching {
+                require(store.contains(book)) { "Save the audiobook before changing its binding." }
+                spineBindings.importCustomArtwork(book, uri)
+                _state.value = _state.value.copy(spineRevision = _state.value.spineRevision + 1)
+            }.onSuccess { onResult(null) }
+                .onFailure { onResult(it.message ?: "Could not import the spine image.") }
+        }
     }
 
     /** Give offline or previously unmatched books another artwork lookup attempt. */
