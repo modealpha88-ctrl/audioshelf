@@ -109,6 +109,7 @@ fun AnimatedLibraryScreen(
     onBook: (AudioBook) -> Unit,
     onResumeBook: (AudioBook) -> Unit,
     onRefreshCovers: () -> Unit,
+    spineRevision: Int = 0,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -193,7 +194,7 @@ fun AnimatedLibraryScreen(
                         val start = index * columns
                         BookstoreShelfRow(
                             filtered.subList(start, minOf(start + columns, filtered.size)),
-                            index, progressFor, animateVisuals, onBook,
+                            index, progressFor, animateVisuals, onBook, spineRevision,
                         )
                     }
                 }
