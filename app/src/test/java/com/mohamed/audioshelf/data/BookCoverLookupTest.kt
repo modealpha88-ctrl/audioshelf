@@ -53,6 +53,27 @@ class BookCoverLookupTest {
             listOf("Brandon Sanderson")))
     }
 
+    @Test fun collectionCanSearchForVolumesWithoutAutoSelectingOne() {
+        assertEquals(
+            listOf("Harry Potter Complete Audiobook Collection", "Harry Potter"),
+            coverSuggestionSearchTitles("Harry Potter Complete Audiobook Collection"),
+        )
+        assertEquals(0, scoreCoverCandidate(
+            "Harry Potter Complete Audiobook Collection", "Local torrent audiobook",
+            "Harry Potter and the Philosopher's Stone", listOf("J. K. Rowling"),
+        ))
+    }
+
+    @Test fun normalBooksStillPreferTheirExactPublishedTitles() {
+        assertEquals(listOf("Peter Pan"), coverSuggestionSearchTitles("Peter Pan"))
+        assertEquals(120, scoreCoverCandidate(
+            "Peter Pan", "J. M. Barrie", "Peter Pan", listOf("J. M. Barrie"),
+        ))
+        assertEquals(120, scoreCoverCandidate(
+            "Dracula", "Bram Stoker", "Dracula", listOf("Bram Stoker"),
+        ))
+    }
+
     @Test fun punctuationIsNormalized() {
         assertEquals(120, scoreCoverCandidate(
             "Alice's Adventures in Wonderland", "Lewis Carroll",
