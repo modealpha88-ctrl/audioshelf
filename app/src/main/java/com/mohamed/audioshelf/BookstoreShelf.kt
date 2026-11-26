@@ -164,7 +164,9 @@ private fun BookstoreSpine(
         mutableStateOf<String?>(null)
     }
     LaunchedEffect(book.sourceId, book.id, mode, spineRevision) {
-        spineArtwork = withContext(Dispatchers.IO) { store.displayedArtwork(book, mode) }
+        spineArtwork = withContext(Dispatchers.IO) {
+            runCatching { store.displayedArtwork(book, mode) }.getOrNull()
+        }
     }
     val spineRequest = remember(context, spineArtwork) {
         ImageRequest.Builder(context).data(spineArtwork).size(160, 480).build()
