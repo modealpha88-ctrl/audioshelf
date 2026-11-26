@@ -368,20 +368,20 @@ private fun AudioShelfApp(
             val bars = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             val originalIcons = bars.isAppearanceLightStatusBars
             val originalColor = window.statusBarColor
-            bars.isAppearanceLightStatusBars = true
-            if (Build.VERSION.SDK_INT < 35) window.statusBarColor = android.graphics.Color.rgb(241, 226, 207)
+            bars.isAppearanceLightStatusBars = false
+            if (Build.VERSION.SDK_INT < 35) window.statusBarColor = android.graphics.Color.rgb(12, 14, 20)
             onDispose {
                 bars.isAppearanceLightStatusBars = originalIcons
                 if (Build.VERSION.SDK_INT < 35) window.statusBarColor = originalColor
             }
         }
     }
-    val navInk = if (onShelf) Color(0xFF432F22) else MaterialTheme.colorScheme.onSurfaceVariant
+    val navInk = if (onShelf) Color(0xFFE9DDCE) else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
         unselectedIconColor = navInk.copy(alpha = .8f),
         unselectedTextColor = navInk.copy(alpha = .8f),
-        indicatorColor = if (onShelf) Color(0xFFDDBF99) else MaterialTheme.colorScheme.secondaryContainer,
+        indicatorColor = if (onShelf) Color(0xFF44372F) else MaterialTheme.colorScheme.secondaryContainer,
     )
     LaunchedEffect(autoResumeKey, state.selectedBook?.id,
         state.selectedBook?.sourceId, state.chapters, controller) {
@@ -396,7 +396,7 @@ private fun AudioShelfApp(
     }
 
     Scaffold(
-        containerColor = if (onShelf) Color(0xFFF1E2CF) else MaterialTheme.colorScheme.background,
+        containerColor = if (onShelf) Color(0xFF0D0E13) else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
@@ -411,7 +411,7 @@ private fun AudioShelfApp(
                         }
                     })
                 NavigationBar(
-                    containerColor = if (onShelf) Color(0xFFF1E2CF) else MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = if (onShelf) Color(0xFF111117) else MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     NavigationBarItem(
                         colors = navColors,
@@ -1206,10 +1206,13 @@ private fun CoverFallback(book: AudioBook? = null) =
         }
     }
 
-internal val walnutColors = lightColorScheme(
-    primary = Color(0xFF795234), secondary = Color(0xFF715A49),
-    background = Color(0xFFF2E3CF), surface = Color(0xFFF8EDDE),
-    onSurface = Color(0xFF36271E), onBackground = Color(0xFF36271E),
+internal val walnutColors = androidx.compose.material3.darkColorScheme(
+    primary = Color(0xFFD8AC73), secondary = Color(0xFFB8A18B),
+    background = Color(0xFF0D0E13), surface = Color(0xFF1B1A20),
+    surfaceVariant = Color(0xFF29242A),
+    onSurface = Color(0xFFF2E8D8), onBackground = Color(0xFFF2E8D8),
+    onSurfaceVariant = Color(0xFFD0C0AF),
+    outline = Color(0xFF655C57),
 )
 
 @Composable
