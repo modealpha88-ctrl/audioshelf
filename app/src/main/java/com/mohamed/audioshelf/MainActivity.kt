@@ -483,6 +483,15 @@ private fun AudioShelfApp(
                             onBack = ::closeBook,
                             onToggleSaved = { viewModel.toggleLibrary(selected) },
                             onPickCover = { onPickCover(selected) },
+                            onChooseCatalogCover = { url ->
+                                viewModel.setCatalogCover(selected, url) { error ->
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        error ?: "Published cover updated",
+                                        android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
                             onOpenExternal = {
                                 if (selected.externalUrl.startsWith("https://")) {
                                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(selected.externalUrl))) }
@@ -1198,6 +1207,7 @@ private fun BookScreen(
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
     onPickCover: () -> Unit,
+    onChooseCatalogCover: (String) -> Unit,
     onOpenExternal: () -> Unit,
     onPlay: (Int) -> Unit,
     onResume: () -> Unit,
@@ -1208,6 +1218,17 @@ private fun BookScreen(
 ) {
     var showPlayer by remember(book.id) { mutableStateOf(openPlayerInitially) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
+    var showPublishedCovers by remember(book.sourceId, book.id) { mutableStateOf(false) }
+    if (showPublishedCovers) {
+        PublishedCoverPicker(
+            book = book,
+            onDismiss = { showPublishedCovers = false },
+            onChoose = { chosen ->
+                onChooseCatalogCover(chosen.coverUrl)
+                showPublishedCovers = false
+            },
+        )
+    }
     val navigateBack: () -> Unit = {
         when {
             storyOpen -> storyOpen = false
@@ -1259,6 +1280,15 @@ private fun BookScreen(
                         LibraryBookDetailCard(book, listeningProgress)
                         Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                             Column(Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { showPublishedCovers = true },
+                                    enabled = saved,
+                                ) {
+                                    Icon(Icons.Default.AutoStories, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Find published covers")
+                                }
+                                Spacer(Modifier.height(6.dp))
                                 OutlinedButton(onClick = onPickCover, enabled = saved) {
                                     Icon(Icons.Default.Image, null)
                                     Spacer(Modifier.width(6.dp))
