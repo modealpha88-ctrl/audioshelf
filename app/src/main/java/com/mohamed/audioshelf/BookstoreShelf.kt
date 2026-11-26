@@ -13,14 +13,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -42,7 +46,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.mohamed.audioshelf.data.SpineBindingMode
+import com.mohamed.audioshelf.data.SpineBindingStore
 import com.mohamed.audioshelf.model.AudioBook
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.mohamed.audioshelf.model.ListeningProgress
 
 /**
@@ -64,15 +72,12 @@ internal fun bookstoreSpineTitle(title: String): String =
         .replace(Regex("""(?i)\s*\((?:unabridged|audiobook)\)"""), "")
         .trim().ifBlank { title }
 
-private fun bookstoreCloth(book: AudioBook): Int {
-    val name = book.title.lowercase()
-    return when {
-        "harry potter" in name -> R.drawable.cloth_navy
-        "peter pan" in name || "dracula" in name -> R.drawable.cloth_burgundy
-        "frankenstein" in name -> R.drawable.cloth_green
-        else -> listOf(R.drawable.cloth_navy, R.drawable.cloth_umber,
-            R.drawable.cloth_green, R.drawable.cloth_burgundy)[(name.hashCode() and Int.MAX_VALUE) % 4]
-    }
+/** New imports get the same reproducible cloth style offline, without a hardcoded title list. */
+internal fun bookstoreCloth(book: AudioBook): Int {
+    val seed = "${book.title.lowercase(java.util.Locale.ROOT)}:${book.authors.lowercase(java.util.Locale.ROOT)}"
+    val swatches = listOf(R.drawable.cloth_navy, R.drawable.cloth_umber,
+        R.drawable.cloth_green, R.drawable.cloth_burgundy)
+    return swatches[(seed.hashCode() and Int.MAX_VALUE) % swatches.size]
 }
 
 private fun bookDescription(book: AudioBook): String =
@@ -86,6 +91,7 @@ internal fun BookstoreShelfRow(
     progressFor: (AudioBook) -> ListeningProgress,
     motion: Boolean,
     onBook: (AudioBook) -> Unit,
+    spineRevision: Int = 0,
 ) {
     if (books.isEmpty()) return
     BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -121,7 +127,7 @@ internal fun BookstoreShelfRow(
                             }
                         } else {
                             Box(Modifier.width(spineSlotWidth).height(bookZoneHeight)) {
-                                BookstoreSpine(book, progressFor(book), position, motion) { onBook(book) }
+                                BookstoreSpine(book, progressFor(book), position, motion, spineRevision) { onBook(book) }
                             }
                         }
                     }
@@ -147,10 +153,27 @@ internal fun BookstoreShelfRow(
 @Composable
 private fun BookstoreSpine(
     book: AudioBook, progress: ListeningProgress, position: Int,
-    motion: Boolean, onOpen: () -> Unit,
+    motion: Boolean, spineRevision: Int, onOpen: () -> Unit,
 ) {
-    val texture = remember(book.title) { bookstoreCloth(book) }
+    val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
     val context = LocalContext.current
+    val store = remember(context) { SpineBindingStore(context) }
+    val mode = remember(book.sourceId, book.id, spineRevision) { store.mode(book) }
+    // Bounded file discovery runs off the UI thread; a decorative spine appears immediately.
+    var spineArtwork by remember(book.sourceId, book.id, mode, spineRevision) {
+        mutableStateOf<String?>(null)
+    }
+    LaunchedEffect(book.sourceId, book.id, mode, spineRevision) {
+        spineArtwork = withContext(Dispatchers.IO) {
+            runCatching { store.displayedArtwork(book, mode) }.getOrNull()
+        }
+    }
+    val spineRequest = remember(context, spineArtwork) {
+        ImageRequest.Builder(context).data(spineArtwork).size(160, 480).build()
+    }
+    val spinePainter = rememberAsyncImagePainter(spineRequest)
+    val hasSpineImage = spineArtwork != null &&
+        spinePainter.state is AsyncImagePainter.State.Success
     val coverRequest = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
             .size(180, 240).allowHardware(false).build()
@@ -158,10 +181,26 @@ private fun BookstoreSpine(
     val coverPainter = rememberAsyncImagePainter(coverRequest)
     val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)
         ?.result?.drawable
-    val spinePalette = remember(book.title, texture, coverDrawable) {
-        bookstoreSpineColors(book.title, coverDrawable, texture)
+    val cachedPalette = remember(book.sourceId, book.id, book.coverUrl) { store.palette(book) }
+    val spinePalette = remember(book.title, texture, coverDrawable, cachedPalette, mode) {
+        when {
+            mode == SpineBindingMode.CLASSIC ->
+                bookstoreSpineColors(book.title, null, texture)
+            coverDrawable != null -> bookstoreSpineColors(book.title, coverDrawable, texture)
+            cachedPalette != null -> BookstoreSpineColors(
+                Color(cachedPalette.first), Color(cachedPalette.second), true,
+            )
+            else -> bookstoreSpineColors(book.title, null, texture)
+        }
     }
-    val ink = spinePalette.ink
+    LaunchedEffect(book.sourceId, book.id, book.coverUrl, spinePalette) {
+        if (coverDrawable != null && spinePalette.hasCoverPalette && mode != SpineBindingMode.CLASSIC) {
+            withContext(Dispatchers.IO) {
+                store.savePalette(book, spinePalette.cloth.toArgb(), spinePalette.ink.toArgb())
+            }
+        }
+    }
+    val ink = if (hasSpineImage) Color(0xFFF2DFC0) else spinePalette.ink
     val fraction = conceptProgress(progress)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -197,9 +236,15 @@ private fun BookstoreSpine(
             }
             .shadow(5.dp, RoundedCornerShape(2.dp))
             .background(Color(0xFF30241F))) {
-            // Front cover stays on face-out books. The spine is an ORIGINAL printed
-            // binding using colors sampled from the cover, never a stretched photo.
-            BookstorePrintedSpine(book.title, texture, spinePalette, Modifier.fillMaxSize())
+            // Only an actual bundled spine scan or a user-chosen spine photo is shown as an
+            // image. Never stretch the front jacket into a fake publisher's spine.
+            if (hasSpineImage) {
+                Image(spinePainter, contentDescription = null, modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit)
+            } else {
+                BookstorePrintedSpine(book.title, texture, spinePalette, Modifier.fillMaxSize(),
+                    ornate = mode != SpineBindingMode.CLASSIC)
+            }
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
                 Color.Black.copy(alpha = .31f), Color.Transparent,
                 Color.White.copy(alpha = .13f), Color.Black.copy(alpha = .27f),
@@ -209,7 +254,8 @@ private fun BookstoreSpine(
             Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 5.dp)
                 .padding(bottom = 11.dp).height(1.dp).background(ink.copy(alpha = .65f)))
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally,
+            // An authentic or uploaded spine already contains its own lettering.
+            if (!hasSpineImage) Column(horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.layout { measurable, limits ->
                     val text = measurable.measure(Constraints(
                         maxWidth = (limits.maxHeight - 38.dp.roundToPx()).coerceAtLeast(1),

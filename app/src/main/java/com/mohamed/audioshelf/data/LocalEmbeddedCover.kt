@@ -85,7 +85,8 @@ class LocalEmbeddedCover(private val context: Context) {
             .filter { file ->
                 file.isFile && file.length() in 1_024L..8_388_608L &&
                     file.canonicalPath.startsWith(prefix) &&
-                    TorrentDownloads.isArtworkPath(file.relativeTo(root).invariantSeparatorsPath)
+                    TorrentDownloads.isArtworkPath(file.relativeTo(root).invariantSeparatorsPath) &&
+                    !isNamedSpineImage(file.name)
             }.take(256).toList()
             .sortedBy { file ->
                 when (file.nameWithoutExtension.lowercase()) {

@@ -41,12 +41,17 @@ internal fun bookstoreSpineColors(
     drawable: Drawable?,
     clothTexture: Int,
 ): BookstoreSpineColors {
-    val fallback = when (clothTexture) {
-        R.drawable.cloth_umber -> Color(0xFF78523B)
-        R.drawable.cloth_green -> Color(0xFF304E40)
-        R.drawable.cloth_burgundy -> Color(0xFF6A303C)
-        else -> Color(0xFF233B54)
-    }
+    // Any title, including newly imported books with no catalogue cover, has a
+    // reproducible binding palette. No hardcoded franchise-specific colours.
+    val fallbackSwatches = listOf(
+        Color(0xFF233B54), Color(0xFF78523B), Color(0xFF304E40),
+        Color(0xFF6A303C), Color(0xFF555173), Color(0xFF956B51),
+        Color(0xFF426778), Color(0xFF624A3F), Color(0xFF6A5841),
+        Color(0xFF4B5951), Color(0xFF414C62), Color(0xFF79604D),
+    )
+    val fallback = fallbackSwatches[
+        (title.lowercase(java.util.Locale.ROOT).hashCode() and Int.MAX_VALUE) % fallbackSwatches.size
+    ]
     val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return BookstoreSpineColors(
         fallback, Color(0xFFF8E7C9), false,
     )
@@ -104,6 +109,7 @@ internal fun BookstorePrintedSpine(
     texture: Int,
     palette: BookstoreSpineColors,
     modifier: Modifier = Modifier,
+    ornate: Boolean = true,
 ) {
     Box(modifier.background(palette.cloth)) {
         // Old cloth assets only contribute subtle woven grain, never a conflicting color.
@@ -136,6 +142,9 @@ internal fun BookstorePrintedSpine(
             drawLine(ink.copy(alpha = .25f), Offset(size.width - pad - 3.dp.toPx(), pad),
                 Offset(size.width - pad - 3.dp.toPx(), size.height - pad), line)
 
+            if (!ornate) return@Canvas
+            // Four subtle repeat positions echo printed clothbound editions while
+            // leaving the centre of the spine clear for the full readable title.
             listOf(top, bottom).forEach { y ->
                 when (motif) {
                     0 -> {
