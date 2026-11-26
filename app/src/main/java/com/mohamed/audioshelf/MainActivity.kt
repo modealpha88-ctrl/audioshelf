@@ -367,12 +367,22 @@ private fun AudioShelfApp(
         DisposableEffect(window) {
             val bars = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             val originalIcons = bars.isAppearanceLightStatusBars
+            val originalNavIcons = bars.isAppearanceLightNavigationBars
             val originalColor = window.statusBarColor
+            val originalNavColor = window.navigationBarColor
             bars.isAppearanceLightStatusBars = false
-            if (Build.VERSION.SDK_INT < 35) window.statusBarColor = android.graphics.Color.rgb(12, 14, 20)
+            bars.isAppearanceLightNavigationBars = false
+            if (Build.VERSION.SDK_INT < 35) {
+                window.statusBarColor = android.graphics.Color.rgb(12, 14, 20)
+                window.navigationBarColor = android.graphics.Color.rgb(13, 14, 19)
+            }
             onDispose {
                 bars.isAppearanceLightStatusBars = originalIcons
-                if (Build.VERSION.SDK_INT < 35) window.statusBarColor = originalColor
+                bars.isAppearanceLightNavigationBars = originalNavIcons
+                if (Build.VERSION.SDK_INT < 35) {
+                    window.statusBarColor = originalColor
+                    window.navigationBarColor = originalNavColor
+                }
             }
         }
     }
