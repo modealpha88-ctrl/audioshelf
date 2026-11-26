@@ -26,6 +26,15 @@ class BookstoreShelfTest {
     @Test fun spinesShortenMetadataButDoNotChangeSavedTitles() {
         assertEquals("Harry Potter", bookstoreSpineTitle("Harry Potter Complete Audiobook Collection"))
         assertEquals("The Final Empire", bookstoreSpineTitle("The Final Empire (Unabridged)"))
+        assertEquals("The Final Empire", bookstoreSpineTitle("The Final Empire: Mistborn, Book 1"))
         assertEquals("The Memoirs of Sherlock Holmes", bookstoreSpineTitle("The Memoirs of Sherlock Holmes"))
+    }
+
+    @Test fun printedSpineOrnamentsAreStableAcrossCaseAndWithinRange() {
+        for (name in listOf("Harry Potter", "Dracula", "Peter Pan", "The Final Empire")) {
+            val motif = bookstoreSpineMotif(name)
+            org.junit.Assert.assertTrue(motif in 0..4)
+            assertEquals(motif, bookstoreSpineMotif(name.uppercase()))
+        }
     }
 }
