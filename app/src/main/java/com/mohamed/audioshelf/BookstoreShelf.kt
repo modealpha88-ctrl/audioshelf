@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -251,13 +252,43 @@ private fun BookstoreSpine(
         contentDescription = bookDescription(book)
         progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
     }, contentAlignment = Alignment.BottomCenter) {
-        Box(Modifier.padding(horizontal = 3.dp).fillMaxWidth().fillMaxHeight(heightFraction)
+        Box(Modifier.padding(start = 2.dp, end = 5.dp)
+            .fillMaxWidth().fillMaxHeight(heightFraction)
             .graphicsLayer {
                 transformOrigin = TransformOrigin(.5f, 1f)
                 rotationZ = lean + pressShift
+                rotationY = when (position % 4) {
+                    0 -> -11f
+                    1 -> 8f
+                    2 -> -7f
+                    else -> 11f
+                }
+                cameraDistance = 32f * density
             }
-            .shadow(5.dp, RoundedCornerShape(2.dp))
-            .background(Color(0xFF30241F))) {
+            .shadow(11.dp, RoundedCornerShape(topStart = 5.dp, bottomStart = 4.dp))
+            .background(Color(0xFF171318))) {
+            // An actual 10dp page/board edge is drawn behind the printed spine.
+            // Its grain is independent of the cover illustration, preserving readability.
+            Box(Modifier.align(Alignment.CenterEnd).width(10.dp).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(
+                    Color(0xFF544B42), Color(0xFFE2D1B3), Color(0xFF6D5544),
+                )))) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val gap = 3.dp.toPx()
+                    var y = gap
+                    while (y < size.height) {
+                        drawLine(Color(0x4A4F4035),
+                            androidx.compose.ui.geometry.Offset(1.dp.toPx(), y),
+                            androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), y),
+                            strokeWidth = .5.dp.toPx())
+                        y += gap
+                    }
+                }
+            }
+            Box(Modifier.fillMaxHeight().fillMaxWidth().padding(end = 9.dp)
+                .clip(RoundedCornerShape(topStart = 5.dp, bottomStart = 4.dp,
+                    topEnd = 2.dp, bottomEnd = 2.dp))
+                .background(spinePalette.cloth)) {
             // Only an actual bundled spine scan or a user-chosen spine photo is shown as an
             // image. Never stretch the front jacket into a fake publisher's spine.
             if (hasSpineImage) {
@@ -313,6 +344,15 @@ private fun BookstoreSpine(
                         .background(ink))
                 }
             }
+            } // printed jacket surface
+            // Rounded cloth lip and a bright sliver where the binding meets the pages.
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = 9.dp).width(2.dp)
+                .fillMaxHeight().background(Brush.horizontalGradient(listOf(
+                    Color(0xC6000000), Color(0x66F6E9D1),
+                ))))
+            Box(Modifier.align(Alignment.TopStart).padding(end = 9.dp)
+                .fillMaxWidth().height(3.dp)
+                .background(Color(0x30FFF4DD)))
         }
     }
 }
