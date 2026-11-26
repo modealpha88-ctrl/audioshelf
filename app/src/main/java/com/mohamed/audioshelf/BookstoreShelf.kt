@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -65,6 +66,10 @@ internal fun bookstoreFaceOutIndex(books: List<AudioBook>, faceOnLeft: Boolean):
         else withArtwork.lastOrNull() ?: -1
 }
 
+/** Slightly different binding widths make imported titles feel like physical volumes. */
+internal fun bookstoreSpineWidthVariation(title: String): Int =
+    ((title.lowercase(java.util.Locale.ROOT).hashCode() and Int.MAX_VALUE) % 6) * 3
+
 /** Long metadata cannot fit on a physical spine; full titles remain in accessibility semantics. */
 internal fun bookstoreSpineTitle(title: String): String =
     title.replace(Regex("""(?i)\s+(?:complete\s+)?audiobook\s+collection\b.*$"""), "")
@@ -95,8 +100,8 @@ internal fun BookstoreShelfRow(
 ) {
     if (books.isEmpty()) return
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val shelfHeight = (maxWidth * .555f).coerceIn(180.dp, 242.dp)
-        val bookZoneHeight = shelfHeight - 20.dp
+        val shelfHeight = (maxWidth * .68f).coerceIn(218.dp, 292.dp)
+        val bookZoneHeight = shelfHeight - 26.dp
         val spineSlotWidth = (maxWidth * .13f).coerceIn(48.dp, 60.dp)
         val faceOnLeft = rowIndex % 2 == 1
         val faceIndex = bookstoreFaceOutIndex(books, faceOnLeft)
@@ -105,12 +110,34 @@ internal fun BookstoreShelfRow(
             else if (faceOnLeft) listOf(faceIndex) + books.indices.filterNot { it == faceIndex }
             else books.indices.filterNot { it == faceIndex } + faceIndex
 
-        Box(Modifier.fillMaxWidth().height(shelfHeight)) {
-            // One restrained shared contact shadow. No shadows that make books float.
-            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp)
-                .fillMaxWidth().height(22.dp)
-                .shadow(12.dp, RoundedCornerShape(3.dp))
-                .background(Color(0x55442B1B)))
+        Box(Modifier.fillMaxWidth().height(shelfHeight)
+            .background(Brush.verticalGradient(listOf(
+                Color(0xFF0E1017), Color(0xFF242129), Color(0xFF0B0B10),
+            )))) {
+            // Recessed black-walnut cabinet: upper canopy, side walls and soft top-light.
+            Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(15.dp)
+                .background(Brush.verticalGradient(listOf(
+                    Color(0xFF08090E), Color(0xFF252028), Color.Transparent,
+                ))))
+            Box(Modifier.align(Alignment.TopCenter).padding(horizontal = 36.dp)
+                .fillMaxWidth().height(110.dp)
+                .background(Brush.verticalGradient(listOf(
+                    Color(0x2DA77956), Color(0x0FD9B484), Color.Transparent,
+                ))))
+            Box(Modifier.align(Alignment.CenterStart).width(8.dp).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(
+                    Color(0xFF06070A), Color(0xFF292129),
+                ))))
+            Box(Modifier.align(Alignment.CenterEnd).width(8.dp).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(
+                    Color(0xFF292129), Color(0xFF06070A),
+                ))))
+            // The books visibly rest on a continuous shadow plane.
+            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 12.dp)
+                .fillMaxWidth().height(28.dp)
+                .background(Brush.verticalGradient(listOf(
+                    Color.Transparent, Color(0xCA000000),
+                ))))
 
             Row(
                 Modifier.fillMaxWidth().height(bookZoneHeight)
@@ -126,7 +153,8 @@ internal fun BookstoreShelfRow(
                                 BookstoreFaceOut(book, progressFor(book), motion) { onBook(book) }
                             }
                         } else {
-                            Box(Modifier.width(spineSlotWidth).height(bookZoneHeight)) {
+                            Box(Modifier.width(spineSlotWidth + bookstoreSpineWidthVariation(book.title).dp)
+                                .height(bookZoneHeight)) {
                                 BookstoreSpine(book, progressFor(book), position, motion, spineRevision) { onBook(book) }
                             }
                         }
@@ -134,17 +162,17 @@ internal fun BookstoreShelfRow(
                 }
             }
             // Continuous floating wood slab: its bevel is above the book's contact shadow.
-            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 9.dp)
-                .fillMaxWidth().height(20.dp).shadow(5.dp, RoundedCornerShape(2.dp))
+            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp)
+                .fillMaxWidth().height(26.dp).shadow(11.dp, RoundedCornerShape(2.dp))
                 .background(Brush.verticalGradient(listOf(
-                    Color(0xFFAB7850), Color(0xFF74462B), Color(0xFF4B2B1E),
+                    Color(0xFF806047), Color(0xFF352721), Color(0xFF161319),
                 )))) {
-                Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(3.dp)
+                Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(2.dp)
                     .background(Brush.horizontalGradient(listOf(
-                        Color(0xFF926140), Color(0xFFE1B485), Color(0xFF956243),
+                        Color(0xFF594432), Color(0xFFBC926E), Color(0xFF574133),
                     ))))
-                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(2.dp)
-                    .background(Color(0xFF3C2219).copy(alpha = .7f)))
+                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp)
+                    .background(Color(0xFF08090D).copy(alpha = .86f)))
             }
         }
     }
@@ -229,13 +257,43 @@ private fun BookstoreSpine(
         contentDescription = bookDescription(book)
         progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
     }, contentAlignment = Alignment.BottomCenter) {
-        Box(Modifier.padding(horizontal = 3.dp).fillMaxWidth().fillMaxHeight(heightFraction)
+        Box(Modifier.padding(start = 2.dp, end = 5.dp)
+            .fillMaxWidth().fillMaxHeight(heightFraction)
             .graphicsLayer {
                 transformOrigin = TransformOrigin(.5f, 1f)
                 rotationZ = lean + pressShift
+                rotationY = when (position % 4) {
+                    0 -> -11f
+                    1 -> 8f
+                    2 -> -7f
+                    else -> 11f
+                }
+                cameraDistance = 32f * density
             }
-            .shadow(5.dp, RoundedCornerShape(2.dp))
-            .background(Color(0xFF30241F))) {
+            .shadow(11.dp, RoundedCornerShape(topStart = 5.dp, bottomStart = 4.dp))
+            .background(Color(0xFF171318))) {
+            // An actual 10dp page/board edge is drawn behind the printed spine.
+            // Its grain is independent of the cover illustration, preserving readability.
+            Box(Modifier.align(Alignment.CenterEnd).width(10.dp).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(
+                    Color(0xFF544B42), Color(0xFFE2D1B3), Color(0xFF6D5544),
+                )))) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val gap = 3.dp.toPx()
+                    var y = gap
+                    while (y < size.height) {
+                        drawLine(Color(0x4A4F4035),
+                            androidx.compose.ui.geometry.Offset(1.dp.toPx(), y),
+                            androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), y),
+                            strokeWidth = .5.dp.toPx())
+                        y += gap
+                    }
+                }
+            }
+            Box(Modifier.fillMaxHeight().fillMaxWidth().padding(end = 9.dp)
+                .clip(RoundedCornerShape(topStart = 5.dp, bottomStart = 4.dp,
+                    topEnd = 2.dp, bottomEnd = 2.dp))
+                .background(spinePalette.cloth)) {
             // Only an actual bundled spine scan or a user-chosen spine photo is shown as an
             // image. Never stretch the front jacket into a fake publisher's spine.
             if (hasSpineImage) {
@@ -291,6 +349,15 @@ private fun BookstoreSpine(
                         .background(ink))
                 }
             }
+            } // printed jacket surface
+            // Rounded cloth lip and a bright sliver where the binding meets the pages.
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = 9.dp).width(2.dp)
+                .fillMaxHeight().background(Brush.horizontalGradient(listOf(
+                    Color(0xC6000000), Color(0x66F6E9D1),
+                ))))
+            Box(Modifier.align(Alignment.TopStart).padding(end = 9.dp)
+                .fillMaxWidth().height(3.dp)
+                .background(Color(0x30FFF4DD)))
         }
     }
 }
@@ -325,22 +392,39 @@ private fun BookstoreFaceOut(
         contentDescription = bookDescription(book)
         progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
     }, contentAlignment = Alignment.BottomCenter) {
-        val coverHeight = minOf(maxHeight * .95f, (maxWidth - 8.dp) / ratio)
+        val coverHeight = minOf(maxHeight * .90f, (maxWidth - 21.dp) / ratio)
         val coverWidth = coverHeight * ratio
-        Box(Modifier.width(coverWidth + 6.dp).height(coverHeight)
+        Box(Modifier.width(coverWidth + 13.dp).height(coverHeight)
             .graphicsLayer {
                 transformOrigin = TransformOrigin(.5f, 1f)
                 scaleX = selectScale
                 scaleY = selectScale
+                rotationY = -12f
+                rotationZ = if ((book.title.hashCode() and 1) == 0) -3.5f else 3f
+                cameraDistance = 36f * density
             }
-            .shadow(8.dp, RoundedCornerShape(2.dp))
-            .background(Color(0xFFE4D5B9))) {
-            Box(Modifier.align(Alignment.CenterEnd).width(5.dp).fillMaxHeight()
+            .shadow(17.dp, RoundedCornerShape(3.dp))
+            .background(Color(0xFF27212A))) {
+            // Visible page block catches the cabinet light along the edge of the cover.
+            Box(Modifier.align(Alignment.CenterEnd).width(13.dp).fillMaxHeight()
                 .background(Brush.horizontalGradient(listOf(
-                    Color(0xFF997B5A), Color(0xFFF0E1C5), Color(0xFFB29B79),
-                ))))
+                    Color(0xFF6B584A), Color(0xFFEBDDC4), Color(0xFF5B483C),
+                )))) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val gap = 2.6.dp.toPx()
+                    var y = gap
+                    while (y < size.height) {
+                        drawLine(Color(0x4C55483F),
+                            androidx.compose.ui.geometry.Offset(1.dp.toPx(), y),
+                            androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), y),
+                            strokeWidth = .5.dp.toPx())
+                        y += gap
+                    }
+                }
+            }
             Box(Modifier.fillMaxHeight().width(coverWidth)
-                .background(Color(0xFF463329))) {
+                .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 3.dp))
+                .background(Color(0xFF27212A))) {
                 if (drawable != null) {
                     Image(painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 } else {
