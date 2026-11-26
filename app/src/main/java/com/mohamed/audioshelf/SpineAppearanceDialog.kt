@@ -1,6 +1,9 @@
 package com.mohamed.audioshelf
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,7 +68,10 @@ internal fun SpineAppearanceDialog(
         onDismissRequest = onDismiss,
         title = { Text("Book appearance") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
                     "Changes apply only to this audiobook. New books use Automatic.",
                     style = MaterialTheme.typography.bodySmall,
