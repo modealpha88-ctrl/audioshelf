@@ -414,7 +414,12 @@ private fun AudioShelfApp(
         playBook(context, controller, book, state.chapters, index, progress.positionMs)
     }
 
-    MaterialTheme(colorScheme = if (onShelf) shelfColors else MaterialTheme.colorScheme) {
+    MaterialTheme(
+        colorScheme = if (onShelf) shelfColors else MaterialTheme.colorScheme,
+        shapes = if (onShelf) Shapes(extraSmall = RoundedCornerShape(3.dp),
+            small = RoundedCornerShape(5.dp), medium = RoundedCornerShape(7.dp),
+            large = RoundedCornerShape(10.dp), extraLarge = RoundedCornerShape(12.dp)) else MaterialTheme.shapes,
+    ) {
     Scaffold(
         containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -843,6 +848,7 @@ private fun SourcesScreen(
                     onClick = { onAdd(repositoryUrl.trim()) },
                     enabled = repositoryUrl.isNotBlank() && !state.repositoryBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     if (state.repositoryBusy) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -890,6 +896,7 @@ private fun SourcesScreen(
                     onClick = { onImport(bookUrl.trim()) },
                     enabled = bookUrl.isNotBlank() && hasRights && !state.importBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     if (state.importBusy) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -910,6 +917,7 @@ private fun SourcesScreen(
                     },
                     enabled = canOpenWebsite,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
@@ -934,6 +942,7 @@ private fun SourcesScreen(
                     onClick = { onImportFeed(podcastUrl.trim()) },
                     enabled = podcastUrl.startsWith("https://") && !state.importBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     Icon(Icons.Default.Podcasts, null)
                     Spacer(Modifier.width(8.dp))
@@ -1082,13 +1091,16 @@ private fun RepositoryCard(
     onRemove: (SourceRepository) -> Unit,
     onToggleProvider: (SourceProviderDefinition) -> Unit,
 ) {
-    ElevatedCard(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
+    OutlinedCard(Modifier.padding(horizontal = 17.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(5.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(.7.dp, MaterialTheme.colorScheme.outline.copy(alpha = .45f))) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(Icons.Default.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(repository.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(repository.name, fontFamily = FontFamily.Serif, fontSize = 19.sp)
                     if (repository.description.isNotBlank()) Text(repository.description, style = MaterialTheme.typography.bodySmall)
                     Text(repository.url, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
