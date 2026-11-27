@@ -14,15 +14,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.math.PI
 import kotlin.math.exp
-import kotlin.math.sin
 import kotlin.random.Random
 
-/** Original, deterministic paper-rustle and soft binding-contact sound. No recording or network needed. */
+/** Short, aperiodic paper friction: no pitched tone, bass thud or periodic modulation. */
 internal fun shelfFlipWave(): ByteArray {
     val sampleRate = 22050
-    val count = sampleRate * 185 / 1000
+    val count = sampleRate * 92 / 1000
     val out = ByteBuffer.allocate(44 + count * 2).order(ByteOrder.LITTLE_ENDIAN)
     fun tag(value: String) { out.put(value.toByteArray(Charsets.US_ASCII)) }
     tag("RIFF"); out.putInt(36 + count * 2); tag("WAVE")
@@ -30,33 +28,45 @@ internal fun shelfFlipWave(): ByteArray {
     out.putInt(sampleRate); out.putInt(sampleRate * 2); out.putShort(2); out.putShort(16)
     tag("data"); out.putInt(count * 2)
     val random = Random(617)
-    var low = 0.0
+    // Irregular small fibre scratches with a quick dry decay, not a resonant buzz.
+    val grains = List(13) { Triple(random.nextDouble(.003, .069),
+        random.nextDouble(.0012, .0045), random.nextDouble(.10, .38)) }
+    var previous = 0.0
+    var previousHigh = 0.0
+    var filtered = 0.0
     for (i in 0 until count) {
         val t = i.toDouble() / sampleRate
         val noise = random.nextDouble(-1.0, 1.0)
-        low += (noise - low) * .19
-        val rustle = (noise - low) * .22 *
-            exp(-((t - .053) / .032) * ((t - .053) / .032)) *
-            (.65 + .35 * sin(2 * PI * 43 * t))
-        val contactTime = (t - .098).coerceAtLeast(0.0)
-        val contact = if (t >= .098) (.12 * sin(2 * PI * 155 * contactTime) + low * .10) *
-            exp(-contactTime / .013) else 0.0
-        val fade = (t / .008).coerceIn(0.0, 1.0) * ((.185 - t) / .02).coerceIn(0.0, 1.0)
-        out.putShort(((rustle + contact) * fade * 32767).toInt().coerceIn(-32767, 32767).toShort())
+        val high = noise - previous + .66 * previousHigh
+        previous = noise
+        previousHigh = high
+        filtered += (high - filtered) * .65
+        val texture = grains.sumOf { (start, width, strength) ->
+            val offset = (t - start) / width
+            strength * exp(-offset * offset)
+        }.coerceAtMost(1.0)
+        val attack = (t / .004).coerceIn(0.0, 1.0)
+        val tail = ((.092 - t) / .014).coerceIn(0.0, 1.0)
+        val sample = filtered * (.045 + texture * .32) * attack * tail
+        out.putShort((sample * 32767).toInt().coerceIn(-12000, 12000).toShort())
     }
     return out.array()
 }
+
+/** Number of half-spine boundaries crossed between two continuous shelf positions. */
+internal fun shelfSoundCrossings(from: Float, to: Float): Int =
+    kotlin.math.abs(kotlin.math.floor(to * 2f).toInt() - kotlin.math.floor(from * 2f).toInt())
 
 private class ShelfFlipPlayer {
     private var pool: SoundPool? = null
     private var sample = 0
     private var ready = false
-    private var stream = 0
+    private var variation = 0
     private var lastPlay = -1000L
 
     fun open() {
         if (pool != null) return
-        val created = SoundPool.Builder().setMaxStreams(1)
+        val created = SoundPool.Builder().setMaxStreams(2)
             .setAudioAttributes(AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
@@ -74,11 +84,11 @@ private class ShelfFlipPlayer {
         val sound = pool ?: return
         if (!ready || sample == 0) return
         val now = SystemClock.elapsedRealtime()
-        if (now - lastPlay < 105L) return
+        if (now - lastPlay < 70L) return
         lastPlay = now
-        if (stream != 0) sound.stop(stream)
-        // Deliberately quiet and no audio-focus request: audiobook narration keeps playing.
-        stream = sound.play(sample, .30f, .30f, 1, 0, 1f)
+        // Short variations prevent identical mechanical repeats; no audio focus request.
+        val rate = listOf(.97f, 1.08f, 1.02f, .92f)[variation++ and 3]
+        sound.play(sample, .24f, .24f, 1, 0, rate)
     }
 
     fun close() {
@@ -86,7 +96,7 @@ private class ShelfFlipPlayer {
         pool = null
         ready = false
         sample = 0
-        stream = 0
+        variation = 0
         sound?.release()
     }
 }
@@ -103,7 +113,7 @@ internal fun rememberShelfFlipSound(enabled: Boolean): () -> Unit {
         if (enabled) {
             val file = withContext(Dispatchers.IO) {
                 runCatching {
-                    File(context.cacheDir, "shelf-flip-v1.wav").apply {
+                    File(context.cacheDir, "shelf-flip-v2.wav").apply {
                         val wave = shelfFlipWave()
                         if (!exists() || length() != wave.size.toLong()) writeBytes(wave)
                     }
