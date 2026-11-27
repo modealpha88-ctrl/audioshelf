@@ -1,3 +1,6 @@
+import java.io.File
+import java.net.URI
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -21,9 +24,9 @@ val prepareSpineFonts by tasks.registering {
     doLast {
         val root = spineFontAssets.get().asFile.resolve("spine_fonts")
         root.mkdirs()
-        fun fetchFontAsset(family: String, remote: String, target: java.io.File) {
+        fun fetchFontAsset(family: String, remote: String, target: File) {
             val encoded = remote.replace("[", "%5B").replace("]", "%5D")
-            val url = java.net.URI("https://raw.githubusercontent.com/google/fonts/main/ofl/$family/$encoded").toURL()
+            val url = URI("https://raw.githubusercontent.com/google/fonts/main/ofl/$family/$encoded").toURL()
             val bytes = url.openConnection().apply {
                 connectTimeout = 15000
                 readTimeout = 20000
