@@ -4,6 +4,49 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Keep the actual open-licensed font files and their individual license notices
+// inside the APK. The phone never needs a font-service connection.
+val spineFontAssets = layout.buildDirectory.dir("generated/spineFontAssets")
+val spineFontSources = mapOf(
+    "cinzel" to "Cinzel[wght].ttf",
+    "ebgaramond" to "EBGaramond[wght].ttf",
+    "oswald" to "Oswald[wght].ttf",
+    "bebasneue" to "BebasNeue-Regular.ttf",
+    "anton" to "Anton-Regular.ttf",
+    "caveat" to "Caveat[wght].ttf",
+)
+val prepareSpineFonts by tasks.registering {
+    inputs.property("fontSources", spineFontSources)
+    outputs.dir(spineFontAssets)
+    doLast {
+        val root = spineFontAssets.get().asFile.resolve("spine_fonts")
+        root.mkdirs()
+        fun fetchFontAsset(family: String, remote: String, target: java.io.File) {
+            val encoded = remote.replace("[", "%5B").replace("]", "%5D")
+            val url = java.net.URI("https://raw.githubusercontent.com/google/fonts/main/ofl/$family/$encoded").toURL()
+            val bytes = url.openConnection().apply {
+                connectTimeout = 15000
+                readTimeout = 20000
+            }.getInputStream().use { it.readBytes() }
+            require(bytes.size in 1000..4000000) { "Unexpected font asset size: $family/$remote" }
+            if (remote.endsWith(".ttf")) {
+                require(bytes.take(4) == listOf(0.toByte(), 1.toByte(), 0.toByte(), 0.toByte())) {
+                    "Expected TrueType font: $family"
+                }
+            } else {
+                require(bytes.toString(Charsets.UTF_8).contains("SIL OPEN FONT LICENSE", ignoreCase = true)) {
+                    "Missing OFL notice: $family"
+                }
+            }
+            target.writeBytes(bytes)
+        }
+        spineFontSources.forEach { (family, file) ->
+            fetchFontAsset(family, file, root.resolve("$family.ttf"))
+            fetchFontAsset(family, "OFL.txt", root.resolve("$family-OFL.txt"))
+        }
+    }
+}
+
 android {
     val releaseKeystorePath = providers.environmentVariable("AUDIOSHELF_KEYSTORE_PATH").orNull
     namespace = "com.mohamed.audioshelf"
@@ -17,6 +60,7 @@ android {
         versionName = "0.6.10"
     }
 
+    sourceSets.getByName("main").assets.srcDir(spineFontAssets)
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 
@@ -56,6 +100,8 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 }
+
+tasks.named("preBuild").configure { dependsOn(prepareSpineFonts) }
 
 dependencies {
     implementation("androidx.browser:browser:1.8.0")
