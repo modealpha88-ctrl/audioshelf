@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,13 +50,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -81,13 +80,9 @@ import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.mohamed.audioshelf.data.SpineBindingMode
-import com.mohamed.audioshelf.data.SpineBindingStore
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -252,6 +247,9 @@ internal fun VhsAudiobookShelf(
     val backdropUrl = selected?.coverUrl.orEmpty()
     LaunchedEffect(backdropUrl) { onBackdropCover(backdropUrl) }
     val density = LocalDensity.current
+    val shelfContext = LocalContext.current.applicationContext
+    val shelfScope = rememberCoroutineScope()
+    val stableSpines = remember(shelfContext, shelfScope) { StableShelfSpines(shelfContext, shelfScope) }
 
     Column(
         Modifier.fillMaxWidth().padding(top = 6.dp),
@@ -381,7 +379,7 @@ internal fun VhsAudiobookShelf(
                         val ratio = ratioAt(virtualIndex)
                         val width = faceWidth(ratio)
                         VhsPhysicalCase(
-                            book = book, spineRevision = spineRevision,
+                            book = book, spineRevision = spineRevision, stableSpines = stableSpines,
                             height = width / ratio, spineWidth = spineAt(virtualIndex),
                             album = vhsIsAlbum(ratio),
                             onRatio = { ratios[book.coverUrl] = it },
@@ -456,6 +454,7 @@ internal fun rememberShelfCoverPainter(book: AudioBook): AsyncImagePainter {
 private fun VhsPhysicalCase(
     book: AudioBook,
     spineRevision: Int,
+    stableSpines: StableShelfSpines,
     height: Dp,
     spineWidth: Dp,
     coverWidth: Dp,
@@ -466,69 +465,25 @@ private fun VhsPhysicalCase(
     onSelect: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val store = remember(context) { SpineBindingStore(context) }
-    val binding = remember(book.sourceId, book.id, spineRevision) { store.mode(book) }
-    var spineImage by remember(book.sourceId, book.id, spineRevision) {
-        mutableStateOf<String?>(null)
+    val entry = remember(stableSpines, stableSpineKey(book, spineRevision)) {
+        stableSpines.entry(book, spineRevision)
     }
-    LaunchedEffect(book.sourceId, book.id, binding, spineRevision) {
-        spineImage = withContext(Dispatchers.IO) {
-            runCatching { store.displayedArtwork(book, binding) }.getOrNull()
-        }
-    }
+    val binding = entry.binding
+    val spineImage = entry.artwork
+    val appearance = entry.visual
+    val palette = appearance.palette
+    val spinePreview = appearance.preview
+    val stableLettering = appearance.lettering
+    val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
     val coverPainter = rememberShelfCoverPainter(book)
     val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)?.result?.drawable
-    LaunchedEffect(book.coverUrl, coverDrawable) {
-        if (coverDrawable != null && coverDrawable.intrinsicWidth > 0 && coverDrawable.intrinsicHeight > 0) {
-            onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
-        }
-    }
-    var coverLettering by remember(book.coverUrl, book.title, binding) {
-        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
-    }
-    var matchedFont by remember(book.coverUrl, book.title, binding) {
-        mutableStateOf<CoverFontMatch?>(null)
-    }
-    LaunchedEffect(book.coverUrl, book.title, coverDrawable, binding, spineImage) {
-        coverLettering = null
-        matchedFont = null
-        if (binding == SpineBindingMode.AUTOMATIC && spineImage == null && coverDrawable != null) {
-            try {
-                val lettering = coverTitleLettering(context, coverDrawable, book.coverUrl,
-                    bookstoreSpineTitle(book.title))
-                coverLettering = lettering?.bitmap?.asImageBitmap()
-                matchedFont = lettering?.fontMatch
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                // OCR must never prevent loading the existing binding or original cover.
+    LaunchedEffect(entry) { stableSpines.loadArtwork(book, entry) }
+    LaunchedEffect(entry, coverDrawable) {
+        if (coverDrawable != null) {
+            if (coverDrawable.intrinsicWidth > 0 && coverDrawable.intrinsicHeight > 0) {
+                onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
             }
-        }
-    }
-    val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
-    val savedPalette = remember(book.id, book.coverUrl, spineRevision) { store.palette(book) }
-    val palette = remember(book.title, coverDrawable, savedPalette, binding, texture) {
-        when {
-            binding == SpineBindingMode.CLASSIC ->
-                bookstoreSpineColors(book.title, null, texture)
-            coverDrawable != null -> bookstoreSpineColors(book.title, coverDrawable, texture)
-            savedPalette != null -> BookstoreSpineColors(
-                Color(savedPalette.first), Color(savedPalette.second), true,
-            )
-            else -> bookstoreSpineColors(book.title, null, texture)
-        }
-    }
-    val fontLettering = remember(book.title, matchedFont, palette.ink) {
-        matchedFont?.let {
-            renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb())?.asImageBitmap()
-        }
-    }
-    LaunchedEffect(book.id, book.coverUrl, palette) {
-        if (coverDrawable != null && palette.hasCoverPalette) {
-            withContext(Dispatchers.IO) {
-                store.savePalette(book, palette.cloth.toArgb(), palette.ink.toArgb())
-            }
+            stableSpines.analyze(book, entry, coverDrawable)
         }
     }
 
@@ -582,8 +537,8 @@ private fun VhsPhysicalCase(
                 } else if (album) {
                     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(corner))
                         .background(palette.cloth)) {
-                        if (coverDrawable != null) {
-                            Image(coverPainter, contentDescription = null,
+                        if (spinePreview != null) {
+                            Image(requireNotNull(spinePreview), contentDescription = null,
                                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                             Box(Modifier.fillMaxSize().background(palette.cloth.copy(alpha = .78f)))
                         }
@@ -597,7 +552,7 @@ private fun VhsPhysicalCase(
                                     (measured.width - measured.height) / 2) { rotationZ = 90f }
                             }
                         }) {
-                            val lettering = coverLettering ?: fontLettering
+                            val lettering = stableLettering
                             if (lettering != null) {
                                 Image(lettering, contentDescription = null,
                                     modifier = Modifier.width(height * .88f).height(spineWidth * .86f),
@@ -613,18 +568,18 @@ private fun VhsPhysicalCase(
                 } else {
                     Box(Modifier.fillMaxSize()
                         .clip(RoundedCornerShape(2.dp))) {
-                        val illustrated = binding == SpineBindingMode.AUTOMATIC && coverDrawable != null
+                        val illustrated = binding == SpineBindingMode.AUTOMATIC && spinePreview != null
                         val artHeight = height * .31f
                         val cloth = palette.cloth
                         val ink = palette.ink
                         if (binding == SpineBindingMode.AUTOMATIC) {
                             Box(Modifier.fillMaxSize().background(cloth))
                             if (illustrated) {
-                                Image(coverPainter, contentDescription = null, contentScale = ContentScale.Crop,
+                                Image(requireNotNull(spinePreview), contentDescription = null, contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize())
                                 Box(Modifier.fillMaxSize().background(cloth.copy(alpha = .90f)))
                                 Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(artHeight)) {
-                                    Image(coverPainter, contentDescription = null,
+                                    Image(requireNotNull(spinePreview), contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize())
                                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
@@ -659,7 +614,7 @@ private fun VhsPhysicalCase(
                                     ) { rotationZ = 90f }
                                 }
                             }) {
-                                val lettering = coverLettering ?: fontLettering
+                                val lettering = stableLettering
                                 if (automatic && lettering != null) {
                                     Image(lettering, contentDescription = null,
                                         modifier = Modifier.width(height - topSpace - footerHeight)
