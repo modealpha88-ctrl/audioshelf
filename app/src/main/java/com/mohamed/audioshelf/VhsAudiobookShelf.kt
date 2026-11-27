@@ -5,6 +5,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
@@ -97,10 +98,7 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-private val Paper = Color(0xFFEDEBE6)
-private val Ink = Color(0xFF141414)
-private val Cobalt = Color(0xFF1F3FB0)
-private val Muted = Color(0xFF6D6A63)
+internal fun vhsVinylReveal(openness: Float): Float = vhsSmoothstep((openness - .68f) / .32f)
 
 internal fun vhsWrap(index: Int, count: Int): Int =
     if (count <= 0) 0 else ((index % count) + count) % count
@@ -156,6 +154,10 @@ internal fun VhsAudiobookShelf(
     spineRevision: Int,
     onOpen: (AudioBook) -> Unit,
 ) {
+    val Ink = MaterialTheme.colorScheme.onBackground
+    val Cobalt = MaterialTheme.colorScheme.primary
+    val Muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val dark = MaterialTheme.colorScheme.background == vhsDarkColors.background
     var filter by rememberSaveable { mutableStateOf(ArchiveFilter.ALL) }
     val visible = vhsFilterBooks(books, filter, progressFor)
     var target by rememberSaveable(filter, visible.size) {
@@ -163,9 +165,7 @@ internal fun VhsAudiobookShelf(
     }
     val position by animateFloatAsState(
         target.toFloat(),
-        animationSpec = if (motion) spring(
-            dampingRatio = .96f, stiffness = 85f,
-        ) else snap(),
+        animationSpec = if (motion) tween(1050, easing = FastOutSlowInEasing) else snap(),
         label = "Physical audiobook shelf",
     )
     val selected = visible.getOrNull(vhsWrap(position.roundToInt(), visible.size))
@@ -187,12 +187,13 @@ internal fun VhsAudiobookShelf(
                 val active = kind == filter
                 Box(
                     Modifier.border(1.dp, Ink.copy(alpha = .84f))
-                        .background(if (active) Cobalt else Color.Transparent)
+                        .background(if (active) if (dark) Color(0xFF292F58) else Cobalt else Color.Transparent)
                         .clickable(role = Role.Tab) { filter = kind }
                         .padding(horizontal = if (index == 0) 8.dp else 11.dp, vertical = 9.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(text, color = if (active) Color.White else Ink,
+                        fontFamily = FontFamily.Serif,
                         fontSize = 9.sp, letterSpacing = .5.sp,
                         fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
@@ -211,7 +212,7 @@ internal fun VhsAudiobookShelf(
             val hardbackSpine = bookHeight * (142f / 840f)
             val ratios = remember { mutableStateMapOf<String, Float>() }
             val maxCoverWidth = maxWidth * .54f
-            fun faceWidth(ratio: Float) = minOf(bookHeight * ratio, maxCoverWidth)
+            fun faceWidth(ratio: Float) = minOf(bookHeight * ratio, if (vhsIsAlbum(ratio)) maxWidth * .49f else maxCoverWidth)
             fun ratioAt(index: Int) = ratios[visible[vhsWrap(index, visible.size)].coverUrl] ?: .67f
             val mid = floor(position.toDouble()).toInt()
             fun spineAt(index: Int): Dp {
@@ -225,7 +226,8 @@ internal fun VhsAudiobookShelf(
                 val open = vhsSmoothstep(1f - abs(index - position))
                 val spine = spineAt(index)
                 val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
-                return spine * (1f - open) + face * open
+                val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
+                return spine * (1f - open) + face * open + reveal
             }
             fun centre(index: Int): Dp {
                 var distance = 0.dp
@@ -274,12 +276,15 @@ internal fun VhsAudiobookShelf(
                     }.focusable(),
                 contentAlignment = Alignment.Center,
             ) {
-                // Subtle grounding of the row, without the old wooden shelf planks.
+                // Continuous contact shadow and a restrained shelf lip.
                 Box(Modifier.fillMaxWidth().height(38.dp)
                     .align(Alignment.BottomCenter)
                     .background(Brush.verticalGradient(listOf(
-                        Color.Transparent, Color(0x14231D17), Color.Transparent,
+                        Color.Transparent, if (dark) Color(0x99000000) else Color(0x24231D17), Color.Transparent,
                     ))))
+                if (dark) Box(Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp)
+                    .fillMaxWidth().height(8.dp).background(Brush.verticalGradient(
+                        listOf(Color(0xFF5A4230), Color(0xFF2B211C), Color(0xFF100D0C)))))
                 for (virtualIndex in (mid - 32)..(mid + 32)) {
                     val book = visible[vhsWrap(virtualIndex, visible.size)]
                     val relative = virtualIndex - position
@@ -317,7 +322,7 @@ internal fun VhsAudiobookShelf(
             IconButton(onClick = { target-- }, modifier = Modifier.size(48.dp)) {
                 Text("←", fontSize = 23.sp, color = Ink)
             }
-            Box(Modifier.weight(1f).height(96.dp), contentAlignment = Alignment.TopCenter) {
+            Box(Modifier.weight(1f).height(124.dp), contentAlignment = Alignment.TopCenter) {
                 if (selected != null) {
                     AnimatedContent(
                         targetState = selected,
@@ -334,18 +339,18 @@ internal fun VhsAudiobookShelf(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(captionBook.title, color = Ink, fontFamily = FontFamily.Serif,
                                 fontSize = 26.sp, lineHeight = 27.sp,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                maxLines = 3, overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center)
                             Spacer(Modifier.height(5.dp))
                             Text(captionBook.authors.ifBlank { "UNKNOWN AUTHOR" }.uppercase(),
-                                color = Cobalt, fontSize = 10.sp,
+                                color = Cobalt, fontSize = 11.sp, fontFamily = FontFamily.Serif,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center, letterSpacing = 1.sp)
                             val progress = progressFor(captionBook)
                             val percent = (conceptProgress(progress) * 100f).roundToInt()
                             Text(if (percent > 0) "$percent% LISTENED" else "AUDIOBOOK · OPEN COVER",
-                                color = Muted, fontSize = 10.sp, letterSpacing = 1.sp)
+                                color = Muted, fontSize = 11.sp, fontFamily = FontFamily.Serif, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -430,9 +435,10 @@ private fun VhsPhysicalCase(
     val spineAngle = -90f * openness
     val coverAngle = 90f * (1f - openness)
     val tilt = if (album) 0f else -3.5f * openness
+    val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
     Box(
-        modifier.width(maxOf(spineWidth, coverWidth + edge)).height(height)
+        modifier.width(maxOf(spineWidth, coverWidth + edge + reveal)).height(height)
             .graphicsLayer {
                 transformOrigin = TransformOrigin(.5f, 1f)
                 rotationZ = tilt
@@ -499,6 +505,9 @@ private fun VhsPhysicalCase(
                         if (binding == SpineBindingMode.AUTOMATIC) {
                             Box(Modifier.fillMaxSize().background(cloth))
                             if (illustrated) {
+                                Image(coverPainter, contentDescription = null, contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize())
+                                Box(Modifier.fillMaxSize().background(cloth.copy(alpha = .90f)))
                                 Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(artHeight)) {
                                     Image(coverPainter, contentDescription = null,
                                         contentScale = ContentScale.Crop,
@@ -506,7 +515,7 @@ private fun VhsPhysicalCase(
                                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
                                         0f to cloth.copy(alpha = .08f),
                                         .60f to Color.Transparent,
-                                        1f to cloth,
+                                        1f to cloth.copy(alpha = .94f),
                                     )))
                                 }
                             }
@@ -565,18 +574,20 @@ private fun VhsPhysicalCase(
 
         if (openness > .001f) {
             Box(
-                Modifier.width(coverWidth + edge).height(height)
+                Modifier.width(coverWidth + edge + reveal).height(height)
                     .graphicsLayer {
                         rotationY = coverAngle
                         cameraDistance = 34f * density
                     }
-                    .shadow(if (album) 4.dp else 10.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness > .55f, role = Role.Button,
                         onClickLabel = "Open " + book.title, onClick = onOpen)
                     .semantics { contentDescription = "Open audiobook: " + book.title },
             ) {
+                if (album && reveal > 0.dp) VinylDisc(palette.cloth,
+                    Modifier.align(Alignment.CenterStart).offset(x = reveal + coverWidth * .02f)
+                        .size(minOf(coverWidth, height) * .96f))
                 // Physical side of the box: paper grain, board bevel, and cast shadow.
-                Box(Modifier.align(Alignment.CenterEnd).width(edge).fillMaxSize()
+                Box(Modifier.align(Alignment.CenterStart).offset(x = coverWidth).width(edge).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
                         Color(0xFF28231F), palette.cloth, Color(0xFF302A25),
                     )))) {
@@ -592,6 +603,7 @@ private fun VhsPhysicalCase(
                 }
                 Box(Modifier.width(coverWidth).height(height)
                     .align(Alignment.CenterStart)
+                    .shadow(if (album) 4.dp else 10.dp, RoundedCornerShape(corner))
                     .clip(RoundedCornerShape(corner))
                     .background(Color(0xFF28252A))) {
                     if (coverDrawable != null) {
@@ -606,31 +618,78 @@ private fun VhsPhysicalCase(
                             Color(0x55000000), Color.Transparent,
                         ))))
                 }
-                if (!album) PrintedEditionFinish(book.title,
-                    Modifier.width(coverWidth).height(height).align(Alignment.CenterStart))
+                PrintedEditionFinish(book.title,
+                    Modifier.width(coverWidth).height(height).align(Alignment.CenterStart), album)
             }
         }
     }
 }
 
-/** Subtle printed-stock patina and rounded edge highlights, stable for each edition. */
+/** Vinyl is drawn behind the paper jacket; the original cover is never distorted. */
 @Composable
-private fun PrintedEditionFinish(seed: String, modifier: Modifier = Modifier) {
-    Canvas(modifier.clip(RoundedCornerShape(4.dp))) {
+private fun VinylDisc(label: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val r = size.minDimension / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+        drawCircle(Color(0xFF080808), r, center)
+        drawCircle(Brush.sweepGradient(listOf(Color(0xFF111113), Color(0xFF555256),
+            Color(0xFF151517), Color(0xFF080808), Color(0xFF424043), Color(0xFF111113)), center), r * .99f, center)
+        for (i in 0..54) {
+            val radius = r * (.34f + i * .012f)
+            drawCircle(if (i % 4 == 0) Color(0x605E5B5B) else Color(0x65000000),
+                radius, center, style = Stroke(.45.dp.toPx()))
+        }
+        drawCircle(Color(0xFF807B70), r * .995f, center, style = Stroke(.6.dp.toPx()))
+        drawCircle(label, r * .30f, center)
+        drawCircle(Color(0x55F5E3C6), r * .27f, center, style = Stroke(.7.dp.toPx()))
+        drawCircle(Color(0xFF111111), r * .028f, center)
+    }
+}
+
+/** Repeatable paper fibre, edge abrasion and short creases, without modifying stored cover art. */
+@Composable
+private fun PrintedEditionFinish(seed: String, modifier: Modifier = Modifier, album: Boolean = false) {
+    val corner = if (album) 1.dp else 4.dp
+    Canvas(modifier.clip(RoundedCornerShape(corner))) {
         val random = kotlin.random.Random(seed.hashCode())
-        val hairline = .65.dp.toPx()
-        drawRoundRect(Color(0x65463B2D), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()), style = Stroke(1.5.dp.toPx()))
-        drawRoundRect(Color(0x70EEE2CC), topLeft = Offset(hairline, hairline),
-            size = Size((size.width - 2 * hairline).coerceAtLeast(0f), (size.height - 2 * hairline).coerceAtLeast(0f)),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()), style = Stroke(hairline))
-        drawRect(Brush.horizontalGradient(0f to Color(0x37000000), .09f to Color.Transparent,
-            .88f to Color.Transparent, 1f to Color(0x38000000)))
-        repeat(180) {
+        val cr = androidx.compose.ui.geometry.CornerRadius(corner.toPx())
+        val wear = if (album) .72f else 1f
+        val inset = .65.dp.toPx()
+        drawRoundRect(Color(0x6A342519), cornerRadius = cr, style = Stroke(1.8.dp.toPx()))
+        drawRoundRect(Color(0x8BD8B88D).copy(alpha = .48f * wear), topLeft = Offset(inset, inset),
+            size = Size((size.width - 2 * inset).coerceAtLeast(0f), (size.height - 2 * inset).coerceAtLeast(0f)),
+            cornerRadius = cr, style = Stroke(inset))
+        drawRect(Brush.horizontalGradient(0f to Color(0x51000000), .065f to Color.Transparent,
+            .92f to Color.Transparent, 1f to Color(0x47000000)))
+        repeat(260) {
             val x = random.nextFloat() * size.width
             val y = random.nextFloat() * size.height
-            val edge = x < size.width * .07f || x > size.width * .93f || y < size.height * .025f || y > size.height * .975f
-            drawCircle(if (edge) Color(0x48E9D9BC) else Color(0x0BE9D9BC),
-                radius = (.2f + random.nextFloat() * if (edge) .9f else .35f).dp.toPx(), center = Offset(x, y))
+            drawCircle(Color(if (it % 2 == 0) 0x16E9D9BC else 0x18000000),
+                (.15f + random.nextFloat() * .40f).dp.toPx(), Offset(x, y))
+        }
+        repeat(90) {
+            val along = random.nextFloat()
+            val side = random.nextInt(4)
+            val depth = random.nextFloat() * 2.1.dp.toPx()
+            val point = when (side) {
+                0 -> Offset(depth, along * size.height)
+                1 -> Offset(size.width - depth, along * size.height)
+                2 -> Offset(along * size.width, depth)
+                else -> Offset(along * size.width, size.height - depth)
+            }
+            val end = if (side < 2) point + Offset(0f, (1f + random.nextFloat() * 4f).dp.toPx())
+                else point + Offset((1f + random.nextFloat() * 4f).dp.toPx(), 0f)
+            drawLine(Color(0xFFE2BD8B).copy(alpha = (.16f + random.nextFloat() * .4f) * wear),
+                point, end, (.25f + random.nextFloat() * .6f).dp.toPx())
+        }
+        repeat(12) {
+            val x = if (it % 2 == 0) random.nextFloat() * size.width * .12f
+                else size.width * (.88f + random.nextFloat() * .12f)
+            val y = if (it % 3 == 0) random.nextFloat() * size.height * .10f
+                else size.height * (.90f + random.nextFloat() * .10f)
+            val end = Offset((x + (random.nextFloat() - .5f) * 13.dp.toPx()).coerceIn(0f, size.width),
+                (y + (random.nextFloat() - .5f) * 9.dp.toPx()).coerceIn(0f, size.height))
+            drawLine(Color(0xFFD9C09A).copy(alpha = .28f * wear), Offset(x,y), end, .45.dp.toPx())
         }
     }
 }
