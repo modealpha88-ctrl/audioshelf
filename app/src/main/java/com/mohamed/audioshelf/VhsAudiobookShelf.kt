@@ -246,13 +246,27 @@ internal fun VhsAudiobookShelf(
     }
     val selected = visible.getOrNull(vhsWrap(position.roundToInt(), visible.size))
     val backdropUrl = selected?.coverUrl.orEmpty()
-    LaunchedEffect(backdropUrl) { onBackdropCover(backdropUrl) }
+    LaunchedEffect(backdropUrl, motion) {
+        // Coalesce extremely fast swipes; do not queue a backdrop for every passing book.
+        if (motion) kotlinx.coroutines.delay(90)
+        onBackdropCover(backdropUrl)
+    }
     val density = LocalDensity.current
     val shelfContext = LocalContext.current.applicationContext
     val shelfScope = rememberCoroutineScope()
     val stableSpines = remember(shelfContext, shelfScope) { StableShelfSpines(shelfContext, shelfScope) }
     val shelfSettled = !dragging && abs(position - target.toFloat()) < .01f
     SideEffect { stableSpines.setSettled(shelfSettled) }
+    val centerIndex = if (visible.isEmpty()) 0 else vhsWrap(position.roundToInt(), visible.size)
+    val nearby = remember(visible, centerIndex) {
+        if (visible.isEmpty()) emptyList() else listOf(0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5)
+            .map { visible[vhsWrap(centerIndex + it, visible.size)] }
+            .distinctBy { it.sourceId to it.id }
+    }
+    LaunchedEffect(nearby, spineRevision) {
+        // One request at a time; prioritise the center and both immediate neighbors.
+        for (book in nearby) stableSpines.preload(book, spineRevision)
+    }
 
     Column(
         Modifier.fillMaxWidth().padding(top = 6.dp),
@@ -443,13 +457,14 @@ internal fun VhsAudiobookShelf(
     }
 }
 
+internal fun shelfCoverRequest(context: android.content.Context, book: AudioBook): ImageRequest =
+    ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
+        .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false).build()
+
 @Composable
 internal fun rememberShelfCoverPainter(book: AudioBook): AsyncImagePainter {
     val context = LocalContext.current
-    val request = remember(context, book.coverUrl) {
-        ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false).build()
-    }
+    val request = remember(context, book.coverUrl) { shelfCoverRequest(context, book) }
     return rememberAsyncImagePainter(request)
 }
 
