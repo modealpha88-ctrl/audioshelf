@@ -1,0 +1,147 @@
+package com.mohamed.audioshelf
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.util.LruCache
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
+import com.mohamed.audioshelf.data.SpineBindingMode
+import com.mohamed.audioshelf.data.SpineBindingStore
+import com.mohamed.audioshelf.model.AudioBook
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
+
+internal data class StableSpineKey(
+    val sourceId: String, val bookId: String, val title: String,
+    val coverUrl: String, val revision: Int,
+)
+
+internal fun stableSpineKey(book: AudioBook, revision: Int) =
+    StableSpineKey(book.sourceId, book.id, book.title, book.coverUrl, revision)
+
+internal data class StableSpineVisual(
+    val palette: BookstoreSpineColors,
+    val preview: ImageBitmap? = null,
+    val lettering: ImageBitmap? = null,
+)
+
+internal class StableSpineEntry(
+    val binding: SpineBindingMode,
+    initial: StableSpineVisual,
+) {
+    var visual by mutableStateOf(initial)
+        internal set
+    var artwork by mutableStateOf<String?>(null)
+        internal set
+    internal var artworkReady = false
+    internal var artworkLoading = false
+    internal var analyzing = false
+    internal var coverHash: String? = null
+    internal var lastAttempt = 0L
+}
+
+/**
+ * Shelf-owned, rather than virtual-slot-owned. Repeated copies of a book share
+ * the same entry and recognition work. All published state is changed on Main.
+ * Keep at most 64 entries with small, bounded render bitmaps.
+ */
+internal class StableShelfSpines(
+    private val context: Context,
+    private val scope: CoroutineScope,
+) {
+    private val store = SpineBindingStore(context)
+    private val entries = LruCache<StableSpineKey, StableSpineEntry>(64)
+
+    fun entry(book: AudioBook, revision: Int): StableSpineEntry {
+        val key = stableSpineKey(book, revision)
+        entries.get(key)?.let { return it }
+        val binding = store.mode(book)
+        val texture = bookstoreCloth(book)
+        val saved = if (binding != SpineBindingMode.CLASSIC) store.palette(book) else null
+        val palette = saved?.let { BookstoreSpineColors(Color(it.first), Color(it.second), true) }
+            ?: bookstoreSpineColors(book.title, null, texture)
+        return StableSpineEntry(binding, StableSpineVisual(palette)).also { entries.put(key, it) }
+    }
+
+    fun loadArtwork(book: AudioBook, entry: StableSpineEntry) {
+        if (entry.artworkReady || entry.artworkLoading) return
+        entry.artworkLoading = true
+        scope.launch {
+            try {
+                entry.artwork = withContext(Dispatchers.IO) { store.displayedArtwork(book, entry.binding) }
+                entry.artworkReady = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Retain last successful artwork; retry on a subsequent visit.
+            } finally { entry.artworkLoading = false }
+        }
+    }
+
+    fun analyze(book: AudioBook, entry: StableSpineEntry, drawable: Drawable) {
+        val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return
+        if (entry.analyzing || entry.binding == SpineBindingMode.CLASSIC) return
+        // Avoid repeatedly retrying failed analysis while rapidly swiping.
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (entry.coverHash == null && entry.lastAttempt != 0L && now - entry.lastAttempt < 15000L) return
+        entry.lastAttempt = now
+        entry.analyzing = true
+        scope.launch {
+            try {
+                val hash = withContext(Dispatchers.Default) {
+                    spineRecognitionKey(bitmap, bookstoreSpineTitle(book.title))
+                }
+                if (entry.coverHash == hash) return@launch
+                val palette = withContext(Dispatchers.Default) {
+                    bookstoreSpineColors(book.title, drawable, bookstoreCloth(book))
+                }
+                val preview = withContext(Dispatchers.Default) { scaled(bitmap, 144, 216).asImageBitmap() }
+                val lettering = if (entry.binding == SpineBindingMode.AUTOMATIC) {
+                    try {
+                        val match = coverTitleLettering(context, drawable, book.coverUrl,
+                            bookstoreSpineTitle(book.title))
+                        withContext(Dispatchers.Default) {
+                            val rendered = match?.bitmap ?: match?.fontMatch?.let {
+                                renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb())
+                            }
+                            rendered?.let { scaled(it, 1024, 128).asImageBitmap() }
+                        }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { null }
+                } else null
+                // Do not downgrade an existing successful result on a transient failure.
+                // A different cover is allowed to replace it only with another complete result.
+                if (entry.coverHash == null || lettering != null || entry.visual.lettering == null) {
+                    entry.visual = StableSpineVisual(palette, preview, lettering)
+                    // Allow a later visit to retry a failed automatic match.
+                    if (lettering != null || entry.binding != SpineBindingMode.AUTOMATIC) entry.coverHash = hash
+                    if (palette.hasCoverPalette) withContext(Dispatchers.IO) {
+                        store.savePalette(book, palette.cloth.toArgb(), palette.ink.toArgb())
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // An image-load/OCR failure must not replace an already rendered spine.
+            } finally { entry.analyzing = false }
+        }
+    }
+
+    private fun scaled(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
+        val factor = minOf(1f, maxWidth.toFloat() / bitmap.width, maxHeight.toFloat() / bitmap.height)
+        return if (factor == 1f) bitmap else Bitmap.createScaledBitmap(bitmap,
+            (bitmap.width * factor).roundToInt().coerceAtLeast(1),
+            (bitmap.height * factor).roundToInt().coerceAtLeast(1), true)
+    }
+}
