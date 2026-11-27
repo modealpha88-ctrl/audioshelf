@@ -1,14 +1,7 @@
 package com.mohamed.audioshelf
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -98,6 +91,8 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sin
+
+private const val SHELF_CAMERA_WIDTHS = 2.8f
 
 internal fun vhsVinylReveal(openness: Float): Float = vhsSmoothstep((openness - .68f) / .32f)
 
@@ -262,11 +257,11 @@ internal fun VhsAudiobookShelf(
             val gap = bookHeight * .018f
             fun slotAt(index: Int): Dp {
                 val ratio = ratioAt(index)
-                val open = vhsSmoothstep(1f - abs(index - position))
+                val open = (1f - abs(index - position)).coerceIn(0f, 1f)
                 val spine = spineAt(index)
                 val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
                 val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
-                val camera = faceWidth(ratio) * 6f
+                val camera = faceWidth(ratio) * SHELF_CAMERA_WIDTHS
                 return vhsProjectedWidth(spine, -90f * open, camera) +
                     vhsProjectedWidth(face + reveal, 90f * (1f - open), camera)
             }
@@ -326,7 +321,7 @@ internal fun VhsAudiobookShelf(
                 for (virtualIndex in (mid - radius)..(mid + radius)) {
                     val book = visible[vhsWrap(virtualIndex, visible.size)]
                     val relative = virtualIndex - position
-                    val openness = vhsSmoothstep(1f - abs(relative))
+                    val openness = (1f - abs(relative)).coerceIn(0f, 1f)
                     val x = centres[virtualIndex - mid + radius]
                     // Only compose physical cases near the visible viewport.
                     // Repeated virtual copies stay off-screen and never trigger image loads.
@@ -340,7 +335,7 @@ internal fun VhsAudiobookShelf(
                             album = vhsIsAlbum(ratio),
                             onRatio = { ratios[book.coverUrl] = it },
                             coverWidth = width,
-                            openness = openness, motion = motion,
+                            openness = openness,
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
@@ -366,33 +361,22 @@ internal fun VhsAudiobookShelf(
             }
             Box(Modifier.weight(1f).height(124.dp), contentAlignment = Alignment.TopCenter) {
                 if (selected != null) {
-                    AnimatedContent(
-                        targetState = selected,
-                        transitionSpec = {
-                            if (!motion) {
-                                EnterTransition.None togetherWith ExitTransition.None
-                            } else {
-                                fadeIn(tween(130)) togetherWith fadeOut(tween(90))
-                            }
-                        },
-                        label = "Masked audiobook caption",
-                    ) { captionBook ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(captionBook.title, color = Ink, fontFamily = FontFamily.Serif,
-                                fontSize = 26.sp, lineHeight = 27.sp,
-                                maxLines = 3, overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center)
-                            Spacer(Modifier.height(5.dp))
-                            Text(captionBook.authors.ifBlank { "UNKNOWN AUTHOR" }.uppercase(),
-                                color = Cobalt, fontSize = 11.sp, fontFamily = FontFamily.Serif,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center, letterSpacing = 1.sp)
-                            val progress = progressFor(captionBook)
-                            val percent = (conceptProgress(progress) * 100f).roundToInt()
-                            Text(if (percent > 0) "$percent% LISTENED" else "AUDIOBOOK · OPEN COVER",
-                                color = Muted, fontSize = 11.sp, fontFamily = FontFamily.Serif, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, letterSpacing = 1.sp)
-                        }
+                    val captionBook = selected
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(captionBook.title, color = Ink, fontFamily = FontFamily.Serif,
+                            fontSize = 26.sp, lineHeight = 27.sp,
+                            maxLines = 3, overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center)
+                        Spacer(Modifier.height(5.dp))
+                        Text(captionBook.authors.ifBlank { "UNKNOWN AUTHOR" }.uppercase(),
+                            color = Cobalt, fontSize = 11.sp, fontFamily = FontFamily.Serif,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center, letterSpacing = 1.sp)
+                        val progress = progressFor(captionBook)
+                        val percent = (conceptProgress(progress) * 100f).roundToInt()
+                        Text(if (percent > 0) "$percent% LISTENED" else "AUDIOBOOK · OPEN COVER",
+                            color = Muted, fontSize = 11.sp, fontFamily = FontFamily.Serif, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -427,7 +411,6 @@ private fun VhsPhysicalCase(
     album: Boolean,
     onRatio: (Float) -> Unit,
     openness: Float,
-    motion: Boolean,
     modifier: Modifier = Modifier,
     onSelect: () -> Unit,
     onOpen: () -> Unit,
@@ -478,7 +461,7 @@ private fun VhsPhysicalCase(
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
     val faceWidth = coverWidth + edge + reveal
-    val camera = coverWidth * 6f
+    val camera = coverWidth * SHELF_CAMERA_WIDTHS
     val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
         vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
@@ -493,7 +476,7 @@ private fun VhsPhysicalCase(
                         translationX = hinge.toPx() - size.width / 2f
                         rotationY = spineAngle
                         cameraDistance = camera.toPx()
-                        transformOrigin = TransformOrigin(1f, .5f)
+                        transformOrigin = TransformOrigin(1f, 1f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
@@ -618,7 +601,7 @@ private fun VhsPhysicalCase(
                 Modifier.width(coverWidth + edge + reveal).height(height)
                     .graphicsLayer {
                         translationX = hinge.toPx() + size.width / 2f
-                        transformOrigin = TransformOrigin(0f, .5f)
+                        transformOrigin = TransformOrigin(0f, 1f)
                         rotationY = coverAngle
                         cameraDistance = camera.toPx()
                     }
