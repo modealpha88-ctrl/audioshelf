@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -126,10 +127,10 @@ internal fun vhsFilterBooks(
 ): List<AudioBook> = when (filter) {
     ArchiveFilter.ALL -> books
     ArchiveFilter.AM -> books.filter {
-        it.title.trim().firstOrNull()?.uppercaseChar() in 'A'..'M'
+        it.title.trim().firstOrNull()?.uppercaseChar()?.let { c -> c in 'A'..'M' } == true
     }
     ArchiveFilter.NZ -> books.filter {
-        it.title.trim().firstOrNull()?.uppercaseChar() in 'N'..'Z'
+        it.title.trim().firstOrNull()?.uppercaseChar()?.let { c -> c in 'N'..'Z' } == true
     }
     ArchiveFilter.LISTENING -> books.filter {
         val progress = progressFor(it)
@@ -281,7 +282,7 @@ internal fun VhsAudiobookShelf(
             Box(Modifier.weight(1f).height(96.dp), contentAlignment = Alignment.TopCenter) {
                 if (selected != null) {
                     AnimatedContent(
-                        targetState = selected.sourceId + ":" + selected.id,
+                        targetState = selected,
                         transitionSpec = {
                             if (!motion) {
                                 EnterTransition.None togetherWith ExitTransition.None
@@ -291,19 +292,19 @@ internal fun VhsAudiobookShelf(
                             }
                         },
                         label = "Masked audiobook caption",
-                    ) {
+                    ) { captionBook ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(selected.title, color = Ink, fontFamily = FontFamily.Serif,
+                            Text(captionBook.title, color = Ink, fontFamily = FontFamily.Serif,
                                 fontSize = 26.sp, lineHeight = 27.sp,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center)
                             Spacer(Modifier.height(5.dp))
-                            Text(selected.authors.ifBlank { "UNKNOWN AUTHOR" }.uppercase(),
+                            Text(captionBook.authors.ifBlank { "UNKNOWN AUTHOR" }.uppercase(),
                                 color = Cobalt, fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center, letterSpacing = 1.sp)
-                            val progress = progressFor(selected)
+                            val progress = progressFor(captionBook)
                             val percent = (conceptProgress(progress) * 100f).roundToInt()
                             Text(if (percent > 0) "$percent% LISTENED" else "AUDIOBOOK · OPEN COVER",
                                 color = Muted, fontSize = 10.sp, letterSpacing = 1.sp)
@@ -370,8 +371,7 @@ private fun VhsPhysicalCase(
     LaunchedEffect(book.id, book.coverUrl, palette) {
         if (coverDrawable != null && palette.hasCoverPalette) {
             withContext(Dispatchers.IO) {
-                store.savePalette(book, palette.cloth.value.toLong().toInt(),
-                    palette.ink.value.toLong().toInt())
+                store.savePalette(book, palette.cloth.toArgb(), palette.ink.toArgb())
             }
         }
     }
