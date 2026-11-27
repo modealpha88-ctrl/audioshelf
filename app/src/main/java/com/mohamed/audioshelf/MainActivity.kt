@@ -369,6 +369,8 @@ private fun AudioShelfApp(
         )
     }
     val onShelf = state.selectedBook == null
+    val libraryBackdropVisible = onShelf && tab == HomeTab.Library
+    var libraryBackdropUrl by rememberSaveable { mutableStateOf("") }
     val shelfPrefs = remember(context) { context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE) }
     var darkShelf by rememberSaveable { mutableStateOf(shelfPrefs.getBoolean("dark_shelf", true)) }
     val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
@@ -420,8 +422,13 @@ private fun AudioShelfApp(
             small = RoundedCornerShape(5.dp), medium = RoundedCornerShape(7.dp),
             large = RoundedCornerShape(10.dp), extraLarge = RoundedCornerShape(12.dp)) else MaterialTheme.shapes,
     ) {
+    Box(Modifier.fillMaxSize().background(shelfColors.background)) {
+    if (libraryBackdropVisible) {
+        val backdropMotion = systemMotionEnabled() && shelfPrefs.getBoolean("motion_enabled", true)
+        ArtworkBackdrop(libraryBackdropUrl, Modifier.matchParentSize(), backdropMotion, library = true)
+    }
     Scaffold(
-        containerColor = shelfColors.background,
+        containerColor = if (libraryBackdropVisible) Color.Transparent else shelfColors.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
@@ -436,7 +443,9 @@ private fun AudioShelfApp(
                         }
                     })
                 NavigationBar(
-                    containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = if (libraryBackdropVisible) shelfColors.surface.copy(alpha = .66f)
+                        else if (onShelf) shelfColors.background else MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 0.dp,
                 ) {
                     NavigationBarItem(
                         colors = navColors,
@@ -602,6 +611,7 @@ private fun AudioShelfApp(
                             onRefreshCovers = viewModel::refreshMissingCovers,
                             spineRevision = pageState.spineRevision,
                             darkShelf = darkShelf,
+                            onBackdropCover = { libraryBackdropUrl = it },
                             onDarkShelfChange = { enabled ->
                                 darkShelf = enabled
                                 shelfPrefs.edit().putBoolean("dark_shelf", enabled).apply()
@@ -623,6 +633,7 @@ private fun AudioShelfApp(
                 }
             }
         }
+    }
     }
     }
 }
@@ -1348,6 +1359,7 @@ private fun BookScreen(
     onProgress: (Int, Long) -> Unit,
     onSleep: (Int) -> Unit,
 ) {
+    var detailsTab by rememberSaveable(book.sourceId, book.id) { mutableStateOf(false) }
     var showPlayer by remember(book.id) { mutableStateOf(openPlayerInitially) }
     var storyOpen by remember(book.id) { mutableStateOf(false) }
     var showPublishedCovers by remember(book.sourceId, book.id) { mutableStateOf(false) }
@@ -1430,28 +1442,13 @@ private fun BookScreen(
                         LibraryBookDetailCard(book, listeningProgress)
                         Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                OutlinedButton(
-                                    onClick = { showPublishedCovers = true },
-                                    enabled = saved,
-                                ) {
-                                    Icon(Icons.Default.AutoStories, null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Find published covers")
-                                }
-                                Spacer(Modifier.height(6.dp))
-                                OutlinedButton(onClick = onPickCover, enabled = saved) {
-                                    Icon(Icons.Default.Image, null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(if (book.coverUrl.isBlank()) "Add cover image" else "Change cover image")
-                                }
-                                Spacer(Modifier.height(6.dp))
-                                OutlinedButton(
-                                    onClick = { showSpineAppearance = true },
-                                    enabled = saved,
-                                ) {
-                                    Icon(Icons.Default.AutoAwesome, null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Book appearance · spine")
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    GlassDetailAction("Find published covers", Icons.Default.AutoStories,
+                                        saved, Modifier.weight(1f)) { showPublishedCovers = true }
+                                    GlassDetailAction(if (book.coverUrl.isBlank()) "Add cover image" else "Change cover image",
+                                        Icons.Default.Image, saved, Modifier.weight(1f), onPickCover)
+                                    GlassDetailAction("Book appearance · spine", Icons.Default.AutoAwesome,
+                                        saved, Modifier.weight(1f)) { showSpineAppearance = true }
                                 }
                                 if (!saved) {
                                     Text("Save this book to your library to set its cover.",
@@ -1469,17 +1466,23 @@ private fun BookScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                     )
                                 } else {
-                                    Button(onClick = { if (chapters.isNotEmpty()) { onResume(); showPlayer = true } }, enabled = chapters.isNotEmpty()) {
-                                        Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                    OutlinedButton(
-                                        onClick = { onResume(); storyOpen = true },
-                                        enabled = chapters.isNotEmpty() && controller != null,
-                                    ) {
-                                        Icon(Icons.Default.ClosedCaption, null)
-                                        Spacer(Modifier.width(6.dp))
-                                        Text("Story mode")
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = { onResume(); showPlayer = true },
+                                            enabled = chapters.isNotEmpty(), modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)) {
+                                            Icon(Icons.Default.PlayArrow, null)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(if (showPlayer) "Resume" else "Play")
+                                        }
+                                        OutlinedButton(onClick = { onResume(); storyOpen = true },
+                                            enabled = chapters.isNotEmpty() && controller != null,
+                                            modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = detailColors.surface.copy(alpha = .5f))) {
+                                            Icon(Icons.Default.ClosedCaption, null)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Story mode", maxLines = 1)
+                                        }
                                     }
                                 }
                                 if (book.externalUrl.isBlank() && book.sourceId != "local_files") {
@@ -1501,14 +1504,40 @@ private fun BookScreen(
                                 }
                             }
                         }
-                        if (book.description.isNotBlank()) Text(book.description, Modifier.padding(horizontal = 20.dp), maxLines = 6, overflow = TextOverflow.Ellipsis)
-                        if (book.externalUrl.isBlank()) Text(if (book.sourceId == "local_files" && chapters.size > 1) "Embedded chapters" else "Chapters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(20.dp))
+                        if (book.externalUrl.isBlank()) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf(false to "Chapters", true to "Details").forEach { (detail, label) ->
+                                    Surface(onClick = { detailsTab = detail }, modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(6.dp),
+                                        border = androidx.compose.foundation.BorderStroke(.7.dp, detailColors.outline),
+                                        color = if (detailsTab == detail) detailColors.secondaryContainer.copy(alpha = .92f)
+                                            else detailColors.surface.copy(alpha = .44f)) {
+                                        Text(label, fontFamily = FontFamily.Serif,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            modifier = Modifier.padding(11.dp))
+                                    }
+                                }
+                            }
+                        }
+                        if (detailsTab || book.externalUrl.isNotBlank()) {
+                            Text(book.description.ifBlank { "No description available." },
+                                color = detailColors.onBackground, modifier = Modifier.padding(20.dp))
+                        } else {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${chapters.size} chapters", fontFamily = FontFamily.Serif)
+                                val total = chapters.sumOf { it.durationMs.coerceAtLeast(0L) }
+                                if (total > 0) Text("Total " + formatTime(total),
+                                    color = detailColors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                     if (loading) item { Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
                     if (error != null) item { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp)) }
-                    itemsIndexed(chapters, key = { _, item -> item.id }) { index, chapter ->
+                    if (!detailsTab) itemsIndexed(chapters, key = { _, item -> item.id }) { index, chapter ->
                         ListItem(
-                            headlineContent = { Text(chapter.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                            headlineContent = { Text(chapter.title, fontFamily = FontFamily.Serif, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                             supportingContent = { if (chapter.durationMs > 0) Text(formatTime(chapter.durationMs)) },
                             leadingContent = { IconButton({ onPlay(index); showPlayer = true }) { Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary) } },
                             modifier = Modifier.clickable { onPlay(index); showPlayer = true },
@@ -1530,29 +1559,61 @@ private fun BookScreen(
     }
 }
 
-/** Fixed full-page artwork with a readability scrim; never alters stored artwork. */
+@Composable
+private fun GlassDetailAction(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Surface(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 86.dp),
+        shape = RoundedCornerShape(10.dp), color = colors.surface.copy(alpha = .55f),
+        border = androidx.compose.foundation.BorderStroke(.7.dp, colors.outline.copy(alpha = .6f))) {
+        Column(Modifier.padding(horizontal = 6.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center) {
+            Icon(icon, null, tint = colors.primary.copy(alpha = if (enabled) 1f else .45f))
+            Spacer(Modifier.height(6.dp))
+            Text(label, fontFamily = FontFamily.Serif, fontSize = 12.sp, lineHeight = 15.sp,
+                color = colors.onSurface.copy(alpha = if (enabled) 1f else .5f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3)
+        }
+    }
+}
+
+/** Shared artwork, with independent image layers for a smooth selection crossfade. */
 @Composable
 private fun BookArtworkBackdrop(book: AudioBook, modifier: Modifier = Modifier) {
+    ArtworkBackdrop(book.coverUrl, modifier, systemMotionEnabled(), library = false)
+}
+
+@Composable
+private fun ArtworkBackdrop(url: String, modifier: Modifier, motion: Boolean, library: Boolean) {
     val colors = MaterialTheme.colorScheme
     val dark = colors.background == vhsDarkColors.background
     Box(modifier.background(colors.background)) {
-        if (book.coverUrl.isNotBlank()) {
-            val context = LocalContext.current
-            val request = remember(context, book.coverUrl) {
-                coil.request.ImageRequest.Builder(context).data(book.coverUrl)
-                    .size(1080, 1920).crossfade(350).build()
+        androidx.compose.animation.Crossfade(
+            targetState = url, modifier = Modifier.matchParentSize(),
+            animationSpec = if (motion) tween(950) else androidx.compose.animation.core.snap(),
+            label = "Cover atmosphere",
+        ) { artwork ->
+            Box(Modifier.fillMaxSize()) {
+                if (artwork.isNotBlank()) {
+                    val context = LocalContext.current
+                    val request = remember(context, artwork) {
+                        coil.request.ImageRequest.Builder(context).data(artwork)
+                            .size(1080, 1920).crossfade(if (motion) 350 else 0).build()
+                    }
+                    AsyncImage(model = request, contentDescription = null,
+                        contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
+                        modifier = Modifier.matchParentSize())
+                }
             }
-            AsyncImage(model = request, contentDescription = null,
-                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
-                modifier = Modifier.matchParentSize())
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(
-                0f to colors.background.copy(alpha = if (dark) .65f else .79f),
-                .22f to colors.background.copy(alpha = if (dark) .56f else .76f),
-                .50f to colors.background.copy(alpha = if (dark) .81f else .88f),
-                .82f to colors.background.copy(alpha = .96f),
-                1f to colors.background,
-            )))
         }
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to colors.background.copy(alpha = if (dark) .55f else .84f),
+            .24f to colors.background.copy(alpha = if (dark) .52f else .80f),
+            .48f to colors.background.copy(alpha = if (dark) .69f else .87f),
+            .76f to colors.background.copy(alpha = if (library && dark) .76f else .92f),
+            1f to colors.background.copy(alpha = if (library && dark) .85f else .98f),
+        )))
     }
 }
 
@@ -1620,7 +1681,10 @@ private fun PlayerPanel(
     }
 
     val canSeek = chapters.isNotEmpty() && controller.mediaItemCount > 0
-    Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = .96f),
+    Surface(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(.7.dp, MaterialTheme.colorScheme.outline.copy(alpha = .4f)),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = .88f),
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp, shadowElevation = 8.dp) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
