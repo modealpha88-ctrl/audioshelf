@@ -93,6 +93,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -116,6 +117,12 @@ internal fun vhsShelfPosition(relative: Float, spine: Float, depth: Float, gap: 
         else -> (relative + sin((PI * relative).toFloat()) / PI.toFloat()) / 2f
     }
     return relative * (spine + gap) + (depth - spine + 1.6f * gap) * bend
+}
+
+// Project the outer edge of each face from the binding where the two planes meet.
+internal fun vhsProjectedWidth(width: Dp, angle: Float, camera: Dp): Dp {
+    val radians = abs(angle) * PI.toFloat() / 180f
+    return width * cos(radians).coerceAtLeast(0f) / (1f + width / camera * sin(radians))
 }
 
 internal fun vhsIsAlbum(ratio: Float): Boolean = ratio in .90f..1.15f
@@ -259,8 +266,9 @@ internal fun VhsAudiobookShelf(
                 val spine = spineAt(index)
                 val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
                 val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
-                return spine * kotlin.math.cos(open * PI.toFloat() / 2f) +
-                    (face + reveal) * sin(open * PI.toFloat() / 2f)
+                val camera = faceWidth(ratio) * 6f
+                return vhsProjectedWidth(spine, -90f * open, camera) +
+                    vhsProjectedWidth(face + reveal, 90f * (1f - open), camera)
             }
             // Accumulate neighboring slot widths once per frame.
             val radius = 32
@@ -467,29 +475,25 @@ private fun VhsPhysicalCase(
     val corner = if (album) 1.dp else 4.dp
     val spineAngle = -90f * openness
     val coverAngle = 90f * (1f - openness)
-    val tilt = if (album) 0f else -3.5f * openness
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
-    val faceSpan = (coverWidth + edge + reveal) * sin(openness * PI.toFloat() / 2f)
-    val spineSpan = spineWidth * kotlin.math.cos(openness * PI.toFloat() / 2f)
+    val faceWidth = coverWidth + edge + reveal
+    val camera = coverWidth * 6f
+    val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
+        vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
     Box(
-        modifier.width(maxOf(spineWidth, coverWidth + edge + reveal)).height(height)
-            .graphicsLayer {
-                transformOrigin = TransformOrigin(.5f, 1f)
-                rotationZ = tilt
-                cameraDistance = 35f * density
-            },
+        modifier.width(maxOf(spineWidth, faceWidth)).height(height),
         contentAlignment = Alignment.Center,
     ) {
         if (openness < .999f) {
             Box(
                 Modifier.width(spineWidth).height(height)
                     .graphicsLayer {
-                        translationX = -faceSpan.toPx() / 2f
+                        translationX = hinge.toPx() - size.width / 2f
                         rotationY = spineAngle
-                        cameraDistance = coverWidth.toPx() * 10f
-                        transformOrigin = TransformOrigin(.5f, .5f)
+                        cameraDistance = camera.toPx()
+                        transformOrigin = TransformOrigin(1f, .5f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
@@ -613,9 +617,10 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(coverWidth + edge + reveal).height(height)
                     .graphicsLayer {
-                        translationX = spineSpan.toPx() / 2f
+                        translationX = hinge.toPx() + size.width / 2f
+                        transformOrigin = TransformOrigin(0f, .5f)
                         rotationY = coverAngle
-                        cameraDistance = coverWidth.toPx() * 10f
+                        cameraDistance = camera.toPx()
                     }
                     .clickable(enabled = openness > .55f, role = Role.Button,
                         onClickLabel = "Open " + book.title, onClick = onOpen)
@@ -658,6 +663,10 @@ private fun VhsPhysicalCase(
                 }
                 PrintedEditionFinish(book.title,
                     Modifier.width(coverWidth).height(height).align(Alignment.CenterStart), album)
+                if (openness < 1f) {
+                    Box(Modifier.align(Alignment.CenterStart).width(coverWidth).height(height)
+                        .background(Color.Black.copy(alpha = .24f * (1f - openness)), RoundedCornerShape(corner)))
+                }
             }
         }
     }
