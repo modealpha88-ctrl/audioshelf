@@ -54,7 +54,7 @@ internal fun SpineAppearanceDialog(
     }
     val options = listOf(
         Triple(SpineBindingMode.AUTOMATIC, "Automatic (recommended)",
-            "Real spine when supplied; otherwise an original decorative binding."),
+            "Uses the supplied spine, then an illustration from the cover, then a printed binding."),
         Triple(SpineBindingMode.ORIGINAL, "Supplied edition spine",
             "Only if the audiobook includes an identifiable spine image."),
         Triple(SpineBindingMode.DECORATIVE, "Decorative binding",

@@ -2,6 +2,13 @@ package com.mohamed.audioshelf
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -43,7 +50,12 @@ internal fun VhsInkRevealCover(book: AudioBook, modifier: Modifier = Modifier) {
         )
     }
     val delays = remember { listOf(0f, .12f, .22f, .30f, .36f, .42f, .18f) }
-    Box(modifier.drawWithContent {
+    val painter = rememberShelfCoverPainter(book)
+    val drawable = (painter.state as? AsyncImagePainter.State.Success)?.result?.drawable
+    val ratio = if (drawable != null && drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0)
+        drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight else .67f
+    val width = minOf(116.dp, 145.dp * ratio)
+    Box(modifier.size(width, width / ratio).shadow(5.dp, RoundedCornerShape(2.dp)).drawWithContent {
         if (reveal >= .998f) {
             drawContent()
         } else {
@@ -72,6 +84,10 @@ internal fun VhsInkRevealCover(book: AudioBook, modifier: Modifier = Modifier) {
             clipPath(path) { content.drawContent() }
         }
     }) {
-        LibraryCover(book, Modifier.fillMaxSize())
+        if (drawable != null) {
+            Image(painter, "${book.title} cover", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        } else {
+            ShelfTextCover(book, Modifier.fillMaxSize())
+        }
     }
 }
