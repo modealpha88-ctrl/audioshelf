@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -121,6 +120,8 @@ internal fun vhsShelfPosition(relative: Float, spine: Float, depth: Float, gap: 
     return relative * (spine + gap) + (depth - spine + 1.6f * gap) * bend
 }
 
+internal fun vhsIsAlbum(ratio: Float): Boolean = ratio in .90f..1.15f
+
 internal enum class ArchiveFilter { ALL, AM, NZ, LISTENING }
 
 /** Retains real user metadata; films, years, and fictional asset sheets are never substituted. */
@@ -207,19 +208,37 @@ internal fun VhsAudiobookShelf(
 
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val bookHeight = minOf(maxWidth * .60f, 260.dp).coerceAtLeast(150.dp)
-            val spineWidth = bookHeight * (142f / 840f)
+            val hardbackSpine = bookHeight * (142f / 840f)
             val ratios = remember { mutableStateMapOf<String, Float>() }
             val maxCoverWidth = maxWidth * .54f
             fun faceWidth(ratio: Float) = minOf(bookHeight * ratio, maxCoverWidth)
             fun ratioAt(index: Int) = ratios[visible[vhsWrap(index, visible.size)].coverUrl] ?: .67f
             val mid = floor(position.toDouble()).toInt()
-            val weight = vhsSmoothstep(position - mid)
-            fun caseWidth(ratio: Float) = faceWidth(ratio) + if (ratio < .86f) 4.dp else 2.dp
-            val openingWidth = caseWidth(ratioAt(mid)) * (1f - weight) +
-                caseWidth(ratioAt(mid + 1)) * weight
+            fun spineAt(index: Int): Dp {
+                val ratio = ratioAt(index)
+                return if (vhsIsAlbum(ratio)) (faceWidth(ratio) / ratio * .043f).coerceAtLeast(7.dp)
+                    else hardbackSpine
+            }
             val gap = bookHeight * .018f
+            fun slotAt(index: Int): Dp {
+                val ratio = ratioAt(index)
+                val open = vhsSmoothstep(1f - abs(index - position))
+                val spine = spineAt(index)
+                val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
+                return spine * (1f - open) + face * open
+            }
+            fun centre(index: Int): Dp {
+                var distance = 0.dp
+                if (index > mid) for (i in mid until index) {
+                    distance += (slotAt(i) + slotAt(i + 1)) / 2f + gap
+                }
+                if (index < mid) for (i in index until mid) {
+                    distance -= (slotAt(i) + slotAt(i + 1)) / 2f + gap
+                }
+                return distance - ((slotAt(mid) + slotAt(mid + 1)) / 2f + gap) * (position - mid)
+            }
             val stageWidth = maxWidth
-            val stepPx = with(density) { (spineWidth + gap).toPx() }
+            val stepPx = with(density) { (hardbackSpine + gap).toPx() }
             var draggedPx by remember { mutableFloatStateOf(0f) }
 
             Box(
@@ -261,12 +280,11 @@ internal fun VhsAudiobookShelf(
                     .background(Brush.verticalGradient(listOf(
                         Color.Transparent, Color(0x14231D17), Color.Transparent,
                     ))))
-                for (virtualIndex in (mid - 10)..(mid + 11)) {
+                for (virtualIndex in (mid - 32)..(mid + 32)) {
                     val book = visible[vhsWrap(virtualIndex, visible.size)]
                     val relative = virtualIndex - position
                     val openness = vhsSmoothstep(1f - abs(relative))
-                    val x = vhsShelfPosition(relative, spineWidth.value,
-                        openingWidth.value, gap.value).dp
+                    val x = centre(virtualIndex)
                     // Only compose physical cases near the visible viewport.
                     // Repeated virtual copies stay off-screen and never trigger image loads.
                     if (abs(x.value) > stageWidth.value / 2f + maxCoverWidth.value) continue
@@ -275,8 +293,8 @@ internal fun VhsAudiobookShelf(
                         val width = faceWidth(ratio)
                         VhsPhysicalCase(
                             book = book, spineRevision = spineRevision,
-                            height = width / ratio, spineWidth = spineWidth,
-                            album = ratio >= .86f,
+                            height = width / ratio, spineWidth = spineAt(virtualIndex),
+                            album = vhsIsAlbum(ratio),
                             onRatio = { ratios[book.coverUrl] = it },
                             coverWidth = width,
                             openness = openness, motion = motion,
@@ -407,10 +425,11 @@ private fun VhsPhysicalCase(
         }
     }
 
-    val edge = if (album) 2.dp else 4.dp
+    val edge = if (album) 1.dp else 4.dp
+    val corner = if (album) 1.dp else 4.dp
     val spineAngle = -90f * openness
     val coverAngle = 90f * (1f - openness)
-    val tilt = -3.5f * openness
+    val tilt = if (album) 0f else -3.5f * openness
 
     Box(
         modifier.width(maxOf(spineWidth, coverWidth + edge)).height(height)
@@ -429,12 +448,12 @@ private fun VhsPhysicalCase(
                         cameraDistance = 34f * density
                         transformOrigin = TransformOrigin(.5f, .5f)
                     }
-                    .shadow(5.dp, RoundedCornerShape(4.dp))
+                    .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
                         onClickLabel = "Select " + book.title, onClick = onSelect)
                     .semantics { contentDescription = "Select audiobook: " + book.title },
             ) {
-                Box(Modifier.align(Alignment.CenterEnd).width(5.dp).fillMaxSize()
+                Box(Modifier.align(Alignment.CenterEnd).width(if (album) 1.dp else 5.dp).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
                         Color(0xFF8F7D65), Color(0xFFE6D8B9), Color(0xFF655446),
                     ))))
@@ -446,6 +465,30 @@ private fun VhsPhysicalCase(
                             .clip(RoundedCornerShape(4.dp)),
                         contentScale = ContentScale.Fit,
                     )
+                } else if (album) {
+                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(corner))
+                        .background(palette.cloth)) {
+                        if (coverDrawable != null) {
+                            Image(coverPainter, contentDescription = null,
+                                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            Box(Modifier.fillMaxSize().background(palette.cloth.copy(alpha = .78f)))
+                        }
+                        Box(Modifier.align(Alignment.Center).layout { measurable, limits ->
+                            val measured = measurable.measure(Constraints(
+                                maxWidth = limits.maxHeight.coerceAtLeast(1),
+                                maxHeight = limits.maxWidth.coerceAtLeast(1),
+                            ))
+                            layout(measured.height, measured.width) {
+                                measured.placeWithLayer((measured.height - measured.width) / 2,
+                                    (measured.width - measured.height) / 2) { rotationZ = 90f }
+                            }
+                        }) {
+                            Text(bookstoreSpineTitle(book.title).uppercase(), color = palette.ink,
+                                fontSize = (spineWidth.value * .68f).coerceIn(4f, 7f).sp,
+                                fontWeight = FontWeight.SemiBold, maxLines = 1,
+                                overflow = TextOverflow.Ellipsis)
+                        }
+                    }
                 } else {
                     Box(Modifier.fillMaxSize()
                         .clip(RoundedCornerShape(2.dp))) {
@@ -513,7 +556,7 @@ private fun VhsPhysicalCase(
 
                     }
                 }
-                Box(Modifier.align(Alignment.CenterStart).width(5.dp).fillMaxSize()
+                Box(Modifier.align(Alignment.CenterStart).width(if (album) 1.dp else 5.dp).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
                         Color(0x66000000), Color.Transparent,
                     ))))
@@ -527,7 +570,7 @@ private fun VhsPhysicalCase(
                         rotationY = coverAngle
                         cameraDistance = 34f * density
                     }
-                    .shadow(10.dp, RoundedCornerShape(4.dp))
+                    .shadow(if (album) 4.dp else 10.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness > .55f, role = Role.Button,
                         onClickLabel = "Open " + book.title, onClick = onOpen)
                     .semantics { contentDescription = "Open audiobook: " + book.title },
@@ -549,7 +592,7 @@ private fun VhsPhysicalCase(
                 }
                 Box(Modifier.width(coverWidth).height(height)
                     .align(Alignment.CenterStart)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(corner))
                     .background(Color(0xFF28252A))) {
                     if (coverDrawable != null) {
                         Image(coverPainter, contentDescription = null,
@@ -558,26 +601,13 @@ private fun VhsPhysicalCase(
                     } else {
                         ShelfTextCover(book, Modifier.fillMaxSize())
                     }
-                    Box(Modifier.align(Alignment.CenterStart).width(2.dp).fillMaxSize()
+                    Box(Modifier.align(Alignment.CenterStart).width(if (album) .5.dp else 2.dp).fillMaxSize()
                         .background(Brush.horizontalGradient(listOf(
                             Color(0x55000000), Color.Transparent,
                         ))))
                 }
-                PrintedEditionFinish(book.title, Modifier.width(coverWidth).height(height).align(Alignment.CenterStart))
-                if (openness > .96f) {
-                    Box(Modifier.align(Alignment.BottomStart)
-                        .padding(4.dp)
-                        .size(30.dp)
-                        .shadow(5.dp, CircleShape)
-                        .background(Paper.copy(alpha = .96f), CircleShape)
-                        .border(1.dp, Cobalt, CircleShape)
-                        .clickable(role = Role.Button, onClickLabel = "Open audiobook details",
-                            onClick = onOpen),
-                        contentAlignment = Alignment.Center) {
-                        Text("▶", color = Cobalt, fontSize = 13.sp,
-                            modifier = Modifier.offset(x = 1.dp))
-                    }
-                }
+                if (!album) PrintedEditionFinish(book.title,
+                    Modifier.width(coverWidth).height(height).align(Alignment.CenterStart))
             }
         }
     }
