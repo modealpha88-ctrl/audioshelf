@@ -73,7 +73,7 @@ internal fun downloadedSpineFonts(context: Context): Map<String, Typeface> {
 internal fun expandSpineFonts(context: Context) {
     val prefs = context.getSharedPreferences("spine_font_catalog", Context.MODE_PRIVATE)
     val now = System.currentTimeMillis()
-    if (now - prefs.getLong("lastAttempt", 0L) in 0 until DAY) return
+    if (now - prefs.getLong("lastAttempt", 0L) in 0L until DAY) return
     prefs.edit().putLong("lastAttempt", now).apply()
     val root = fontDir(context)
     val catalogFile = File(root, "catalog.tsv")
@@ -87,11 +87,13 @@ internal fun expandSpineFonts(context: Context) {
         defaultSources).distinctBy { it.family }.take(MAX_FONTS)
     val existing = root.listFiles().orEmpty().count { it.extension == "ttf" }
     var added = 0
+    var attempts = 0
     // Avoid long network stalls; at most three new fonts per expansion.
     for (source in sources) {
-        if (existing + added >= MAX_FONTS || added >= 3) break
+        if (existing + added >= MAX_FONTS || attempts >= 3) break
         val target = File(root, "${source.family}.ttf")
         if (target.isFile) continue
+        attempts++
         val prefix = "https://raw.githubusercontent.com/google/fonts/main/ofl/${source.family}/"
         val ok = runCatching {
             val license = fetchBounded(prefix + "OFL.txt", 32768)
@@ -106,6 +108,6 @@ internal fun expandSpineFonts(context: Context) {
                 require(temporary.renameTo(target))
             } finally { temporary.delete() }
         }.isSuccess
-        if (ok) added++ else break
+        if (ok) added++
     }
 }
