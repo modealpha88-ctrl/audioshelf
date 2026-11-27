@@ -36,7 +36,7 @@ private fun candidates(context: Context): List<FontCandidate> {
             runCatching {
                 val builder = Typeface.Builder(context.assets, file)
                 if (weights.size > 1) builder.setFontVariationSettings("'wght' $weight")
-                FontCandidate("$family-$weight", builder.build())
+                builder.build()?.let { FontCandidate("$family-$weight", it) }
             }.getOrNull()
         }
     }.also { loadedFonts = it }
@@ -130,7 +130,7 @@ private fun normalized(mask: BooleanArray, width: Int, height: Int): GlyphMask? 
     val w = right - left + 1; val h = bottom - top + 1
     if (w < 4 || h < 4) return null
     val density = ink.toFloat() / (w * h)
-    if (density !in .07f.. .85f) return null
+    if (density !in 0.07f..0.85f) return null
     val cells = FloatArray(MASK_W * MASK_H)
     val count = IntArray(cells.size)
     for (y in top..bottom) for (x in left..right) {
