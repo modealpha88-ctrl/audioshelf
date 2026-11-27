@@ -94,6 +94,11 @@ import kotlin.math.sin
 
 private const val SHELF_CAMERA_WIDTHS = 2.8f
 
+private fun sleeveLean(openness: Float) = 4f * vhsSmoothstep(openness)
+
+private fun leanOverhang(height: Dp, degrees: Float) =
+    height * sin(degrees * PI.toFloat() / 180f)
+
 internal fun vhsVinylReveal(openness: Float): Float = vhsSmoothstep((openness - .68f) / .32f)
 
 internal fun vhsWrap(index: Int, count: Int): Int =
@@ -263,7 +268,8 @@ internal fun VhsAudiobookShelf(
                 val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
                 val camera = faceWidth(ratio) * SHELF_CAMERA_WIDTHS
                 return vhsProjectedWidth(spine, -90f * open, camera) +
-                    vhsProjectedWidth(face + reveal, 90f * (1f - open), camera)
+                    vhsProjectedWidth(face + reveal, 90f * (1f - open), camera) +
+                    leanOverhang(faceWidth(ratio) / ratio, sleeveLean(open))
             }
             // Accumulate neighboring slot widths once per frame.
             val radius = 32
@@ -465,8 +471,18 @@ private fun VhsPhysicalCase(
     val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
         vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
+    val lean = sleeveLean(openness)
+    val projectedWidth = vhsProjectedWidth(spineWidth, spineAngle, camera) +
+        vhsProjectedWidth(faceWidth, coverAngle, camera)
+
     Box(
-        modifier.width(maxOf(spineWidth, faceWidth)).height(height),
+        modifier.width(maxOf(spineWidth, faceWidth)).height(height)
+            .graphicsLayer {
+                transformOrigin = TransformOrigin(.5f, 1f)
+                rotationZ = -lean
+                translationX = leanOverhang(height, lean).toPx() / 2f
+                translationY = -leanOverhang(projectedWidth, lean).toPx() / 2f
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (openness < .999f) {
