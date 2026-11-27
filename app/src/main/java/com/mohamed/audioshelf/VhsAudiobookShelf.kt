@@ -94,6 +94,9 @@ import kotlin.math.sin
 
 private const val SHELF_CAMERA_WIDTHS = 2.8f
 
+// Leave eight degrees of cover visible when a neighboring book rests on its spine.
+private fun jacketAngle(openness: Float) = 82f * (1f - openness)
+
 private fun sleeveLean(openness: Float) = 4f * vhsSmoothstep(openness)
 
 private fun leanOverhang(height: Dp, degrees: Float) =
@@ -267,8 +270,9 @@ internal fun VhsAudiobookShelf(
                 val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
                 val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
                 val camera = faceWidth(ratio) * SHELF_CAMERA_WIDTHS
-                return vhsProjectedWidth(spine, -90f * open, camera) +
-                    vhsProjectedWidth(face + reveal, 90f * (1f - open), camera) +
+                val angle = jacketAngle(open)
+                return vhsProjectedWidth(spine, angle - 90f, camera) +
+                    vhsProjectedWidth(face + reveal, angle, camera) +
                     leanOverhang(faceWidth(ratio) / ratio, sleeveLean(open))
             }
             // Accumulate neighboring slot widths once per frame.
@@ -342,6 +346,7 @@ internal fun VhsAudiobookShelf(
                             onRatio = { ratios[book.coverUrl] = it },
                             coverWidth = width,
                             openness = openness,
+                            onRight = relative > 0f,
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
@@ -417,6 +422,7 @@ private fun VhsPhysicalCase(
     album: Boolean,
     onRatio: (Float) -> Unit,
     openness: Float,
+    onRight: Boolean,
     modifier: Modifier = Modifier,
     onSelect: () -> Unit,
     onOpen: () -> Unit,
@@ -462,13 +468,15 @@ private fun VhsPhysicalCase(
 
     val edge = if (album) 1.dp else 4.dp
     val corner = if (album) 1.dp else 4.dp
-    val spineAngle = -90f * openness
-    val coverAngle = 90f * (1f - openness)
+    val side = if (onRight) -1f else 1f
+    val angle = jacketAngle(openness)
+    val spineAngle = side * (angle - 90f)
+    val coverAngle = side * angle
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
     val faceWidth = coverWidth + edge + reveal
     val camera = coverWidth * SHELF_CAMERA_WIDTHS
-    val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
+    val hinge = side * (vhsProjectedWidth(spineWidth, spineAngle, camera) -
         vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
     val lean = sleeveLean(openness)
@@ -489,10 +497,10 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(spineWidth).height(height)
                     .graphicsLayer {
-                        translationX = hinge.toPx() - size.width / 2f
+                        translationX = hinge.toPx() - side * size.width / 2f
                         rotationY = spineAngle
                         cameraDistance = camera.toPx()
-                        transformOrigin = TransformOrigin(1f, 1f)
+                        transformOrigin = TransformOrigin(if (onRight) 0f else 1f, 1f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
@@ -612,60 +620,60 @@ private fun VhsPhysicalCase(
             }
         }
 
-        if (openness > .001f) {
-            Box(
-                Modifier.width(coverWidth + edge + reveal).height(height)
-                    .graphicsLayer {
-                        translationX = hinge.toPx() + size.width / 2f
-                        transformOrigin = TransformOrigin(0f, 1f)
-                        rotationY = coverAngle
-                        cameraDistance = camera.toPx()
+        val openCover = openness > .55f
+        Box(
+            Modifier.width(coverWidth + edge + reveal).height(height)
+                .graphicsLayer {
+                    translationX = hinge.toPx() + side * size.width / 2f
+                    transformOrigin = TransformOrigin(if (onRight) 1f else 0f, 1f)
+                    rotationY = coverAngle
+                    cameraDistance = camera.toPx()
+                }
+                .clickable(role = Role.Button,
+                    onClickLabel = if (openCover) "Open audiobook" else "Select audiobook",
+                    onClick = if (openCover) onOpen else onSelect)
+                .semantics { contentDescription = book.title },
+        ) {
+            if (album && reveal > 0.dp) VinylDisc(palette.cloth,
+                Modifier.align(Alignment.CenterStart).offset(x = reveal + coverWidth * .02f)
+                    .size(minOf(coverWidth, height) * .96f))
+            // Physical side of the box: paper grain, board bevel, and cast shadow.
+            Box(Modifier.align(Alignment.CenterStart).offset(x = coverWidth).width(edge).fillMaxSize()
+                .background(Brush.horizontalGradient(listOf(
+                    Color(0xFF28231F), palette.cloth, Color(0xFF302A25),
+                )))) {
+                if (!album) Canvas(Modifier.fillMaxSize()) {
+                    var y = 2.dp.toPx()
+                    while (y < size.height) {
+                        drawLine(Color(0x244A443C),
+                            Offset(0f, y), Offset(size.width, y),
+                            strokeWidth = .5.dp.toPx())
+                        y += 2.dp.toPx()
                     }
-                    .clickable(enabled = openness > .55f, role = Role.Button,
-                        onClickLabel = "Open " + book.title, onClick = onOpen)
-                    .semantics { contentDescription = "Open audiobook: " + book.title },
-            ) {
-                if (album && reveal > 0.dp) VinylDisc(palette.cloth,
-                    Modifier.align(Alignment.CenterStart).offset(x = reveal + coverWidth * .02f)
-                        .size(minOf(coverWidth, height) * .96f))
-                // Physical side of the box: paper grain, board bevel, and cast shadow.
-                Box(Modifier.align(Alignment.CenterStart).offset(x = coverWidth).width(edge).fillMaxSize()
+                }
+            }
+            Box(Modifier.width(coverWidth).height(height)
+                .align(Alignment.CenterStart)
+                .shadow(if (album) 4.dp else 10.dp, RoundedCornerShape(corner))
+                .clip(RoundedCornerShape(corner))
+                .background(Color(0xFF28252A))) {
+                if (coverDrawable != null) {
+                    Image(coverPainter, contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit)
+                } else {
+                    ShelfTextCover(book, Modifier.fillMaxSize())
+                }
+                Box(Modifier.align(Alignment.CenterStart).width(if (album) .5.dp else 2.dp).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
-                        Color(0xFF28231F), palette.cloth, Color(0xFF302A25),
-                    )))) {
-                    if (!album) Canvas(Modifier.fillMaxSize()) {
-                        var y = 2.dp.toPx()
-                        while (y < size.height) {
-                            drawLine(Color(0x244A443C),
-                                Offset(0f, y), Offset(size.width, y),
-                                strokeWidth = .5.dp.toPx())
-                            y += 2.dp.toPx()
-                        }
-                    }
-                }
-                Box(Modifier.width(coverWidth).height(height)
-                    .align(Alignment.CenterStart)
-                    .shadow(if (album) 4.dp else 10.dp, RoundedCornerShape(corner))
-                    .clip(RoundedCornerShape(corner))
-                    .background(Color(0xFF28252A))) {
-                    if (coverDrawable != null) {
-                        Image(coverPainter, contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit)
-                    } else {
-                        ShelfTextCover(book, Modifier.fillMaxSize())
-                    }
-                    Box(Modifier.align(Alignment.CenterStart).width(if (album) .5.dp else 2.dp).fillMaxSize()
-                        .background(Brush.horizontalGradient(listOf(
-                            Color(0x55000000), Color.Transparent,
-                        ))))
-                }
-                PrintedEditionFinish(book.title,
-                    Modifier.width(coverWidth).height(height).align(Alignment.CenterStart), album)
-                if (openness < 1f) {
-                    Box(Modifier.align(Alignment.CenterStart).width(coverWidth).height(height)
-                        .background(Color.Black.copy(alpha = .24f * (1f - openness)), RoundedCornerShape(corner)))
-                }
+                        Color(0x55000000), Color.Transparent,
+                    ))))
+            }
+            PrintedEditionFinish(book.title,
+                Modifier.width(coverWidth).height(height).align(Alignment.CenterStart), album)
+            if (openness < 1f) {
+                Box(Modifier.align(Alignment.CenterStart).width(coverWidth).height(height)
+                    .background(Color.Black.copy(alpha = .24f * (1f - openness)), RoundedCornerShape(corner)))
             }
         }
     }
