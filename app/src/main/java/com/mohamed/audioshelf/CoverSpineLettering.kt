@@ -93,6 +93,13 @@ internal suspend fun coverTitleLettering(
             }
         }
         val output = best?.let { rects ->
+            // Never paste opaque rectangles from the front cover onto a spine.
+            // If any title line cannot be separated reliably, use font recognition.
+            val lines = rects.map { extractTransparentSpineLine(bitmap, it) }
+            if (lines.any { it == null }) {
+                lines.forEach { it?.recycle() }
+                return@let null
+            }
             // Reflow separate cover lines into one readable strip, keeping each line's
             // own typography and ink. Do not recolor or stretch individual letters.
             val tallest = rects.maxOf { it.height() }.coerceAtMost(160)
@@ -108,11 +115,11 @@ internal suspend fun coverTitleLettering(
                 rects.forEachIndexed { index, rect ->
                     val h = (rect.height() * scale).roundToInt().coerceAtLeast(1)
                     val top = (tallest - h) / 2
-                    canvas.drawBitmap(bitmap, rect, Rect(x, top, x + widths[index], top + h), paint)
+                    canvas.drawBitmap(requireNotNull(lines[index]), null, Rect(x, top, x + widths[index], top + h), paint)
                     x += widths[index] + gap
                 }
                 result
-            }
+            }.also { lines.forEach { line -> line?.recycle() } }
         }
         val fontMatch = if (output == null) matchCoverFont(context, bitmap, recognized, title) else null
         val result = LetteringResult(output, fontMatch)
