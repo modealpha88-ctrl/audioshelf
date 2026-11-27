@@ -208,6 +208,7 @@ internal fun VhsAudiobookShelf(
             val spineWidth = bookHeight * (142f / 840f)
             val coverWidth = bookHeight * (474f / 900f)
             val gap = bookHeight * .030f
+            val stageWidth = maxWidth
             val stepPx = with(density) { (spineWidth + gap).toPx() }
             var draggedPx by remember { mutableFloatStateOf(0f) }
 
@@ -259,7 +260,7 @@ internal fun VhsAudiobookShelf(
                         coverWidth.value, gap.value).dp
                     // Only compose physical cases near the visible viewport.
                     // Repeated virtual copies stay off-screen and never trigger image loads.
-                    if (abs(x.value) > maxWidth.value / 2f + coverWidth.value * 1.4f) continue
+                    if (abs(x.value) > stageWidth.value / 2f + coverWidth.value * 1.4f) continue
                     key(virtualIndex, book.sourceId, book.id) {
                         VhsPhysicalCase(
                             book = book, spineRevision = spineRevision,
