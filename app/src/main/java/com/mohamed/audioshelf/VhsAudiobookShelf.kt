@@ -346,7 +346,6 @@ internal fun VhsAudiobookShelf(
                             onRatio = { ratios[book.coverUrl] = it },
                             coverWidth = width,
                             openness = openness,
-                            onRight = relative > 0f,
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
@@ -422,7 +421,6 @@ private fun VhsPhysicalCase(
     album: Boolean,
     onRatio: (Float) -> Unit,
     openness: Float,
-    onRight: Boolean,
     modifier: Modifier = Modifier,
     onSelect: () -> Unit,
     onOpen: () -> Unit,
@@ -468,16 +466,15 @@ private fun VhsPhysicalCase(
 
     val edge = if (album) 1.dp else 4.dp
     val corner = if (album) 1.dp else 4.dp
-    val side = if (onRight) -1f else 1f
     val angle = jacketAngle(openness)
-    val spineAngle = side * (angle - 90f)
-    val coverAngle = side * angle
+    val spineAngle = angle - 90f
+    val coverAngle = angle
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
     val faceWidth = coverWidth + edge + reveal
     val camera = coverWidth * SHELF_CAMERA_WIDTHS
     val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
-        vhsProjectedWidth(faceWidth, coverAngle, camera)) * (side / 2f)
+        vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
     val lean = sleeveLean(openness)
     val projectedWidth = vhsProjectedWidth(spineWidth, spineAngle, camera) +
@@ -497,10 +494,10 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(spineWidth).height(height)
                     .graphicsLayer {
-                        translationX = hinge.toPx() - side * size.width / 2f
+                        translationX = hinge.toPx() - size.width / 2f
                         rotationY = spineAngle
                         cameraDistance = camera.toPx()
-                        transformOrigin = TransformOrigin(if (onRight) 0f else 1f, 1f)
+                        transformOrigin = TransformOrigin(1f, 1f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
@@ -624,8 +621,8 @@ private fun VhsPhysicalCase(
         Box(
             Modifier.width(coverWidth + edge + reveal).height(height)
                 .graphicsLayer {
-                    translationX = hinge.toPx() + side * size.width / 2f
-                    transformOrigin = TransformOrigin(if (onRight) 1f else 0f, 1f)
+                    translationX = hinge.toPx() + size.width / 2f
+                    transformOrigin = TransformOrigin(0f, 1f)
                     rotationY = coverAngle
                     cameraDistance = camera.toPx()
                 }
