@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,9 +52,18 @@ internal fun PublishedCoverPicker(
     var suggestions by remember(book.sourceId, book.id) {
         mutableStateOf<List<CoverSuggestion>>(emptyList())
     }
-    LaunchedEffect(book.sourceId, book.id) {
+    var titleQuery by remember(book.sourceId, book.id) { mutableStateOf(book.title) }
+    var authorQuery by remember(book.sourceId, book.id) { mutableStateOf(book.authors) }
+    var submitted by remember(book.sourceId, book.id) { mutableStateOf(book.title to book.authors) }
+    var attempt by remember(book.sourceId, book.id) { mutableStateOf(0) }
+    var requestFailed by remember(book.sourceId, book.id) { mutableStateOf(false) }
+    LaunchedEffect(book.sourceId, book.id, submitted, attempt) {
         loading = true
-        suggestions = lookup.suggestions(book)
+        requestFailed = false
+        suggestions = emptyList()
+        val result = lookup.searchSuggestions(book, submitted.first, submitted.second)
+        suggestions = result.covers
+        requestFailed = result.requestFailed
         loading = false
     }
 
@@ -60,7 +71,7 @@ internal fun PublishedCoverPicker(
         onDismissRequest = onDismiss,
         title = { Text("Choose a published cover") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "Real catalogued artwork from Open Library. Check the book title " +
                         "and author before choosing an edition.",
@@ -74,6 +85,20 @@ internal fun PublishedCoverPicker(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                OutlinedTextField(value = titleQuery, onValueChange = { titleQuery = it },
+                    label = { Text("Book title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = authorQuery, onValueChange = { authorQuery = it },
+                    label = { Text("Author (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedButton(onClick = {
+                    submitted = titleQuery.trim() to authorQuery.trim()
+                    attempt++
+                }, enabled = titleQuery.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
+                    Text(if (loading) "Restart search" else "Search / retry")
+                }
+                if (!loading && requestFailed && suggestions.isNotEmpty()) {
+                    Text("Some catalogue requests failed. Available matches are shown below.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 when {
                     loading -> {
                         Row(Modifier.fillMaxWidth().padding(18.dp),
@@ -81,13 +106,17 @@ internal fun PublishedCoverPicker(
                             CircularProgressIndicator()
                         }
                     }
+                    requestFailed && suggestions.isEmpty() -> Text(
+                        "Open Library could not complete the search. Retry or simplify the title; your current cover has not been changed.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     suggestions.isEmpty() -> Text(
                         "No confidently related artwork was found. You can still use " +
                             "Add/Change cover image to pick the correct cover from your device.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     else -> LazyColumn(
-                        Modifier.fillMaxWidth().heightIn(max = 425.dp),
+                        Modifier.fillMaxWidth().heightIn(max = 240.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(suggestions, key = { it.coverUrl }) { option ->
