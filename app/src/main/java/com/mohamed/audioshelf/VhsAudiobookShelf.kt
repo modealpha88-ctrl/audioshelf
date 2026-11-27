@@ -347,7 +347,8 @@ internal fun rememberShelfCoverPainter(book: AudioBook): AsyncImagePainter {
     val context = LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false).build()
+            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false)
+            .transformations(CoverMatte).build()
     }
     return rememberAsyncImagePainter(request)
 }
