@@ -269,7 +269,7 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
                 .shadow(5.dp, RoundedCornerShape(3.dp))
                 .background(Color(0xFFE6D5B7))
                 .padding(start = 5.dp, end = 3.dp, top = 3.dp, bottom = 3.dp)) {
-                LibraryCover(book, Modifier.fillMaxSize())
+                VhsInkRevealCover(book, Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
