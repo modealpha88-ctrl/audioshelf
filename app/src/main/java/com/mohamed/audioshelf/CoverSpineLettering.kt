@@ -38,11 +38,18 @@ internal suspend fun coverTitleLettering(
 ): LetteringResult? = withContext(Dispatchers.Default) {
     val wanted = spineLetteringKey(title)
     if (wanted.length < 4 || coverKey.isBlank()) return@withContext null
-    val key = "$coverKey:$wanted"
+    val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return@withContext null
+    if (bitmap.width < 100 || bitmap.height < 100) return@withContext null
+    val key = spineRecognitionKey(bitmap, title)
     letteringLock.withLock {
+        // Exact artwork is immutable for a given content hash. Font matches can improve
+        // after a catalog refresh, so use their time-limited disk cache instead.
         letteringCache.get(key)?.let { return@withLock it }
-        val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return@withLock null
-        if (bitmap.width < 100 || bitmap.height < 100) return@withLock null
+        val saved = withContext(Dispatchers.IO) { readSpineRecognition(context, key) }
+        if (saved != null) {
+            if (saved.bitmap != null) letteringCache.put(key, saved)
+            return@withLock saved
+        }
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         val recognized = try {
             suspendCancellableCoroutine<com.google.mlkit.vision.text.Text> { continuation ->
@@ -109,7 +116,8 @@ internal suspend fun coverTitleLettering(
         }
         val fontMatch = if (output == null) matchCoverFont(context, bitmap, recognized, title) else null
         val result = LetteringResult(output, fontMatch)
-        letteringCache.put(key, result)
+        if (result.bitmap != null) letteringCache.put(key, result)
+        withContext(Dispatchers.IO) { writeSpineRecognition(context, key, result) }
         result
     }
 }
