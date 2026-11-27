@@ -25,7 +25,11 @@ internal fun spineLetteringKey(text: String): String =
     text.lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
 
 private data class LetteringResult(val bitmap: Bitmap?)
-private val letteringCache = LruCache<String, LetteringResult>(48)
+// Charge positive entries by bitmap bytes and negative entries by a small fixed cost.
+private val letteringCache = object : LruCache<String, LetteringResult>(8 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: LetteringResult): Int =
+        value.bitmap?.allocationByteCount ?: 4096
+}
 private val letteringLock = Mutex()
 
 internal suspend fun coverTitleLettering(
