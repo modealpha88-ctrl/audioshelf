@@ -14,6 +14,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -220,7 +221,7 @@ fun AnimatedLibraryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("© AUDIOSHELF", color = Color(0xFF6D6A63),
                         fontSize = 9.sp, letterSpacing = .9.sp)
-                    Text("SAVED / \${books.size}", color = Color(0xFF6D6A63),
+                    Text("SAVED / ${books.size}", color = Color(0xFF6D6A63),
                         fontSize = 9.sp, letterSpacing = .9.sp)
                 }
             }
@@ -260,7 +261,7 @@ internal fun conceptProgress(progress: ListeningProgress): Float {
 /** A larger book-detail card opens when a library item is tapped. */
 @Composable
 fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
-    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = walnutColors.surface,
+    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = vhsPaperColors.surface,
         shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             // Concept C uses a physical book jacket in details too: no vinyl behind square art.
@@ -272,13 +273,13 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
             }
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("AUDIOBOOK", color = walnutColors.onSurface.copy(alpha = .75f),
+                Text("AUDIOBOOK", color = vhsPaperColors.onSurface.copy(alpha = .75f),
                     style = MaterialTheme.typography.labelSmall)
                 Text(book.title, style = MaterialTheme.typography.titleLarge,
-                    color = walnutColors.onSurface, fontWeight = FontWeight.Bold,
+                    color = vhsPaperColors.onSurface, fontWeight = FontWeight.Bold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(book.authors, style = MaterialTheme.typography.bodyMedium,
-                    color = walnutColors.onSurface.copy(alpha = .87f),
+                    color = vhsPaperColors.onSurface.copy(alpha = .87f),
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (progress.chapterCount > 0) {
                     LinearProgressIndicator(
@@ -287,10 +288,10 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
                             .clip(RoundedCornerShape(4.dp)),
                     )
                     Text("${(conceptProgress(progress) * 100).toInt()}% listened",
-                        color = walnutColors.onSurface, style = MaterialTheme.typography.labelMedium)
+                        color = vhsPaperColors.onSurface, style = MaterialTheme.typography.labelMedium)
                 } else if (book.language.isNotBlank()) {
                     Text(book.language, style = MaterialTheme.typography.labelMedium,
-                        color = walnutColors.onSurface)
+                        color = vhsPaperColors.onSurface)
                 }
             }
         }
