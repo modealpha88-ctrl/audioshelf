@@ -153,6 +153,7 @@ internal fun VhsAudiobookShelf(
     motion: Boolean,
     spineRevision: Int,
     onOpen: (AudioBook) -> Unit,
+    onBackdropCover: (String) -> Unit = {},
 ) {
     val Ink = MaterialTheme.colorScheme.onBackground
     val Cobalt = MaterialTheme.colorScheme.primary
@@ -169,6 +170,8 @@ internal fun VhsAudiobookShelf(
         label = "Physical audiobook shelf",
     )
     val selected = visible.getOrNull(vhsWrap(position.roundToInt(), visible.size))
+    val backdropUrl = visible.getOrNull(vhsWrap(target, visible.size))?.coverUrl.orEmpty()
+    LaunchedEffect(backdropUrl) { onBackdropCover(backdropUrl) }
     val density = LocalDensity.current
 
     Column(
@@ -176,7 +179,7 @@ internal fun VhsAudiobookShelf(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(Modifier.padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.Center) {
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
             val tabs = listOf(
                 ArchiveFilter.ALL to "ALL / LIBRARY",
                 ArchiveFilter.AM to "A-M",
@@ -186,8 +189,9 @@ internal fun VhsAudiobookShelf(
             tabs.forEachIndexed { index, (kind, text) ->
                 val active = kind == filter
                 Box(
-                    Modifier.border(1.dp, Ink.copy(alpha = .84f))
-                        .background(if (active) if (dark) Color(0xFF292F58) else Cobalt else Color.Transparent)
+                    Modifier.clip(RoundedCornerShape(7.dp))
+                        .background(if (active) if (dark) Color(0xFF48486D).copy(alpha = .9f) else Cobalt else MaterialTheme.colorScheme.surface.copy(alpha = .44f))
+                        .border(.8.dp, Ink.copy(alpha = if (active) .65f else .30f), RoundedCornerShape(7.dp))
                         .clickable(role = Role.Tab) { filter = kind }
                         .padding(horizontal = if (index == 0) 8.dp else 11.dp, vertical = 9.dp),
                     contentAlignment = Alignment.Center,
@@ -315,7 +319,11 @@ internal fun VhsAudiobookShelf(
         }
 
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 3.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 3.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = .55f))
+                .border(.7.dp, Ink.copy(alpha = .23f), RoundedCornerShape(12.dp))
+                .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
