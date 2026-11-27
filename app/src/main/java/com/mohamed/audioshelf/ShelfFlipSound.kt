@@ -53,9 +53,9 @@ internal fun shelfFlipWave(): ByteArray {
     return out.array()
 }
 
-/** Number of half-spine boundaries crossed between two continuous shelf positions. */
-internal fun shelfSoundCrossings(from: Float, to: Float): Int =
-    kotlin.math.abs(kotlin.math.floor(to * 2f).toInt() - kotlin.math.floor(from * 2f).toInt())
+/** Accumulate movement in either direction without triggering on stationary frames. */
+internal fun shelfSoundTravel(accumulated: Float, movement: Float): Float =
+    accumulated + kotlin.math.abs(movement)
 
 private class ShelfFlipPlayer {
     private var pool: SoundPool? = null
