@@ -487,12 +487,18 @@ private fun VhsPhysicalCase(
     var coverLettering by remember(book.coverUrl, book.title, binding) {
         mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
     }
+    var matchedFont by remember(book.coverUrl, book.title, binding) {
+        mutableStateOf<CoverFontMatch?>(null)
+    }
     LaunchedEffect(book.coverUrl, book.title, coverDrawable, binding, spineImage) {
         coverLettering = null
+        matchedFont = null
         if (binding == SpineBindingMode.AUTOMATIC && spineImage == null && coverDrawable != null) {
             try {
-                coverLettering = coverTitleLettering(coverDrawable, book.coverUrl,
-                    bookstoreSpineTitle(book.title))?.asImageBitmap()
+                val lettering = coverTitleLettering(context, coverDrawable, book.coverUrl,
+                    bookstoreSpineTitle(book.title))
+                coverLettering = lettering?.bitmap?.asImageBitmap()
+                matchedFont = lettering?.fontMatch
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -511,6 +517,11 @@ private fun VhsPhysicalCase(
                 Color(savedPalette.first), Color(savedPalette.second), true,
             )
             else -> bookstoreSpineColors(book.title, null, texture)
+        }
+    }
+    val fontLettering = remember(book.title, matchedFont, palette.ink) {
+        matchedFont?.let {
+            renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb())?.asImageBitmap()
         }
     }
     LaunchedEffect(book.id, book.coverUrl, palette) {
@@ -586,7 +597,7 @@ private fun VhsPhysicalCase(
                                     (measured.width - measured.height) / 2) { rotationZ = 90f }
                             }
                         }) {
-                            val lettering = coverLettering
+                            val lettering = coverLettering ?: fontLettering
                             if (lettering != null) {
                                 Image(lettering, contentDescription = null,
                                     modifier = Modifier.width(height * .88f).height(spineWidth * .86f),
@@ -648,7 +659,7 @@ private fun VhsPhysicalCase(
                                     ) { rotationZ = 90f }
                                 }
                             }) {
-                                val lettering = coverLettering
+                                val lettering = coverLettering ?: fontLettering
                                 if (automatic && lettering != null) {
                                     Image(lettering, contentDescription = null,
                                         modifier = Modifier.width(height - topSpace - footerHeight)
