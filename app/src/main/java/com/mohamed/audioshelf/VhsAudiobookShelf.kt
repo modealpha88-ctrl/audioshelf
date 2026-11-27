@@ -90,6 +90,7 @@ import com.mohamed.audioshelf.data.SpineBindingStore
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.abs
@@ -170,7 +171,6 @@ internal fun VhsAudiobookShelf(
     fun moveTo(next: Int) {
         if (visible.size > 1 && next != target) {
             target = next
-            latestPlayFlip()
         }
     }
     val position by animateFloatAsState(
@@ -178,6 +178,21 @@ internal fun VhsAudiobookShelf(
         animationSpec = if (motion) tween(1050, easing = FastOutSlowInEasing) else snap(),
         label = "Physical audiobook shelf",
     )
+    // Sample actual animated travel, not the selected title. Accumulate distance
+    // instead of reacting to recomposition or repeatedly crossing a jittery boundary.
+    LaunchedEffect(filter, visible.size, flipSounds, motion) {
+        if (!flipSounds || visible.size < 2) return@LaunchedEffect
+        var previous = position
+        var travel = .30f
+        androidx.compose.runtime.snapshotFlow { position }.collect { current ->
+            travel = shelfSoundTravel(travel, current - previous)
+            previous = current
+            if (travel >= .50f) {
+                travel %= .50f
+                latestPlayFlip()
+            }
+        }
+    }
     val selected = visible.getOrNull(vhsWrap(position.roundToInt(), visible.size))
     val backdropUrl = visible.getOrNull(vhsWrap(target, visible.size))?.coverUrl.orEmpty()
     LaunchedEffect(backdropUrl) { onBackdropCover(backdropUrl) }
@@ -255,16 +270,30 @@ internal fun VhsAudiobookShelf(
             val stageWidth = maxWidth
             val stepPx = with(density) { (hardbackSpine + gap).toPx() }
             var draggedPx by remember { mutableFloatStateOf(0f) }
+            var dragSoundTravel by remember { mutableFloatStateOf(0f) }
 
             Box(
                 Modifier.fillMaxWidth().height(bookHeight + 72.dp)
                     .clip(RoundedCornerShape(0.dp))
                     .pointerInput(visible, stepPx, flipSounds) {
                         detectHorizontalDragGestures(
-                            onDragStart = { draggedPx = 0f },
+                            onDragStart = {
+                                draggedPx = 0f
+                                dragSoundTravel = stepPx * .34f
+                            },
                             onHorizontalDrag = { change, dx ->
                                 change.consume()
                                 draggedPx += dx
+                                // Finger travel makes the shuffle audible before release,
+                                // even when the shelf's selected book has not changed yet.
+                                if (visible.size > 1 && stepPx > 0f) {
+                                    dragSoundTravel = shelfSoundTravel(dragSoundTravel, dx)
+                                    val interval = stepPx * .5f
+                                    if (dragSoundTravel >= interval) {
+                                        dragSoundTravel %= interval
+                                        latestPlayFlip()
+                                    }
+                                }
                             },
                             onDragEnd = {
                                 val steps = (draggedPx / stepPx).roundToInt()
@@ -272,8 +301,9 @@ internal fun VhsAudiobookShelf(
                                     if (draggedPx > 0) 1 else -1 else steps
                                 moveTo(target - delta.coerceIn(-3, 3))
                                 draggedPx = 0f
+                                dragSoundTravel = 0f
                             },
-                            onDragCancel = { draggedPx = 0f },
+                            onDragCancel = { draggedPx = 0f; dragSoundTravel = 0f },
                         )
                     }
                     .onKeyEvent { event ->
