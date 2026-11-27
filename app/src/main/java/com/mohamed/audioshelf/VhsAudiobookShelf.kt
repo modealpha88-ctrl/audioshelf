@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -505,6 +506,20 @@ private fun VhsPhysicalCase(
                         .background(Brush.horizontalGradient(listOf(
                             Color(0xB5000000), Color.Transparent,
                         ))))
+                }
+                if (openness > .96f) {
+                    Box(Modifier.align(Alignment.BottomStart)
+                        .offset(x = (-9).dp, y = 6.dp)
+                        .size(42.dp)
+                        .shadow(5.dp, CircleShape)
+                        .background(Paper.copy(alpha = .96f), CircleShape)
+                        .border(1.dp, Cobalt, CircleShape)
+                        .clickable(role = Role.Button, onClickLabel = "Open audiobook details",
+                            onClick = onOpen),
+                        contentAlignment = Alignment.Center) {
+                        Text("▶", color = Cobalt, fontSize = 18.sp,
+                            modifier = Modifier.offset(x = 1.dp))
+                    }
                 }
             }
         }
