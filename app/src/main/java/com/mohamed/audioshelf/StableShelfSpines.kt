@@ -44,6 +44,9 @@ internal class StableSpineEntry(
         internal set
     var artwork by mutableStateOf<String?>(null)
         internal set
+    internal var pendingVisual: StableSpineVisual? = null
+    internal var pendingArtwork: String? = null
+    internal var hasPendingArtwork = false
     internal var artworkReady = false
     internal var artworkLoading = false
     internal var analyzing = false
@@ -62,6 +65,25 @@ internal class StableShelfSpines(
 ) {
     private val store = SpineBindingStore(context)
     private val entries = LruCache<StableSpineKey, StableSpineEntry>(64)
+    private var settled = true
+
+    fun setSettled(value: Boolean) {
+        if (settled == value) return
+        settled = value
+        if (value) entries.snapshot().values.forEach { entry ->
+            entry.pendingVisual?.let { entry.visual = it }
+            entry.pendingVisual = null
+            if (entry.hasPendingArtwork) {
+                entry.artwork = entry.pendingArtwork
+                entry.pendingArtwork = null
+                entry.hasPendingArtwork = false
+            }
+        }
+    }
+
+    private fun publish(entry: StableSpineEntry, visual: StableSpineVisual) {
+        if (settled) entry.visual = visual else entry.pendingVisual = visual
+    }
 
     fun entry(book: AudioBook, revision: Int): StableSpineEntry {
         val key = stableSpineKey(book, revision)
@@ -79,7 +101,11 @@ internal class StableShelfSpines(
         entry.artworkLoading = true
         scope.launch {
             try {
-                entry.artwork = withContext(Dispatchers.IO) { store.displayedArtwork(book, entry.binding) }
+                val art = withContext(Dispatchers.IO) { store.displayedArtwork(book, entry.binding) }
+                if (settled) entry.artwork = art else {
+                    entry.pendingArtwork = art
+                    entry.hasPendingArtwork = true
+                }
                 entry.artworkReady = true
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -122,8 +148,8 @@ internal class StableShelfSpines(
                 } else null
                 // Do not downgrade an existing successful result on a transient failure.
                 // A different cover is allowed to replace it only with another complete result.
-                if (entry.coverHash == null || lettering != null || entry.visual.lettering == null) {
-                    entry.visual = StableSpineVisual(palette, preview, lettering)
+                if (entry.coverHash == null || lettering != null || (entry.pendingVisual ?: entry.visual).lettering == null) {
+                    publish(entry, StableSpineVisual(palette, preview, lettering))
                     // Allow a later visit to retry a failed automatic match.
                     if (lettering != null || entry.binding != SpineBindingMode.AUTOMATIC) entry.coverHash = hash
                     if (palette.hasCoverPalette) withContext(Dispatchers.IO) {
