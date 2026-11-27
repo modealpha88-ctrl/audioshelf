@@ -12,7 +12,7 @@ import java.security.MessageDigest
 // must receive a fresh match. Bump the algorithm version when the matcher changes.
 internal fun spineRecognitionKey(bitmap: Bitmap, title: String): String {
     val hash = MessageDigest.getInstance("SHA-256")
-    hash.update("spine-v3:$title:${bitmap.width}:${bitmap.height}:".toByteArray(Charsets.UTF_8))
+    hash.update("spine-v4:$title:${bitmap.width}:${bitmap.height}:".toByteArray(Charsets.UTF_8))
     val row = IntArray(bitmap.width)
     val bytes = ByteBuffer.allocate(bitmap.width * 4)
     for (y in 0 until bitmap.height) {
@@ -25,7 +25,7 @@ internal fun spineRecognitionKey(bitmap: Bitmap, title: String): String {
 }
 
 private fun cacheDir(context: Context) =
-    File(context.filesDir, "spine_recognition_v3").apply { mkdirs() }
+    File(context.filesDir, "spine_recognition_v4").apply { mkdirs() }
 
 private const val RETRY_MS = 86400000L
 private const val MAX_BYTES = 32L * 1024 * 1024
