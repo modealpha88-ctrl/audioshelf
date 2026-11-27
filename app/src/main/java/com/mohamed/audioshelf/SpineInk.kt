@@ -1,9 +1,7 @@
 package com.mohamed.audioshelf
 
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Rect
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -73,7 +71,7 @@ internal fun separateSpineInk(pixels: IntArray, w: Int, h: Int): IntArray? {
                 (unmix(green(c),green(bg)) shl 8) or unmix(blue(c),blue(bg))
         }
     }
-    if (strong.toDouble() / pixels.size !in .06.. .75) return null
+    if (strong.toDouble() / pixels.size !in 0.06..0.75) return null
     return result
 }
 
