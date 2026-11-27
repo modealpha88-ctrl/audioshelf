@@ -56,6 +56,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -162,7 +165,7 @@ internal fun VhsAudiobookShelf(
     val position by animateFloatAsState(
         target.toFloat(),
         animationSpec = if (motion) spring(
-            dampingRatio = .84f, stiffness = Spring.StiffnessLow,
+            dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 45f,
         ) else snap(),
         label = "Physical audiobook shelf",
     )
@@ -218,7 +221,7 @@ internal fun VhsAudiobookShelf(
                 caseWidth(ratioAt(mid + 1)) * weight
             val gap = bookHeight * .030f
             val stageWidth = maxWidth
-            val stepPx = with(density) { (spineWidth + gap).toPx() }
+            val stepPx = with(density) { ((spineWidth + gap) * 1.8f).toPx() }
             var draggedPx by remember { mutableFloatStateOf(0f) }
 
             Box(
@@ -235,7 +238,7 @@ internal fun VhsAudiobookShelf(
                                 val steps = (draggedPx / stepPx).roundToInt()
                                 val delta = if (steps == 0 && abs(draggedPx) > stepPx * .22f)
                                     if (draggedPx > 0) 1 else -1 else steps
-                                target -= delta.coerceIn(-6, 6)
+                                target -= delta.coerceIn(-2, 2)
                                 draggedPx = 0f
                             },
                             onDragCancel = { draggedPx = 0f },
@@ -347,7 +350,8 @@ internal fun rememberShelfCoverPainter(book: AudioBook): AsyncImagePainter {
     val context = LocalContext.current
     val request = remember(context, book.coverUrl) {
         ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false).build()
+            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false)
+            .transformations(CoverMatte).build()
     }
     return rememberAsyncImagePainter(request)
 }
@@ -449,22 +453,41 @@ private fun VhsPhysicalCase(
                     Box(Modifier.fillMaxSize()
                         .clip(RoundedCornerShape(2.dp))) {
                         val illustrated = binding == SpineBindingMode.AUTOMATIC && coverDrawable != null
-                        val artHeight = minOf(spineWidth * 1.15f, height * .24f)
-                        BookstorePrintedSpine(
+                        val artHeight = minOf(spineWidth * 1.85f, height * .30f)
+                        if (!illustrated) BookstorePrintedSpine(
                             title = book.title, texture = texture, palette = palette,
                             modifier = Modifier.fillMaxSize(),
                             ornate = !illustrated && binding != SpineBindingMode.CLASSIC,
                         )
                         if (illustrated) {
-                            Image(
-                                painter = coverPainter,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.align(Alignment.TopCenter)
-                                    .padding(top = 6.dp, start = 4.dp, end = 4.dp)
-                                    .fillMaxWidth().height(artHeight)
-                                    .border(.5.dp, palette.ink.copy(alpha = .65f)),
-                            )
+                            Box(Modifier.fillMaxSize().background(palette.cloth)) {
+                                Image(
+                                    painter = androidx.compose.ui.res.painterResource(texture),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.FillBounds,
+                                    alpha = .14f,
+                                )
+                                val print = remember(palette.cloth, palette.ink) {
+                                    spinePrintFilter(palette.cloth, palette.ink)
+                                }
+                                Box(Modifier.fillMaxWidth().height(artHeight)
+                                    .clip(RoundedCornerShape(1.dp))) {
+                                    Image(
+                                        painter = coverPainter, contentDescription = null,
+                                        contentScale = ContentScale.Crop, colorFilter = print,
+                                        modifier = Modifier.fillMaxSize().graphicsLayer {
+                                            scaleX = 1.65f
+                                            scaleY = 1.65f
+                                        },
+                                    )
+                                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
+                                        .72f to Color.Transparent, 1f to palette.cloth
+                                    )))
+                                }
+                                Box(Modifier.fillMaxSize().border(.7.dp,
+                                    Color(0xFFE7D8B9).copy(alpha = .46f), RoundedCornerShape(2.dp)))
+                            }
                         }
                         val titleArea = if (illustrated) Modifier.fillMaxSize()
                             .padding(top = artHeight + 10.dp, bottom = 24.dp)
@@ -487,13 +510,19 @@ private fun VhsPhysicalCase(
                                 Text(bookstoreSpineTitle(book.title).uppercase(),
                                     fontFamily = FontFamily.Serif,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp, maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = if (illustrated && book.title.length > 24) 9.sp else 11.sp,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     color = palette.ink)
                             }
                         }
                         val badge = Modifier.align(Alignment.BottomCenter)
                             .padding(bottom = if (illustrated) 6.dp else 12.dp)
+                        if (illustrated && book.authors.isNotBlank()) {
+                            Text(book.authors.trim().substringAfterLast(' ').uppercase(),
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis, color = palette.ink,
+                                fontSize = 6.sp, letterSpacing = .45.sp)
+                        }
                         Text("AUDIO", if (illustrated) badge.border(.5.dp, palette.ink)
                             .padding(horizontal = 2.dp) else badge,
                             color = palette.ink, fontSize = 7.sp,
@@ -567,4 +596,23 @@ private fun VhsPhysicalCase(
             }
         }
     }
+}
+
+/** Map the jacket's luminance to the two inks used on the binding. */
+private fun spinePrintFilter(cloth: Color, ink: Color): ColorFilter {
+    val dark = if (cloth.luminance() < ink.luminance()) cloth else ink
+    val light = if (dark == cloth) ink else cloth
+    val values = FloatArray(20)
+    fun channel(row: Int, low: Float, high: Float) {
+        val contrast = high - low
+        values[row] = .299f * contrast
+        values[row + 1] = .587f * contrast
+        values[row + 2] = .114f * contrast
+        values[row + 4] = 255f * low
+    }
+    channel(0, dark.red, light.red)
+    channel(5, dark.green, light.green)
+    channel(10, dark.blue, light.blue)
+    values[18] = 1f
+    return ColorFilter.colorMatrix(ColorMatrix(values))
 }
