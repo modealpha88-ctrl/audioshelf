@@ -49,6 +49,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.draw.drawWithCache
@@ -84,6 +85,7 @@ import com.mohamed.audioshelf.data.SpineBindingStore
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlin.math.PI
@@ -482,6 +484,28 @@ private fun VhsPhysicalCase(
             onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
         }
     }
+    var coverLettering by remember(book.coverUrl, book.title, binding) {
+        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+    }
+    var matchedFont by remember(book.coverUrl, book.title, binding) {
+        mutableStateOf<CoverFontMatch?>(null)
+    }
+    LaunchedEffect(book.coverUrl, book.title, coverDrawable, binding, spineImage) {
+        coverLettering = null
+        matchedFont = null
+        if (binding == SpineBindingMode.AUTOMATIC && spineImage == null && coverDrawable != null) {
+            try {
+                val lettering = coverTitleLettering(context, coverDrawable, book.coverUrl,
+                    bookstoreSpineTitle(book.title))
+                coverLettering = lettering?.bitmap?.asImageBitmap()
+                matchedFont = lettering?.fontMatch
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // OCR must never prevent loading the existing binding or original cover.
+            }
+        }
+    }
     val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
     val savedPalette = remember(book.id, book.coverUrl, spineRevision) { store.palette(book) }
     val palette = remember(book.title, coverDrawable, savedPalette, binding, texture) {
@@ -493,6 +517,11 @@ private fun VhsPhysicalCase(
                 Color(savedPalette.first), Color(savedPalette.second), true,
             )
             else -> bookstoreSpineColors(book.title, null, texture)
+        }
+    }
+    val fontLettering = remember(book.title, matchedFont, palette.ink) {
+        matchedFont?.let {
+            renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb())?.asImageBitmap()
         }
     }
     LaunchedEffect(book.id, book.coverUrl, palette) {
@@ -568,10 +597,17 @@ private fun VhsPhysicalCase(
                                     (measured.width - measured.height) / 2) { rotationZ = 90f }
                             }
                         }) {
-                            Text(bookstoreSpineTitle(book.title).uppercase(), color = palette.ink,
-                                fontSize = (spineWidth.value * .68f).coerceIn(4f, 7f).sp,
-                                fontWeight = FontWeight.SemiBold, maxLines = 1,
-                                overflow = TextOverflow.Ellipsis)
+                            val lettering = coverLettering ?: fontLettering
+                            if (lettering != null) {
+                                Image(lettering, contentDescription = null,
+                                    modifier = Modifier.width(height * .88f).height(spineWidth * .86f),
+                                    contentScale = ContentScale.Fit)
+                            } else {
+                                Text(bookstoreSpineTitle(book.title), color = palette.ink,
+                                    fontSize = (spineWidth.value * .68f).coerceIn(4f, 7f).sp,
+                                    fontWeight = FontWeight.SemiBold, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 } else {
@@ -602,7 +638,8 @@ private fun VhsPhysicalCase(
                             BookstorePrintedSpine(book.title, texture, palette,
                                 Modifier.fillMaxSize(), ornate = binding != SpineBindingMode.CLASSIC)
                         }
-                        val title = bookstoreSpineTitle(book.title).uppercase()
+                        val automatic = binding == SpineBindingMode.AUTOMATIC
+                        val title = bookstoreSpineTitle(book.title).let { if (automatic) it else it.uppercase() }
                         val footerHeight = height * .12f
                         val topSpace = if (illustrated) artHeight else height * .12f
                         val titleFont = minOf(spineWidth.value * .44f,
@@ -622,9 +659,17 @@ private fun VhsPhysicalCase(
                                     ) { rotationZ = 90f }
                                 }
                             }) {
-                                Text(title, fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.SemiBold, fontSize = titleFont.sp,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis, color = ink)
+                                val lettering = coverLettering ?: fontLettering
+                                if (automatic && lettering != null) {
+                                    Image(lettering, contentDescription = null,
+                                        modifier = Modifier.width(height - topSpace - footerHeight)
+                                            .height(spineWidth * .84f),
+                                        contentScale = ContentScale.Fit)
+                                } else {
+                                    Text(title, fontFamily = FontFamily.Serif,
+                                        fontWeight = FontWeight.SemiBold, fontSize = titleFont.sp,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis, color = ink)
+                                }
                             }
                         }
                         Column(Modifier.align(Alignment.BottomCenter)
@@ -635,10 +680,12 @@ private fun VhsPhysicalCase(
                                 fontSize = 6.sp, letterSpacing = .5.sp, color = ink,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Spacer(Modifier.height(2.dp))
-                            Text("AUDIO", Modifier.border(.6.dp, ink.copy(alpha = .75f),
-                                RoundedCornerShape(1.dp)).padding(horizontal = 3.dp, vertical = 1.dp),
-                                color = ink, fontFamily = FontFamily.Serif,
-                                fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            if (!automatic) {
+                                Text("AUDIO", Modifier.border(.6.dp, ink.copy(alpha = .75f),
+                                    RoundedCornerShape(1.dp)).padding(horizontal = 3.dp, vertical = 1.dp),
+                                    color = ink, fontFamily = FontFamily.Serif,
+                                    fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                         PrintedEditionFinish(book.title, Modifier.fillMaxSize())
 
