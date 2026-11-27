@@ -49,6 +49,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import coil.imageLoader
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -1589,7 +1593,34 @@ private fun ArtworkBackdrop(url: String, modifier: Modifier, motion: Boolean, li
     val colors = MaterialTheme.colorScheme
     val dark = colors.background == vhsDarkColors.background
     Box(modifier.background(colors.background)) {
-        androidx.compose.animation.Crossfade(
+        if (library) {
+            val context = LocalContext.current
+            var loaded by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+            LaunchedEffect(url, context) {
+                if (url.isBlank()) { loaded = null; return@LaunchedEffect }
+                try {
+                    val request = coil.request.ImageRequest.Builder(context).data(url)
+                        .size(720, 1280).allowHardware(false).crossfade(false).build()
+                    val result = context.imageLoader.execute(request) as? coil.request.SuccessResult
+                    val bitmap = (result?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    // Keep the last successfully loaded image until its replacement is ready.
+                    if (bitmap != null) loaded = bitmap.asImageBitmap()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) { /* Retain the previous atmosphere. */ }
+            }
+            androidx.compose.animation.Crossfade(
+                targetState = loaded,
+                modifier = Modifier.matchParentSize(),
+                animationSpec = if (motion) tween(420) else androidx.compose.animation.core.snap(),
+                label = "Loaded shelf atmosphere",
+            ) { artwork ->
+                if (artwork != null) Image(artwork, contentDescription = null,
+                    contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
+                    modifier = Modifier.fillMaxSize().blur(9.dp))
+                else Box(Modifier.fillMaxSize())
+            }
+        } else androidx.compose.animation.Crossfade(
             targetState = url, modifier = Modifier.matchParentSize(),
             animationSpec = if (motion) tween(950) else androidx.compose.animation.core.snap(),
             label = "Cover atmosphere",
