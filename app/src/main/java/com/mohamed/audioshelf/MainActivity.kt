@@ -372,7 +372,7 @@ private fun AudioShelfApp(
     val shelfPrefs = remember(context) { context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE) }
     var darkShelf by rememberSaveable { mutableStateOf(shelfPrefs.getBoolean("dark_shelf", true)) }
     val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
-    if (onShelf) {
+    run {
         DisposableEffect(window, darkShelf) {
             val bars = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             val originalIcons = bars.isAppearanceLightStatusBars
@@ -415,13 +415,13 @@ private fun AudioShelfApp(
     }
 
     MaterialTheme(
-        colorScheme = if (onShelf) shelfColors else MaterialTheme.colorScheme,
+        colorScheme = shelfColors,
         shapes = if (onShelf) Shapes(extraSmall = RoundedCornerShape(3.dp),
             small = RoundedCornerShape(5.dp), medium = RoundedCornerShape(7.dp),
             large = RoundedCornerShape(10.dp), extraLarge = RoundedCornerShape(12.dp)) else MaterialTheme.shapes,
     ) {
     Scaffold(
-        containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.background,
+        containerColor = shelfColors.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
@@ -1383,7 +1383,7 @@ private fun BookScreen(
     }
     BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
-    val detailColors = vhsPaperColors
+    val detailColors = MaterialTheme.colorScheme
     AnimatedContent(
         targetState = storyOpen && controller != null,
         transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },
@@ -1410,9 +1410,14 @@ private fun BookScreen(
             )
         } else {
             MaterialTheme(colorScheme = detailColors) {
-            Column(Modifier.fillMaxSize().background(detailColors.background)) {
+            Box(Modifier.fillMaxSize().background(detailColors.background)) {
+                BookArtworkBackdrop(book, Modifier.matchParentSize())
+            Column(Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text(book.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    title = { Text(book.title, fontFamily = FontFamily.Serif, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent, titleContentColor = detailColors.onBackground,
+                        navigationIconContentColor = detailColors.onBackground, actionIconContentColor = detailColors.onBackground),
                     navigationIcon = { IconButton(navigateBack) { Icon(Icons.Default.ArrowBack, null) } },
                     actions = { IconButton(onToggleSaved) { Icon(if (saved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, null) } },
                 )
@@ -1424,7 +1429,7 @@ private fun BookScreen(
                     item {
                         LibraryBookDetailCard(book, listeningProgress)
                         Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                            Column(Modifier.fillMaxWidth()) {
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 OutlinedButton(
                                     onClick = { showPublishedCovers = true },
                                     enabled = saved,
@@ -1507,8 +1512,9 @@ private fun BookScreen(
                             supportingContent = { if (chapter.durationMs > 0) Text(formatTime(chapter.durationMs)) },
                             leadingContent = { IconButton({ onPlay(index); showPlayer = true }) { Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary) } },
                             modifier = Modifier.clickable { onPlay(index); showPlayer = true },
+                            colors = ListItemDefaults.colors(containerColor = detailColors.surface.copy(alpha = .78f)),
                         )
-                        HorizontalDivider()
+                        HorizontalDivider(color = detailColors.outline.copy(alpha = .25f))
                     }
                 }
                 AnimatedVisibility(
@@ -1519,6 +1525,33 @@ private fun BookScreen(
                 }
             }
             }
+            }
+        }
+    }
+}
+
+/** Fixed full-page artwork with a readability scrim; never alters stored artwork. */
+@Composable
+private fun BookArtworkBackdrop(book: AudioBook, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val dark = colors.background == vhsDarkColors.background
+    Box(modifier.background(colors.background)) {
+        if (book.coverUrl.isNotBlank()) {
+            val context = LocalContext.current
+            val request = remember(context, book.coverUrl) {
+                coil.request.ImageRequest.Builder(context).data(book.coverUrl)
+                    .size(1080, 1920).crossfade(350).build()
+            }
+            AsyncImage(model = request, contentDescription = null,
+                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
+                modifier = Modifier.matchParentSize())
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+                0f to colors.background.copy(alpha = if (dark) .65f else .79f),
+                .22f to colors.background.copy(alpha = if (dark) .56f else .76f),
+                .50f to colors.background.copy(alpha = if (dark) .81f else .88f),
+                .82f to colors.background.copy(alpha = .96f),
+                1f to colors.background,
+            )))
         }
     }
 }
@@ -1587,7 +1620,9 @@ private fun PlayerPanel(
     }
 
     val canSeek = chapters.isNotEmpty() && controller.mediaItemCount > 0
-    Surface(tonalElevation = 6.dp, shadowElevation = 8.dp) {
+    Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = .96f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp, shadowElevation = 8.dp) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
                 chapters.getOrNull(chapterIndex)?.title ?: "Now playing",
