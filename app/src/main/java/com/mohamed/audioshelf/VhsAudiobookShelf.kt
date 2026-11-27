@@ -256,6 +256,9 @@ internal fun VhsAudiobookShelf(
                     val openness = vhsSmoothstep(1f - abs(relative))
                     val x = vhsShelfPosition(relative, spineWidth.value,
                         coverWidth.value, gap.value).dp
+                    // Only compose physical cases near the visible viewport.
+                    // Repeated virtual copies stay off-screen and never trigger image loads.
+                    if (abs(x.value) > maxWidth.value / 2f + coverWidth.value * 1.4f) continue
                     key(virtualIndex, book.sourceId, book.id) {
                         VhsPhysicalCase(
                             book = book, spineRevision = spineRevision,
