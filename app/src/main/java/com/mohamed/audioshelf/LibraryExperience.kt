@@ -133,6 +133,7 @@ fun AnimatedLibraryScreen(
     spineRevision: Int = 0,
     darkShelf: Boolean = true,
     onDarkShelfChange: (Boolean) -> Unit = {},
+    onBackdropCover: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -156,7 +157,7 @@ fun AnimatedLibraryScreen(
     }
     val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
     MaterialTheme(colorScheme = shelfColors) {
-        Box(Modifier.fillMaxSize().background(shelfColors.background)) {
+        Box(Modifier.fillMaxSize()) {
             // Static paper-fibre grain: not a downloaded or hardcoded book cover.
             androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
                 repeat(1200) { i ->
@@ -225,7 +226,11 @@ fun AnimatedLibraryScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 17.dp),
                     singleLine = true, placeholder = { Text("Search your audiobooks") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = shelfColors.surface.copy(alpha = .55f),
+                        unfocusedContainerColor = shelfColors.surface.copy(alpha = .45f),
+                    ),
                     textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
                 )
                 Spacer(Modifier.height(14.dp))
@@ -235,6 +240,7 @@ fun AnimatedLibraryScreen(
                     motion = animateVisuals,
                     spineRevision = spineRevision,
                     onOpen = onBook,
+                    onBackdropCover = onBackdropCover,
                 )
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween) {
