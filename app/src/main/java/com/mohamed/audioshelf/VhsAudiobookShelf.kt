@@ -185,7 +185,7 @@ internal fun VhsAudiobookShelf(
         var previous = position
         var travel = .30f
         androidx.compose.runtime.snapshotFlow { position }.collect { current ->
-            travel += abs(current - previous)
+            travel = shelfSoundTravel(travel, current - previous)
             previous = current
             if (travel >= .50f) {
                 travel %= .50f
@@ -287,7 +287,7 @@ internal fun VhsAudiobookShelf(
                                 // Finger travel makes the shuffle audible before release,
                                 // even when the shelf's selected book has not changed yet.
                                 if (visible.size > 1 && stepPx > 0f) {
-                                    dragSoundTravel += abs(dx)
+                                    dragSoundTravel = shelfSoundTravel(dragSoundTravel, dx)
                                     val interval = stepPx * .5f
                                     if (dragSoundTravel >= interval) {
                                         dragSoundTravel %= interval
