@@ -280,19 +280,22 @@ internal fun conceptProgress(progress: ListeningProgress): Float {
 /** A larger book-detail card opens when a library item is tapped. */
 @Composable
 fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
-    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = vhsPaperColors.surface,
-        shape = RoundedCornerShape(16.dp)) {
+    val colors = MaterialTheme.colorScheme
+    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = colors.surface.copy(alpha = .55f),
+        contentColor = colors.onSurface,
+        border = androidx.compose.foundation.BorderStroke(.7.dp, colors.outline.copy(alpha = .36f)),
+        shape = RoundedCornerShape(8.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             VhsInkRevealCover(book)
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("AUDIOBOOK", color = vhsPaperColors.onSurface.copy(alpha = .75f),
+                Text("AUDIOBOOK", color = colors.onSurface.copy(alpha = .75f),
                     style = MaterialTheme.typography.labelSmall)
-                Text(book.title, style = MaterialTheme.typography.titleLarge,
-                    color = vhsPaperColors.onSurface, fontWeight = FontWeight.Bold,
+                Text(book.title, style = MaterialTheme.typography.titleLarge.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
+                    color = colors.onSurface, fontWeight = FontWeight.Bold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(book.authors, style = MaterialTheme.typography.bodyMedium,
-                    color = vhsPaperColors.onSurface.copy(alpha = .87f),
+                    color = colors.onSurface.copy(alpha = .87f),
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (progress.chapterCount > 0) {
                     LinearProgressIndicator(
@@ -301,10 +304,10 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
                             .clip(RoundedCornerShape(4.dp)),
                     )
                     Text("${(conceptProgress(progress) * 100).toInt()}% listened",
-                        color = vhsPaperColors.onSurface, style = MaterialTheme.typography.labelMedium)
+                        color = colors.onSurface, style = MaterialTheme.typography.labelMedium)
                 } else if (book.language.isNotBlank()) {
                     Text(book.language, style = MaterialTheme.typography.labelMedium,
-                        color = vhsPaperColors.onSurface)
+                        color = colors.onSurface)
                 }
             }
         }
