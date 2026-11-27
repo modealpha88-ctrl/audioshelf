@@ -365,18 +365,21 @@ private fun AudioShelfApp(
         )
     }
     val onShelf = tab == HomeTab.Library && state.selectedBook == null
+    val shelfPrefs = remember(context) { context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE) }
+    var darkShelf by rememberSaveable { mutableStateOf(shelfPrefs.getBoolean("dark_shelf", true)) }
+    val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
     if (onShelf) {
-        DisposableEffect(window) {
+        DisposableEffect(window, darkShelf) {
             val bars = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             val originalIcons = bars.isAppearanceLightStatusBars
             val originalNavIcons = bars.isAppearanceLightNavigationBars
             val originalColor = window.statusBarColor
             val originalNavColor = window.navigationBarColor
-            bars.isAppearanceLightStatusBars = true
-            bars.isAppearanceLightNavigationBars = true
+            bars.isAppearanceLightStatusBars = !darkShelf
+            bars.isAppearanceLightNavigationBars = !darkShelf
             if (Build.VERSION.SDK_INT < 35) {
-                window.statusBarColor = android.graphics.Color.rgb(237, 235, 230)
-                window.navigationBarColor = android.graphics.Color.rgb(237, 235, 230)
+                window.statusBarColor = if (darkShelf) android.graphics.Color.rgb(21, 19, 19) else android.graphics.Color.rgb(237, 235, 230)
+                window.navigationBarColor = if (darkShelf) android.graphics.Color.rgb(21, 19, 19) else android.graphics.Color.rgb(237, 235, 230)
             }
             onDispose {
                 bars.isAppearanceLightStatusBars = originalIcons
@@ -388,12 +391,12 @@ private fun AudioShelfApp(
             }
         }
     }
-    val navInk = if (onShelf) Color(0xFF141414) else MaterialTheme.colorScheme.onSurfaceVariant
+    val navInk = if (onShelf) shelfColors.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
         unselectedIconColor = navInk.copy(alpha = .8f),
         unselectedTextColor = navInk.copy(alpha = .8f),
-        indicatorColor = if (onShelf) Color(0xFFE0E4F4) else MaterialTheme.colorScheme.secondaryContainer,
+        indicatorColor = if (onShelf) if (darkShelf) Color(0xFF30314B) else Color(0xFFE0E4F4) else MaterialTheme.colorScheme.secondaryContainer,
     )
     LaunchedEffect(autoResumeKey, state.selectedBook?.id,
         state.selectedBook?.sourceId, state.chapters, controller) {
@@ -408,7 +411,7 @@ private fun AudioShelfApp(
     }
 
     Scaffold(
-        containerColor = if (onShelf) Color(0xFFEDEBE6) else MaterialTheme.colorScheme.background,
+        containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
@@ -423,7 +426,7 @@ private fun AudioShelfApp(
                         }
                     })
                 NavigationBar(
-                    containerColor = if (onShelf) Color(0xFFEDEBE6) else MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     NavigationBarItem(
                         colors = navColors,
@@ -588,6 +591,11 @@ private fun AudioShelfApp(
                             },
                             onRefreshCovers = viewModel::refreshMissingCovers,
                             spineRevision = pageState.spineRevision,
+                            darkShelf = darkShelf,
+                            onDarkShelfChange = { enabled ->
+                                darkShelf = enabled
+                                shelfPrefs.edit().putBoolean("dark_shelf", enabled).apply()
+                            },
                         )
                         HomeTab.Sources -> SourcesScreen(
                             state = pageState,

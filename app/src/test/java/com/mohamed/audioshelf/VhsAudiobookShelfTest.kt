@@ -46,6 +46,20 @@ class VhsAudiobookShelfTest {
         assertEquals(1f, vhsSmoothstep(9f), .0001f)
     }
 
+    @Test fun albumFormatFollowsArtworkProportions() {
+        assertTrue(vhsIsAlbum(1f))
+        assertTrue(vhsIsAlbum(.95f))
+        assertTrue(!vhsIsAlbum(.67f))
+        assertTrue(!vhsIsAlbum(1.6f))
+    }
+
+    @Test fun vinylRetractsBeforeTheCoverTurnsEdgeOn() {
+        assertEquals(0f, vhsVinylReveal(0f), .0001f)
+        assertEquals(0f, vhsVinylReveal(.68f), .0001f)
+        assertEquals(1f, vhsVinylReveal(1f), .0001f)
+        assertTrue(vhsVinylReveal(.9f) > vhsVinylReveal(.8f))
+    }
+
     @Test fun shelfFiltersOperateOnAnyImportedTitleWithoutHardcoding() {
         val books = listOf(book("Dracula"), book("The Final Empire"),
             book("Moby Dick"), book("Sherlock Holmes"))
