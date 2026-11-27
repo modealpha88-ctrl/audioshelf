@@ -1,5 +1,6 @@
 package com.mohamed.audioshelf
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -24,7 +25,7 @@ import kotlin.math.roundToInt
 internal fun spineLetteringKey(text: String): String =
     text.lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
 
-private data class LetteringResult(val bitmap: Bitmap?)
+internal data class LetteringResult(val bitmap: Bitmap?, val fontMatch: CoverFontMatch? = null)
 // Charge positive entries by bitmap bytes and negative entries by a small fixed cost.
 private val letteringCache = object : LruCache<String, LetteringResult>(8 * 1024 * 1024) {
     override fun sizeOf(key: String, value: LetteringResult): Int =
@@ -33,13 +34,13 @@ private val letteringCache = object : LruCache<String, LetteringResult>(8 * 1024
 private val letteringLock = Mutex()
 
 internal suspend fun coverTitleLettering(
-    drawable: Drawable, coverKey: String, title: String,
-): Bitmap? = withContext(Dispatchers.Default) {
+    context: Context, drawable: Drawable, coverKey: String, title: String,
+): LetteringResult? = withContext(Dispatchers.Default) {
     val wanted = spineLetteringKey(title)
     if (wanted.length < 4 || coverKey.isBlank()) return@withContext null
     val key = "$coverKey:$wanted"
     letteringLock.withLock {
-        letteringCache.get(key)?.let { return@withLock it.bitmap }
+        letteringCache.get(key)?.let { return@withLock it }
         val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return@withLock null
         if (bitmap.width < 100 || bitmap.height < 100) return@withLock null
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -106,7 +107,9 @@ internal suspend fun coverTitleLettering(
                 result
             }
         }
-        letteringCache.put(key, LetteringResult(output))
-        output
+        val fontMatch = if (output == null) matchCoverFont(context, bitmap, recognized, title) else null
+        val result = LetteringResult(output, fontMatch)
+        letteringCache.put(key, result)
+        result
     }
 }
