@@ -8,6 +8,8 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import com.google.mlkit.vision.text.Text
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.roundToInt
@@ -23,7 +25,8 @@ private data class FontCandidate(val name: String, val face: Typeface)
 internal data class GlyphMask(val cells: FloatArray, val aspect: Float, val density: Float)
 private const val MASK_W = 64
 private const val MASK_H = 24
-private val fontFamilies = listOf("cinzel", "ebgaramond", "oswald", "bebasneue", "anton", "caveat")
+private val fontFamilies = listOf("cinzel", "ebgaramond", "oswald", "bebasneue", "anton", "caveat",
+    "cinzeldecorative", "medievalsharp", "almendra", "almendradisplay")
 private var loadedFonts: List<FontCandidate>? = null
 
 @Synchronized
@@ -31,7 +34,7 @@ private fun candidates(context: Context): List<FontCandidate> {
     loadedFonts?.let { return it }
     return fontFamilies.flatMap { family ->
         val file = "spine_fonts/$family.ttf"
-        val weights = if (family in listOf("bebasneue", "anton")) listOf(400) else listOf(400, 700)
+        val weights = if (family in listOf("bebasneue", "anton", "cinzeldecorative", "medievalsharp", "almendra", "almendradisplay")) listOf(400) else listOf(400, 700)
         weights.mapNotNull { weight ->
             runCatching {
                 val builder = Typeface.Builder(context.assets, file)
@@ -44,7 +47,7 @@ private fun candidates(context: Context): List<FontCandidate> {
 
 // Use the same letters for both the reference and each candidate. This avoids
 // mistaking long words for condensed fonts, or short words for wide fonts.
-internal fun matchCoverFont(
+internal suspend fun matchCoverFont(
     context: Context, bitmap: Bitmap, recognized: Text, title: String,
 ): CoverFontMatch? {
     val titleWords = title.split(Regex("[^\\p{L}\\p{N}]+"))
@@ -60,19 +63,31 @@ internal fun matchCoverFont(
             coverMask(bitmap, bounds)?.let { element.text to it }
         }.take(3)
     if (samples.isEmpty()) return null
-    val scored = candidates(context).mapNotNull { candidate ->
+    fun score(fonts: List<FontCandidate>) = fonts.mapNotNull { candidate ->
         val distances = samples.mapNotNull { (word, target) ->
             renderMask(word, candidate.face)?.let { fontMaskDistance(target, it) }
         }
         if (distances.size != samples.size) null
         else candidate to distances.average().toFloat()
     }.sortedBy { it.second }
-    val best = scored.firstOrNull() ?: return null
+    val downloaded = withContext(Dispatchers.IO) { downloadedSpineFonts(context) }
+    val initial = candidates(context) + downloaded.map { FontCandidate(it.key, it.value) }
+    var best = score(initial).firstOrNull()
+    if (best == null || best.second > .45f) {
+        val expanded = withContext(Dispatchers.IO) {
+            expandSpineFonts(context)
+            downloadedSpineFonts(context)
+        }
+        val newFaces = expanded.filterKeys { it !in downloaded }.map { FontCandidate(it.key, it.value) }
+        val alternative = score(newFaces).firstOrNull()
+        if (alternative != null && (best == null || alternative.second < best.second)) best = alternative
+    }
+    val chosen = best ?: return null
     // A conservative threshold; cluttered illustrations must not force a match.
-    if (best.second > .70f) return null
+    if (chosen.second > .60f) return null
     val letters = samples.joinToString("") { it.first }.filter { it.isLetter() }
     val uppercase = letters.isNotEmpty() && letters.count { it.isUpperCase() } >= letters.length * .85f
-    return CoverFontMatch(best.first.name, best.first.face, uppercase, best.second)
+    return CoverFontMatch(chosen.first.name, chosen.first.face, uppercase, chosen.second)
 }
 
 private fun luminance(pixel: Int): Int =
@@ -161,6 +176,12 @@ internal fun fontMaskDistance(a: GlyphMask, b: GlyphMask): Float {
     val width = abs(ln(a.aspect / b.aspect)).coerceAtMost(1f)
     val weight = abs(a.density - b.density)
     return .70f * shape + .20f * width + .10f * weight
+}
+
+internal fun restoreCoverFont(context: Context, name: String, upper: Boolean, score: Float): CoverFontMatch? {
+    val face = candidates(context).firstOrNull { it.name == name }?.face
+        ?: downloadedSpineFonts(context)[name] ?: return null
+    return CoverFontMatch(name, face, upper, score)
 }
 
 /** Draw the full title in the chosen real font, not a stretched crop. */
