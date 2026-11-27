@@ -22,6 +22,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.shrinkOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -370,11 +372,11 @@ private fun AudioShelfApp(
             val originalNavIcons = bars.isAppearanceLightNavigationBars
             val originalColor = window.statusBarColor
             val originalNavColor = window.navigationBarColor
-            bars.isAppearanceLightStatusBars = false
-            bars.isAppearanceLightNavigationBars = false
+            bars.isAppearanceLightStatusBars = true
+            bars.isAppearanceLightNavigationBars = true
             if (Build.VERSION.SDK_INT < 35) {
-                window.statusBarColor = android.graphics.Color.rgb(12, 14, 20)
-                window.navigationBarColor = android.graphics.Color.rgb(13, 14, 19)
+                window.statusBarColor = android.graphics.Color.rgb(237, 235, 230)
+                window.navigationBarColor = android.graphics.Color.rgb(237, 235, 230)
             }
             onDispose {
                 bars.isAppearanceLightStatusBars = originalIcons
@@ -386,12 +388,12 @@ private fun AudioShelfApp(
             }
         }
     }
-    val navInk = if (onShelf) Color(0xFFE9DDCE) else MaterialTheme.colorScheme.onSurfaceVariant
+    val navInk = if (onShelf) Color(0xFF141414) else MaterialTheme.colorScheme.onSurfaceVariant
     val navColors = NavigationBarItemDefaults.colors(
         selectedIconColor = navInk, selectedTextColor = navInk,
         unselectedIconColor = navInk.copy(alpha = .8f),
         unselectedTextColor = navInk.copy(alpha = .8f),
-        indicatorColor = if (onShelf) Color(0xFF44372F) else MaterialTheme.colorScheme.secondaryContainer,
+        indicatorColor = if (onShelf) Color(0xFFE0E4F4) else MaterialTheme.colorScheme.secondaryContainer,
     )
     LaunchedEffect(autoResumeKey, state.selectedBook?.id,
         state.selectedBook?.sourceId, state.chapters, controller) {
@@ -406,7 +408,7 @@ private fun AudioShelfApp(
     }
 
     Scaffold(
-        containerColor = if (onShelf) Color(0xFF0D0E13) else MaterialTheme.colorScheme.background,
+        containerColor = if (onShelf) Color(0xFFEDEBE6) else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state.selectedBook == null) {
                 Column {
@@ -421,7 +423,7 @@ private fun AudioShelfApp(
                         }
                     })
                 NavigationBar(
-                    containerColor = if (onShelf) Color(0xFF111117) else MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = if (onShelf) Color(0xFFEDEBE6) else MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     NavigationBarItem(
                         colors = navColors,
@@ -468,7 +470,8 @@ private fun AudioShelfApp(
                             androidx.compose.animation.ExitTransition.None
                     }
                     if (libraryNavigation) {
-                        return@AnimatedContent fadeIn(tween(220)) togetherWith fadeOut(tween(170))
+                        return@AnimatedContent expandIn(expandFrom = Alignment.Center, animationSpec = tween(800)) togetherWith
+                            shrinkOut(shrinkTowards = Alignment.Center, animationSpec = tween(650))
                     }
                     val direction = when {
                         targetState.second.selectedBook != null -> 1
@@ -1297,7 +1300,7 @@ private fun BookScreen(
     }
     BackHandler(enabled = storyOpen || showPlayer, onBack = navigateBack)
     val chapterListState = rememberLazyListState()
-    val detailColors = walnutColors
+    val detailColors = vhsPaperColors
     AnimatedContent(
         targetState = storyOpen && controller != null,
         transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(180)) },

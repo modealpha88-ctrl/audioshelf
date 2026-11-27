@@ -14,6 +14,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.mohamed.audioshelf.model.AudioBook
 import com.mohamed.audioshelf.model.ListeningProgress
@@ -102,6 +104,16 @@ internal fun walnutSharedSleeve(book: AudioBook, enabled: Boolean): Modifier {
     }
 }
 
+/** The original filmography brief's warm paper, near-black ink and cobalt accent. */
+internal val vhsPaperColors = androidx.compose.material3.lightColorScheme(
+    primary = Color(0xFF1F3FB0), secondary = Color(0xFF6D6A63),
+    background = Color(0xFFEDEBE6), surface = Color(0xFFF4F2ED),
+    surfaceVariant = Color(0xFFE4E0D8),
+    onBackground = Color(0xFF141414), onSurface = Color(0xFF141414),
+    onSurfaceVariant = Color(0xFF57534D),
+    outline = Color(0xFF6D6A63),
+)
+
 @Composable
 fun AnimatedLibraryScreen(
     books: List<AudioBook>,
@@ -131,84 +143,86 @@ fun AnimatedLibraryScreen(
         val progress = progressFor(book)
         book.externalUrl.isBlank() && (progress.chapterIndex > 0 || progress.positionMs > 0L)
     }
-    MaterialTheme(colorScheme = walnutColors) {
-        androidx.compose.foundation.layout.BoxWithConstraints(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-                Color(0xFF0A0B10), Color(0xFF1B1A20), Color(0xFF0C0D13))))) {
-            val columns = if (maxWidth < 320.dp) 2 else 3
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
-                item {
-                    Column(Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Library", Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold, color = walnutColors.onSurface)
-                            Box {
-                                androidx.compose.material3.IconButton(onClick = { menuOpen = true }) {
-                                    Icon(Icons.Default.MoreVert, "Library controls", tint = walnutColors.onSurface)
-                                }
-                                androidx.compose.material3.DropdownMenu(menuOpen, { menuOpen = false }) {
-                                    androidx.compose.material3.DropdownMenuItem(
-                                        text = { Text(if (sortByTitle) "Sort by saved order" else "Sort by title") },
-                                        onClick = { sortByTitle = !sortByTitle; menuOpen = false })
-                                    androidx.compose.material3.DropdownMenuItem(
-                                        text = { Text("Motion") }, trailingIcon = { Switch(motion, null) },
-                                        onClick = {
-                                            motion = !motion
-                                            prefs.edit().putBoolean("motion_enabled", motion).apply()
-                                            menuOpen = false
-                                        })
-                                    if (books.any { it.coverUrl.isBlank() }) {
-                                        androidx.compose.material3.DropdownMenuItem(text = { Text("Find covers") },
-                                            onClick = { menuOpen = false; onRefreshCovers() })
-                                    }
-                                    if (resumeBook != null) {
-                                        androidx.compose.material3.DropdownMenuItem(
-                                            text = { Text("Resume " + resumeBook.title, maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis) },
-                                            onClick = { menuOpen = false; onResumeBook(resumeBook) })
-                                    }
-                                }
-                            }
+    MaterialTheme(colorScheme = vhsPaperColors) {
+        Box(Modifier.fillMaxSize().background(vhsPaperColors.background)) {
+            // Static paper-fibre grain: not a downloaded or hardcoded book cover.
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                repeat(340) { i ->
+                    val x = ((i * 757 + 17) % 997) / 997f * size.width
+                    val y = ((i * 499 + 79) % 991) / 991f * size.height
+                    drawCircle(
+                        Color(0xFF685B4C).copy(alpha = .08f),
+                        radius = if (i % 3 == 0) .9f else .45f,
+                        center = androidx.compose.ui.geometry.Offset(x, y),
+                    )
+                }
+            }
+            Column(Modifier.fillMaxSize()
+                .verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 17.dp, end = 8.dp, top = 15.dp,
+                        bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("AUDIO / SHELF", color = Color(0xFF1F3FB0),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 2.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f))
+                    Text("LIBRARY", color = Color(0xFF141414),
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 1.6.sp, fontWeight = FontWeight.SemiBold)
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                        androidx.compose.material3.IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Default.MoreVert, "Library settings",
+                                tint = Color(0xFF141414))
                         }
-                        OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
-                            singleLine = true, placeholder = { Text("Search your books") },
-                            leadingIcon = { Icon(Icons.Default.Search, null) },
-                            shape = RoundedCornerShape(14.dp),
-                        )
-                        Spacer(Modifier.height(15.dp))
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("THE COLLECTION · ${books.size} TITLES",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFD0AF83))
-                            Spacer(Modifier.width(14.dp))
-                            Box(Modifier.weight(1f).height(1.dp)
-                                .background(Color(0xFF56483F)))
+                        androidx.compose.material3.DropdownMenu(menuOpen, { menuOpen = false }) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(if (sortByTitle) "Saved order" else "Sort by title") },
+                                onClick = { sortByTitle = !sortByTitle; menuOpen = false })
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Motion") },
+                                trailingIcon = { Switch(motion, null) },
+                                onClick = {
+                                    motion = !motion
+                                    prefs.edit().putBoolean("motion_enabled", motion).apply()
+                                    menuOpen = false
+                                })
+                            if (books.any { it.coverUrl.isBlank() }) {
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text("Find missing covers") },
+                                    onClick = { menuOpen = false; onRefreshCovers() })
+                            }
+                            if (resumeBook != null) {
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text("Resume " + resumeBook.title, maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis) },
+                                    onClick = { menuOpen = false; onResumeBook(resumeBook) })
+                            }
                         }
                     }
                 }
-                if (filtered.isEmpty()) {
-                    item { Text(if (books.isEmpty()) "Save a book from Browse to see it here"
-                        else "No matching books", Modifier.padding(16.dp), color = walnutColors.onSurface) }
-                } else if (search.isNotBlank()) {
-                    items(filtered, key = { "${it.sourceId}:${it.id}" }) { book ->
-                        Row(Modifier.fillMaxWidth().clickable { onBook(book) }.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            LibraryCover(book, Modifier.size(54.dp))
-                            Column(Modifier.padding(start = 12.dp)) {
-                                Text(book.title, color = walnutColors.onSurface)
-                                Text(book.authors, color = walnutColors.secondary)
-                            }
-                        }
-                    }
-                } else {
-                    items(woodenShelfRowCount(filtered.size, columns)) { index ->
-                        val start = index * columns
-                        BookstoreShelfRow(
-                            filtered.subList(start, minOf(start + columns, filtered.size)),
-                            index, progressFor, animateVisuals, onBook, spineRevision,
-                        )
-                    }
+                OutlinedTextField(
+                    value = search, onValueChange = { search = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 17.dp),
+                    singleLine = true, placeholder = { Text("Search your audiobooks") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    shape = RoundedCornerShape(2.dp),
+                )
+                Spacer(Modifier.height(14.dp))
+                VhsAudiobookShelf(
+                    books = filtered,
+                    progressFor = progressFor,
+                    motion = animateVisuals,
+                    spineRevision = spineRevision,
+                    onOpen = onBook,
+                )
+                Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("© AUDIOSHELF", color = Color(0xFF6D6A63),
+                        fontSize = 9.sp, letterSpacing = .9.sp)
+                    Text("SAVED / ${books.size}", color = Color(0xFF6D6A63),
+                        fontSize = 9.sp, letterSpacing = .9.sp)
                 }
             }
         }
@@ -247,7 +261,7 @@ internal fun conceptProgress(progress: ListeningProgress): Float {
 /** A larger book-detail card opens when a library item is tapped. */
 @Composable
 fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
-    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = walnutColors.surface,
+    Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = vhsPaperColors.surface,
         shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             // Concept C uses a physical book jacket in details too: no vinyl behind square art.
@@ -255,17 +269,17 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
                 .shadow(5.dp, RoundedCornerShape(3.dp))
                 .background(Color(0xFFE6D5B7))
                 .padding(start = 5.dp, end = 3.dp, top = 3.dp, bottom = 3.dp)) {
-                LibraryCover(book, Modifier.fillMaxSize())
+                VhsInkRevealCover(book, Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("AUDIOBOOK", color = walnutColors.onSurface.copy(alpha = .75f),
+                Text("AUDIOBOOK", color = vhsPaperColors.onSurface.copy(alpha = .75f),
                     style = MaterialTheme.typography.labelSmall)
                 Text(book.title, style = MaterialTheme.typography.titleLarge,
-                    color = walnutColors.onSurface, fontWeight = FontWeight.Bold,
+                    color = vhsPaperColors.onSurface, fontWeight = FontWeight.Bold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(book.authors, style = MaterialTheme.typography.bodyMedium,
-                    color = walnutColors.onSurface.copy(alpha = .87f),
+                    color = vhsPaperColors.onSurface.copy(alpha = .87f),
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (progress.chapterCount > 0) {
                     LinearProgressIndicator(
@@ -274,10 +288,10 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
                             .clip(RoundedCornerShape(4.dp)),
                     )
                     Text("${(conceptProgress(progress) * 100).toInt()}% listened",
-                        color = walnutColors.onSurface, style = MaterialTheme.typography.labelMedium)
+                        color = vhsPaperColors.onSurface, style = MaterialTheme.typography.labelMedium)
                 } else if (book.language.isNotBlank()) {
                     Text(book.language, style = MaterialTheme.typography.labelMedium,
-                        color = walnutColors.onSurface)
+                        color = vhsPaperColors.onSurface)
                 }
             }
         }
