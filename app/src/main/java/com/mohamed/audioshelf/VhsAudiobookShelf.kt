@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -250,6 +251,8 @@ internal fun VhsAudiobookShelf(
     val shelfContext = LocalContext.current.applicationContext
     val shelfScope = rememberCoroutineScope()
     val stableSpines = remember(shelfContext, shelfScope) { StableShelfSpines(shelfContext, shelfScope) }
+    val shelfSettled = !dragging && abs(position - target.toFloat()) < .01f
+    SideEffect { stableSpines.setSettled(shelfSettled) }
 
     Column(
         Modifier.fillMaxWidth().padding(top = 6.dp),
