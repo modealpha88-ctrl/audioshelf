@@ -3,13 +3,11 @@ package com.mohamed.audioshelf
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -17,7 +15,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -65,7 +65,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -173,11 +172,18 @@ internal fun VhsAudiobookShelf(
             target = next
         }
     }
-    val position by animateFloatAsState(
-        target.toFloat(),
-        animationSpec = if (motion) tween(1050, easing = FastOutSlowInEasing) else snap(),
-        label = "Physical audiobook shelf",
-    )
+    var position by remember(filter, visible.size) { mutableFloatStateOf(target.toFloat()) }
+    var dragging by remember(filter, visible.size) { mutableStateOf(false) }
+    LaunchedEffect(filter, visible.size, target, dragging, motion) {
+        if (dragging) return@LaunchedEffect
+        if (!motion) {
+            position = target.toFloat()
+        } else if (position != target.toFloat()) {
+            animate(position, target.toFloat(), animationSpec = spring(
+                dampingRatio = 1f, stiffness = 150f, visibilityThreshold = .001f,
+            )) { value, _ -> if (!dragging) position = value }
+        }
+    }
     // The audio is one continuously faded stream driven by movement speed.
     LaunchedEffect(filter, visible.size, flipSounds, motion) {
         if (!flipSounds || visible.size < 2) return@LaunchedEffect
@@ -192,7 +198,7 @@ internal fun VhsAudiobookShelf(
         }
     }
     val selected = visible.getOrNull(vhsWrap(position.roundToInt(), visible.size))
-    val backdropUrl = visible.getOrNull(vhsWrap(target, visible.size))?.coverUrl.orEmpty()
+    val backdropUrl = selected?.coverUrl.orEmpty()
     LaunchedEffect(backdropUrl) { onBackdropCover(backdropUrl) }
     val density = LocalDensity.current
 
@@ -253,53 +259,40 @@ internal fun VhsAudiobookShelf(
                 val spine = spineAt(index)
                 val face = faceWidth(ratio) + if (vhsIsAlbum(ratio)) 1.dp else 4.dp
                 val reveal = if (vhsIsAlbum(ratio)) faceWidth(ratio) * .32f * vhsVinylReveal(open) else 0.dp
-                return spine * (1f - open) + face * open + reveal
+                return spine * kotlin.math.cos(open * PI.toFloat() / 2f) +
+                    (face + reveal) * sin(open * PI.toFloat() / 2f)
             }
-            fun centre(index: Int): Dp {
-                var distance = 0.dp
-                if (index > mid) for (i in mid until index) {
-                    distance += (slotAt(i) + slotAt(i + 1)) / 2f + gap
-                }
-                if (index < mid) for (i in index until mid) {
-                    distance -= (slotAt(i) + slotAt(i + 1)) / 2f + gap
-                }
-                return distance - ((slotAt(mid) + slotAt(mid + 1)) / 2f + gap) * (position - mid)
+            // Accumulate neighboring slot widths once per frame.
+            val radius = 32
+            val slots = Array(radius * 2 + 1) { slotAt(mid - radius + it) }
+            val centres = Array(slots.size) { 0.dp }
+            centres[radius] = -((slots[radius] + slots[radius + 1]) / 2f + gap) * (position - mid)
+            for (i in radius + 1 until slots.size) {
+                centres[i] = centres[i - 1] + (slots[i - 1] + slots[i]) / 2f + gap
+            }
+            for (i in radius - 1 downTo 0) {
+                centres[i] = centres[i + 1] - (slots[i + 1] + slots[i]) / 2f - gap
             }
             val stageWidth = maxWidth
-            val stepPx = with(density) { (hardbackSpine + gap).toPx() }
-            var draggedPx by remember { mutableFloatStateOf(0f) }
-            var dragSoundTime by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-
+            val stepPx = with(density) { (stageWidth * .34f).toPx().coerceAtLeast(1f) }
+            var dragPosition by remember { mutableFloatStateOf(position) }
+            val dragState = rememberDraggableState { dx ->
+                dragPosition -= dx / stepPx
+                position = if (motion) dragPosition else dragPosition.roundToInt().toFloat()
+            }
             Box(
                 Modifier.fillMaxWidth().height(bookHeight + 72.dp)
                     .clip(RoundedCornerShape(0.dp))
-                    .pointerInput(visible, stepPx, flipSounds) {
-                        detectHorizontalDragGestures(
-                            onDragStart = {
-                                draggedPx = 0f
-                                dragSoundTime = android.os.SystemClock.elapsedRealtime()
-                            },
-                            onHorizontalDrag = { change, dx ->
-                                change.consume()
-                                draggedPx += dx
-                                if (visible.size > 1 && stepPx > 0f) {
-                                    val now = android.os.SystemClock.elapsedRealtime()
-                                    val seconds = (now - dragSoundTime).coerceIn(12L, 100L) / 1000f
-                                    latestPlayFlip(dx / stepPx / seconds)
-                                    dragSoundTime = now
-                                }
-                            },
-                            onDragEnd = {
-                                val steps = (draggedPx / stepPx).roundToInt()
-                                val delta = if (steps == 0 && abs(draggedPx) > stepPx * .22f)
-                                    if (draggedPx > 0) 1 else -1 else steps
-                                moveTo(target - delta.coerceIn(-3, 3))
-                                draggedPx = 0f
-                                dragSoundTime = 0L
-                            },
-                            onDragCancel = { draggedPx = 0f; dragSoundTime = 0L },
-                        )
-                    }
+                    .draggable(
+                        state = dragState, orientation = Orientation.Horizontal,
+                        enabled = visible.size > 1,
+                        onDragStarted = { dragging = true; dragPosition = position },
+                        onDragStopped = { velocity ->
+                            val carry = if (motion) (-velocity / stepPx * .09f).coerceIn(-.65f, .65f) else 0f
+                            moveTo((dragPosition + carry).roundToInt())
+                            dragging = false
+                        },
+                    )
                     .onKeyEvent { event ->
                         if (event.type != KeyEventType.KeyDown) false else when (event.key) {
                             Key.DirectionLeft -> { moveTo(target - 1); true }
@@ -322,11 +315,11 @@ internal fun VhsAudiobookShelf(
                 if (dark) Box(Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp)
                     .fillMaxWidth().height(8.dp).background(Brush.verticalGradient(
                         listOf(Color(0xFF5A4230), Color(0xFF2B211C), Color(0xFF100D0C)))))
-                for (virtualIndex in (mid - 32)..(mid + 32)) {
+                for (virtualIndex in (mid - radius)..(mid + radius)) {
                     val book = visible[vhsWrap(virtualIndex, visible.size)]
                     val relative = virtualIndex - position
                     val openness = vhsSmoothstep(1f - abs(relative))
-                    val x = centre(virtualIndex)
+                    val x = centres[virtualIndex - mid + radius]
                     // Only compose physical cases near the visible viewport.
                     // Repeated virtual copies stay off-screen and never trigger image loads.
                     if (abs(x.value) > stageWidth.value / 2f + maxCoverWidth.value) continue
@@ -371,8 +364,7 @@ internal fun VhsAudiobookShelf(
                             if (!motion) {
                                 EnterTransition.None togetherWith ExitTransition.None
                             } else {
-                                slideInVertically(tween(850)) { it } togetherWith
-                                    slideOutVertically(tween(850)) { -it }
+                                fadeIn(tween(130)) togetherWith fadeOut(tween(90))
                             }
                         },
                         label = "Masked audiobook caption",
@@ -478,6 +470,9 @@ private fun VhsPhysicalCase(
     val tilt = if (album) 0f else -3.5f * openness
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
+    val faceSpan = (coverWidth + edge + reveal) * sin(openness * PI.toFloat() / 2f)
+    val spineSpan = spineWidth * kotlin.math.cos(openness * PI.toFloat() / 2f)
+
     Box(
         modifier.width(maxOf(spineWidth, coverWidth + edge + reveal)).height(height)
             .graphicsLayer {
@@ -491,8 +486,9 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(spineWidth).height(height)
                     .graphicsLayer {
+                        translationX = -faceSpan.toPx() / 2f
                         rotationY = spineAngle
-                        cameraDistance = 34f * density
+                        cameraDistance = coverWidth.toPx() * 10f
                         transformOrigin = TransformOrigin(.5f, .5f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
@@ -617,8 +613,9 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(coverWidth + edge + reveal).height(height)
                     .graphicsLayer {
+                        translationX = spineSpan.toPx() / 2f
                         rotationY = coverAngle
-                        cameraDistance = 34f * density
+                        cameraDistance = coverWidth.toPx() * 10f
                     }
                     .clickable(enabled = openness > .55f, role = Role.Button,
                         onClickLabel = "Open " + book.title, onClick = onOpen)
