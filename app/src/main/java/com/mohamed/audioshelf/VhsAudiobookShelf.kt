@@ -3,7 +3,6 @@ package com.mohamed.audioshelf
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -162,7 +161,7 @@ internal fun VhsAudiobookShelf(
     val position by animateFloatAsState(
         target.toFloat(),
         animationSpec = if (motion) spring(
-            dampingRatio = .84f, stiffness = Spring.StiffnessLow,
+            dampingRatio = .96f, stiffness = 85f,
         ) else snap(),
         label = "Physical audiobook shelf",
     )
@@ -235,7 +234,7 @@ internal fun VhsAudiobookShelf(
                                 val steps = (draggedPx / stepPx).roundToInt()
                                 val delta = if (steps == 0 && abs(draggedPx) > stepPx * .22f)
                                     if (draggedPx > 0) 1 else -1 else steps
-                                target -= delta.coerceIn(-6, 6)
+                                target -= delta.coerceIn(-3, 3)
                                 draggedPx = 0f
                             },
                             onDragCancel = { draggedPx = 0f },
@@ -306,8 +305,8 @@ internal fun VhsAudiobookShelf(
                             if (!motion) {
                                 EnterTransition.None togetherWith ExitTransition.None
                             } else {
-                                slideInVertically(tween(650)) { it } togetherWith
-                                    slideOutVertically(tween(650)) { -it }
+                                slideInVertically(tween(850)) { it } togetherWith
+                                    slideOutVertically(tween(850)) { -it }
                             }
                         },
                         label = "Masked audiobook caption",
@@ -459,7 +458,7 @@ private fun VhsPhysicalCase(
                             Image(
                                 painter = coverPainter,
                                 contentDescription = null,
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier.align(Alignment.TopCenter)
                                     .padding(top = 6.dp, start = 4.dp, end = 4.dp)
                                     .fillMaxWidth().height(artHeight)
