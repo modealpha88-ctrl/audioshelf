@@ -2,6 +2,7 @@ package com.mohamed.audioshelf.data
 
 import com.mohamed.audioshelf.model.AudioBook
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,7 +24,7 @@ class BookCoverLookup {
     suspend fun find(book: AudioBook): String? {
         if (book.coverUrl.isNotBlank() || book.title.isBlank()) return null
         return requestMutex.withLock {
-            delay(750) // Limit requests to this public community API.
+            delay(1100) // Limit requests to this public community API.
             withContext(Dispatchers.IO) {
                 runCatching { lookup(book) }.getOrNull()
             }
@@ -35,73 +36,112 @@ class BookCoverLookup {
      * Show real Open Library jackets for user selection. A collection title may suggest
      * its individual volumes, but those are NEVER applied automatically to the set.
      */
-    suspend fun suggestions(book: AudioBook): List<CoverSuggestion> {
-        if (book.title.isBlank()) return emptyList()
+    suspend fun suggestions(book: AudioBook): List<CoverSuggestion> =
+        searchSuggestions(book).covers
+
+    suspend fun searchSuggestions(book: AudioBook, searchTitle: String = book.title,
+        searchAuthor: String = book.authors): CoverSearchResult {
+        if (searchTitle.isBlank()) return CoverSearchResult(emptyList(), false)
         return requestMutex.withLock {
-            delay(750)
+            delay(1100)
             withContext(Dispatchers.IO) {
-                runCatching { lookupSuggestions(book) }.getOrDefault(emptyList())
+                lookupSuggestions(book.copy(title = searchTitle, authors = searchAuthor))
             }
         }
     }
 
-    private fun lookupSuggestions(book: AudioBook): List<CoverSuggestion> {
+    private fun lookupSuggestions(book: AudioBook): CoverSearchResult {
         val variants = coverSuggestionSearchTitles(book.title)
         val found = linkedMapOf<String, Pair<Int, CoverSuggestion>>()
         val author = canonicalCoverText(book.authors)
         val usefulAuthor = author.isNotBlank() && author !in setOf(
-            "local audiobook", "local torrent audiobook", "unknown", "unknown author",
-            "various", "anonymous",
-        )
-        for ((qIndex, query) in variants.withIndex()) {
-            if (qIndex > 0) Thread.sleep(750)
+            "local audiobook", "local torrent audiobook", "unknown", "unknown author", "various", "anonymous")
+        var failed = false
+        var requested = false
+        val works = linkedMapOf<String, Pair<Int, CoverSuggestion>>()
+        fun add(id: Long, title: String, authors: String, year: Int?, rank: Int) {
+            if (id <= 0) return
+            val url = "https://covers.openlibrary.org/b/id/$id-L.jpg"
+            if (rank > (found[url]?.first ?: -1))
+                found[url] = rank to CoverSuggestion(title, authors, url, year)
+        }
+        fun request(address: String): JSONObject? {
+            if (requested) Thread.sleep(1100)
+            requested = true
+            return try { readCoverJson(address) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { failed = true; null }
+        }
+        for ((index, query) in variants.withIndex()) {
+            if (found.size >= 12) break
             val encoded = URLEncoder.encode(query.take(150), "UTF-8")
-            val address = "https://openlibrary.org/search.json?title=$encoded&fields=title,author_name,cover_i,first_publish_year&limit=20"
-            val connection = URL(address).openConnection() as HttpURLConnection
-            try {
-                connection.connectTimeout = 6500
-                connection.readTimeout = 6500
-                connection.setRequestProperty("Accept", "application/json")
-                connection.setRequestProperty("User-Agent",
-                    "AudioShelf/0.5 (https://github.com/modealpha88-ctrl/audioshelf)")
-                if (connection.responseCode !in 200..299) continue
-                val docs = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-                    .optJSONArray("docs") ?: continue
-                for (i in 0 until minOf(docs.length(), 20)) {
-                    val doc = docs.optJSONObject(i) ?: continue
-                    val id = doc.optLong("cover_i", 0L)
-                    if (id <= 0L) continue
-                    val title = doc.optString("title").trim()
-                    val authorsJson = doc.optJSONArray("author_name")
-                    val candidates = if (authorsJson == null) emptyList() else
-                        (0 until authorsJson.length()).map { authorsJson.optString(it) }
-                    val score = scoreCoverCandidate(book.title, book.authors, title, candidates)
-                    // A deliberately broad collection search is allowed only in the picker.
-                    // Keep the published title visible so users can identify the right volume.
-                    val prefix = canonicalCoverText(query)
-                    val titleText = canonicalCoverText(title)
-                    val seriesRelated = prefix.length >= 6 &&
-                        (titleText == prefix || titleText.startsWith("$prefix "))
-                    if (score == 0 && !seriesRelated) continue
-                    if (usefulAuthor && score == 0) {
-                        val words = author.split(' ').filter { it.length >= 3 }
-                        if (candidates.none { candidate ->
-                            val normalized = canonicalCoverText(candidate)
-                            normalized == author ||
-                                (words.isNotEmpty() && words.last() in normalized.split(' '))
-                        }) continue
-                    }
-                    val url = "https://covers.openlibrary.org/b/id/$id-L.jpg"
-                    val year = doc.optInt("first_publish_year", 0).takeIf { it in 1400..2100 }
-                    val suggestion = CoverSuggestion(title, candidates.joinToString(", "), url, year)
-                    val rank = score + if (seriesRelated) 20 else 0
-                    if (rank > (found[url]?.first ?: -1)) found[url] = rank to suggestion
+            val authorParam = if (usefulAuthor && index == 0)
+                "&author=" + URLEncoder.encode(book.authors.take(100), "UTF-8") else ""
+            val base = "https://openlibrary.org/search.json?title=$encoded"
+            val fields = "&fields=key,title,author_name,cover_i,first_publish_year&limit=30"
+            val initial = request(base + authorParam + fields)
+            val docs = initial?.optJSONArray("docs")
+                ?: (if (authorParam.isNotEmpty()) request(base + fields)?.optJSONArray("docs") else null)
+                ?: continue
+            for (i in 0 until minOf(docs.length(), 30)) {
+                val doc = docs.optJSONObject(i) ?: continue
+                val title = doc.optString("title").trim()
+                val candidates = doc.optJSONArray("author_name")?.let { names ->
+                    (0 until names.length()).map { names.optString(it) }
+                } ?: emptyList()
+                val score = scoreCoverCandidate(book.title, book.authors, title, candidates)
+                val prefix = canonicalCoverText(query)
+                val actual = canonicalCoverText(title)
+                val related = prefix.length >= 6 &&
+                    (actual == prefix || actual.startsWith("$prefix ") || actual.endsWith(" $prefix"))
+                val authorMatches = !usefulAuthor || candidates.any {
+                    canonicalCoverText(it) == author ||
+                        author.split(' ').lastOrNull()?.let { last -> last.length >= 3 &&
+                            last in canonicalCoverText(it).split(' ') } == true
                 }
-            } finally {
-                connection.disconnect()
+                if (score == 0 && (!related || !authorMatches)) continue
+                val rank = score + if (related) 20 else 0
+                val year = doc.optInt("first_publish_year", 0).takeIf { it in 1400..2100 }
+                val names = candidates.joinToString(", ")
+                add(doc.optLong("cover_i", 0), title, names, year, rank)
+                val key = doc.optString("key")
+                if (key.matches(Regex("/works/OL[0-9]+W"))) {
+                    works[key] = rank to CoverSuggestion(title, names, "", year)
+                }
             }
         }
-        return found.values.sortedByDescending { it.first }.map { it.second }.take(12)
+        // Search results give one representative cover per work. Fetch a bounded
+        // number of matching editions for actual cover choices, including alternate jackets.
+        for ((key, pair) in works.entries.sortedByDescending { it.value.first }.take(2)) {
+            if (found.size >= 12) break
+            val (rank, work) = pair
+            val editions = request("https://openlibrary.org$key/editions.json?limit=30")
+                ?.optJSONArray("entries") ?: continue
+            for (i in 0 until editions.length()) {
+                val edition = editions.optJSONObject(i) ?: continue
+                val title = edition.optString("title").ifBlank { work.title }
+                val ids = edition.optJSONArray("covers") ?: continue
+                for (j in 0 until ids.length()) {
+                    add(ids.optLong(j, 0), title, work.authors, work.firstPublished, rank - 5)
+                }
+            }
+        }
+        return CoverSearchResult(found.values.sortedByDescending { it.first }.map { it.second }.take(12), failed)
+    }
+
+    private fun readCoverJson(address: String): JSONObject {
+        val connection = URL(address).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = 12000
+            connection.readTimeout = 12000
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("User-Agent",
+                "AudioShelf/0.6 (https://github.com/modealpha88-ctrl/audioshelf)")
+            if (connection.responseCode !in 200..299) {
+                throw java.io.IOException("Open Library HTTP " + connection.responseCode)
+            }
+            return JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+        } finally { connection.disconnect() }
     }
 
     private fun lookup(book: AudioBook): String? {
@@ -109,20 +149,13 @@ class BookCoverLookup {
         // such as "The Final Empire: Mistborn, Book 1 (Unabridged)".
         val searches = coverSearchTitles(book.title).take(2)
         for ((index, title) in searches.withIndex()) {
-            if (index > 0) Thread.sleep(750)
+            if (index > 0) Thread.sleep(1100)
             val encoded = URLEncoder.encode(title.take(150), "UTF-8")
             val address = "https://openlibrary.org/search.json?title=$encoded&fields=title,author_name,cover_i&limit=12"
-            val connection = URL(address).openConnection() as HttpURLConnection
-            try {
-                connection.connectTimeout = 6500
-                connection.readTimeout = 6500
-                connection.setRequestProperty("Accept", "application/json")
-                connection.setRequestProperty("User-Agent",
-                    "AudioShelf/0.5 (https://github.com/modealpha88-ctrl/audioshelf)")
-                if (connection.responseCode !in 200..299) continue
-                val docs = JSONObject(
-                    connection.inputStream.bufferedReader().use { it.readText() }
-                ).optJSONArray("docs") ?: continue
+            val response = try { readCoverJson(address) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { continue }
+            val docs = response.optJSONArray("docs") ?: continue
                 var bestScore = 0
                 var coverId: Long? = null
                 for (i in 0 until minOf(docs.length(), 12)) {
@@ -143,9 +176,6 @@ class BookCoverLookup {
                 if (bestScore >= 90 && coverId != null) {
                     return "https://covers.openlibrary.org/b/id/$coverId-L.jpg"
                 }
-            } finally {
-                connection.disconnect()
-            }
         }
         return null
     }
@@ -153,6 +183,8 @@ class BookCoverLookup {
 
 
 /** A real catalogued book jacket. This is an edition choice, not an inferred audiobook cover. */
+data class CoverSearchResult(val covers: List<CoverSuggestion>, val requestFailed: Boolean)
+
 data class CoverSuggestion(
     val title: String,
     val authors: String,

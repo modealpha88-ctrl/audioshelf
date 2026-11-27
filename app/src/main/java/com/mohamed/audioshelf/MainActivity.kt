@@ -1251,20 +1251,25 @@ private fun ListeningCard(book: AudioBook, progress: ListeningProgress, onClick:
 @Composable
 private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val request = remember(context, book.coverUrl) {
+        coil.request.ImageRequest.Builder(context).data(book.coverUrl)
+            .size(512, 512).scale(coil.size.Scale.FIT).allowHardware(false)
+            .transformations(CatalogueCoverTrim).build()
+    }
     Surface(onClick = { onBook(book) }, modifier = Modifier.fillMaxWidth(),
         color = colors.surface, shape = RoundedCornerShape(5.dp),
         border = androidx.compose.foundation.BorderStroke(.7.dp, colors.outline.copy(alpha = .35f))) {
         Row(Modifier.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(64.dp).height(87.dp).clip(RoundedCornerShape(2.dp))
-                .background(colors.surfaceVariant).border(.7.dp, colors.outline.copy(alpha = .6f), RoundedCornerShape(2.dp)),
+            Box(Modifier.width(72.dp).height(91.dp),
                 contentAlignment = Alignment.Center) {
                 if (book.coverUrl.isBlank()) ShelfTextCover(book, Modifier.fillMaxSize())
                 else SubcomposeAsyncImage(
-                    model = book.coverUrl, contentDescription = "${book.title} cover",
+                    model = request, contentDescription = "${book.title} cover",
                     contentScale = ContentScale.Fit,
                     loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
                     error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(2.dp)),
                 )
             }
             Spacer(Modifier.width(13.dp))
