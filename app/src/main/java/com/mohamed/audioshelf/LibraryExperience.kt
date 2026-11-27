@@ -114,6 +114,15 @@ internal val vhsPaperColors = androidx.compose.material3.lightColorScheme(
     outline = Color(0xFF6D6A63),
 )
 
+internal val vhsDarkColors = androidx.compose.material3.darkColorScheme(
+    primary = Color(0xFFB5B6FA), onPrimary = Color(0xFF191C40),
+    secondary = Color(0xFFD3BFA6), background = Color(0xFF151313),
+    surface = Color(0xFF211E1C), surfaceVariant = Color(0xFF302A27),
+    onBackground = Color(0xFFEAD8C1), onSurface = Color(0xFFEAD8C1),
+    onSurfaceVariant = Color(0xFFC5B3A1), outline = Color(0xFF827367),
+    secondaryContainer = Color(0xFF30314B), onSecondaryContainer = Color(0xFFE4DFFF),
+)
+
 @Composable
 fun AnimatedLibraryScreen(
     books: List<AudioBook>,
@@ -122,6 +131,8 @@ fun AnimatedLibraryScreen(
     onResumeBook: (AudioBook) -> Unit,
     onRefreshCovers: () -> Unit,
     spineRevision: Int = 0,
+    darkShelf: Boolean = true,
+    onDarkShelfChange: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -143,15 +154,16 @@ fun AnimatedLibraryScreen(
         val progress = progressFor(book)
         book.externalUrl.isBlank() && (progress.chapterIndex > 0 || progress.positionMs > 0L)
     }
-    MaterialTheme(colorScheme = vhsPaperColors) {
-        Box(Modifier.fillMaxSize().background(vhsPaperColors.background)) {
+    val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
+    MaterialTheme(colorScheme = shelfColors) {
+        Box(Modifier.fillMaxSize().background(shelfColors.background)) {
             // Static paper-fibre grain: not a downloaded or hardcoded book cover.
             androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                repeat(340) { i ->
+                repeat(1200) { i ->
                     val x = ((i * 757 + 17) % 997) / 997f * size.width
                     val y = ((i * 499 + 79) % 991) / 991f * size.height
                     drawCircle(
-                        Color(0xFF685B4C).copy(alpha = .08f),
+                        (if (darkShelf) Color(0xFFCEB596) else Color(0xFF685B4C)).copy(alpha = if (darkShelf) .055f else .08f),
                         radius = if (i % 3 == 0) .9f else .45f,
                         center = androidx.compose.ui.geometry.Offset(x, y),
                     )
@@ -164,22 +176,28 @@ fun AnimatedLibraryScreen(
                         bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("AUDIO / SHELF", color = Color(0xFF1F3FB0),
+                    Text("AUDIO / SHELF", color = shelfColors.primary,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
                         style = MaterialTheme.typography.labelSmall,
                         letterSpacing = 2.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f))
-                    Text("LIBRARY", color = Color(0xFF141414),
+                    Text("LIBRARY", color = shelfColors.onBackground,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
                         style = MaterialTheme.typography.labelMedium,
                         letterSpacing = 1.6.sp, fontWeight = FontWeight.SemiBold)
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                         androidx.compose.material3.IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Default.MoreVert, "Library settings",
-                                tint = Color(0xFF141414))
+                                tint = shelfColors.onBackground)
                         }
                         androidx.compose.material3.DropdownMenu(menuOpen, { menuOpen = false }) {
                             androidx.compose.material3.DropdownMenuItem(
                                 text = { Text(if (sortByTitle) "Saved order" else "Sort by title") },
                                 onClick = { sortByTitle = !sortByTitle; menuOpen = false })
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Dark shelf") },
+                                trailingIcon = { Switch(darkShelf, null) },
+                                onClick = { onDarkShelfChange(!darkShelf); menuOpen = false })
                             androidx.compose.material3.DropdownMenuItem(
                                 text = { Text("Motion") },
                                 trailingIcon = { Switch(motion, null) },
@@ -207,7 +225,8 @@ fun AnimatedLibraryScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 17.dp),
                     singleLine = true, placeholder = { Text("Search your audiobooks") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
-                    shape = RoundedCornerShape(2.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
                 )
                 Spacer(Modifier.height(14.dp))
                 VhsAudiobookShelf(
@@ -219,9 +238,9 @@ fun AnimatedLibraryScreen(
                 )
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("© AUDIOSHELF", color = Color(0xFF6D6A63),
+                    Text("© AUDIOSHELF", color = shelfColors.onSurfaceVariant,
                         fontSize = 9.sp, letterSpacing = .9.sp)
-                    Text("SAVED / ${books.size}", color = Color(0xFF6D6A63),
+                    Text("SAVED / ${books.size}", color = shelfColors.onSurfaceVariant,
                         fontSize = 9.sp, letterSpacing = .9.sp)
                 }
             }
