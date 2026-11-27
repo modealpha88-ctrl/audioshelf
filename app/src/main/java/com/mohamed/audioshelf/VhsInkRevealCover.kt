@@ -68,7 +68,8 @@ internal fun VhsInkRevealCover(book: AudioBook, modifier: Modifier = Modifier) {
                 }
                 path.close()
             }
-            clipPath(path) { drawContent() }
+            val content = this
+            clipPath(path) { content.drawContent() }
         }
     }) {
         LibraryCover(book, Modifier.fillMaxSize())
