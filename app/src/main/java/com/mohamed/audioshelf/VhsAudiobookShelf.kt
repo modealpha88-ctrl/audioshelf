@@ -94,8 +94,8 @@ import kotlin.math.sin
 
 private const val SHELF_CAMERA_WIDTHS = 2.8f
 
-// Leave eight degrees of cover visible when a neighboring book rests on its spine.
-private fun jacketAngle(openness: Float) = 82f * (1f - openness)
+// Keep a hairline of jacket art visible beside each resting spine.
+private fun jacketAngle(openness: Float) = 88.5f * (1f - openness)
 
 private fun sleeveLean(openness: Float) = 4f * vhsSmoothstep(openness)
 
@@ -262,7 +262,7 @@ internal fun VhsAudiobookShelf(
                 return if (vhsIsAlbum(ratio)) (faceWidth(ratio) / ratio * .043f).coerceAtLeast(7.dp)
                     else hardbackSpine
             }
-            val gap = bookHeight * .018f
+            val gap = bookHeight * .028f
             fun slotAt(index: Int): Dp {
                 val ratio = ratioAt(index)
                 val open = (1f - abs(index - position)).coerceIn(0f, 1f)
@@ -346,7 +346,6 @@ internal fun VhsAudiobookShelf(
                             onRatio = { ratios[book.coverUrl] = it },
                             coverWidth = width,
                             openness = openness,
-                            onRight = relative > 0f,
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
@@ -422,7 +421,6 @@ private fun VhsPhysicalCase(
     album: Boolean,
     onRatio: (Float) -> Unit,
     openness: Float,
-    onRight: Boolean,
     modifier: Modifier = Modifier,
     onSelect: () -> Unit,
     onOpen: () -> Unit,
@@ -468,16 +466,15 @@ private fun VhsPhysicalCase(
 
     val edge = if (album) 1.dp else 4.dp
     val corner = if (album) 1.dp else 4.dp
-    val side = if (onRight) -1f else 1f
     val angle = jacketAngle(openness)
-    val spineAngle = side * (angle - 90f)
-    val coverAngle = side * angle
+    val spineAngle = angle - 90f
+    val coverAngle = angle
     val reveal = if (album) coverWidth * .32f * vhsVinylReveal(openness) else 0.dp
 
     val faceWidth = coverWidth + edge + reveal
     val camera = coverWidth * SHELF_CAMERA_WIDTHS
     val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
-        vhsProjectedWidth(faceWidth, coverAngle, camera)) * (side / 2f)
+        vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
 
     val lean = sleeveLean(openness)
     val projectedWidth = vhsProjectedWidth(spineWidth, spineAngle, camera) +
@@ -497,10 +494,10 @@ private fun VhsPhysicalCase(
             Box(
                 Modifier.width(spineWidth).height(height)
                     .graphicsLayer {
-                        translationX = hinge.toPx() - side * size.width / 2f
+                        translationX = hinge.toPx() - size.width / 2f
                         rotationY = spineAngle
                         cameraDistance = camera.toPx()
-                        transformOrigin = TransformOrigin(if (onRight) 0f else 1f, 1f)
+                        transformOrigin = TransformOrigin(1f, 1f)
                     }
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
@@ -572,11 +569,11 @@ private fun VhsPhysicalCase(
                                 Modifier.fillMaxSize(), ornate = binding != SpineBindingMode.CLASSIC)
                         }
                         val title = bookstoreSpineTitle(book.title).uppercase()
-                        val footerHeight = height * .15f
+                        val footerHeight = height * .12f
                         val topSpace = if (illustrated) artHeight else height * .12f
-                        val titleFont = minOf(spineWidth.value * .34f,
+                        val titleFont = minOf(spineWidth.value * .44f,
                             (height - topSpace - footerHeight).value / (title.length.coerceAtLeast(1) * .58f))
-                            .coerceIn(8f, 18f)
+                            .coerceIn(8f, 21f)
                         Box(Modifier.fillMaxSize().padding(top = topSpace, bottom = footerHeight),
                             contentAlignment = Alignment.Center) {
                             Box(Modifier.layout { measurable, limits ->
@@ -592,7 +589,7 @@ private fun VhsPhysicalCase(
                                 }
                             }) {
                                 Text(title, fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.Bold, fontSize = titleFont.sp,
+                                    fontWeight = FontWeight.SemiBold, fontSize = titleFont.sp,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis, color = ink)
                             }
                         }
@@ -624,8 +621,8 @@ private fun VhsPhysicalCase(
         Box(
             Modifier.width(coverWidth + edge + reveal).height(height)
                 .graphicsLayer {
-                    translationX = hinge.toPx() + side * size.width / 2f
-                    transformOrigin = TransformOrigin(if (onRight) 1f else 0f, 1f)
+                    translationX = hinge.toPx() + size.width / 2f
+                    transformOrigin = TransformOrigin(0f, 1f)
                     rotationY = coverAngle
                     cameraDistance = camera.toPx()
                 }
