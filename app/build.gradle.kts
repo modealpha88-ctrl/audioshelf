@@ -17,6 +17,10 @@ val spineFontSources = mapOf(
     "bebasneue" to "BebasNeue-Regular.ttf",
     "anton" to "Anton-Regular.ttf",
     "caveat" to "Caveat[wght].ttf",
+    "cinzeldecorative" to "CinzelDecorative-Regular.ttf",
+    "medievalsharp" to "MedievalSharp.ttf",
+    "almendra" to "Almendra-Regular.ttf",
+    "almendradisplay" to "AlmendraDisplay-Regular.ttf",
 )
 val prepareSpineFonts by tasks.registering {
     inputs.property("fontSources", spineFontSources)
