@@ -20,7 +20,7 @@ internal data class CoverFontMatch(
 )
 
 private data class FontCandidate(val name: String, val face: Typeface)
-private data class GlyphMask(val cells: FloatArray, val aspect: Float, val density: Float)
+internal data class GlyphMask(val cells: FloatArray, val aspect: Float, val density: Float)
 private const val MASK_W = 64
 private const val MASK_H = 24
 private val fontFamilies = listOf("cinzel", "ebgaramond", "oswald", "bebasneue", "anton", "caveat")
@@ -62,7 +62,7 @@ internal fun matchCoverFont(
     if (samples.isEmpty()) return null
     val scored = candidates(context).mapNotNull { candidate ->
         val distances = samples.mapNotNull { (word, target) ->
-            renderMask(word, candidate.face)?.let { distance(target, it) }
+            renderMask(word, candidate.face)?.let { fontMaskDistance(target, it) }
         }
         if (distances.size != samples.size) null
         else candidate to distances.average().toFloat()
@@ -150,7 +150,7 @@ private fun normalized(mask: BooleanArray, width: Int, height: Int): GlyphMask? 
     return GlyphMask(cells, w.toFloat() / h, density)
 }
 
-private fun distance(a: GlyphMask, b: GlyphMask): Float {
+internal fun fontMaskDistance(a: GlyphMask, b: GlyphMask): Float {
     var overlap = 0f
     var union = 0f
     for (i in a.cells.indices) {
