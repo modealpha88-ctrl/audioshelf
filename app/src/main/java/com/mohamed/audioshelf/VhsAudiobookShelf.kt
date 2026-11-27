@@ -476,8 +476,8 @@ private fun VhsPhysicalCase(
 
     val faceWidth = coverWidth + edge + reveal
     val camera = coverWidth * SHELF_CAMERA_WIDTHS
-    val hinge = side * (vhsProjectedWidth(spineWidth, spineAngle, camera) -
-        vhsProjectedWidth(faceWidth, coverAngle, camera)) / 2f
+    val hinge = (vhsProjectedWidth(spineWidth, spineAngle, camera) -
+        vhsProjectedWidth(faceWidth, coverAngle, camera)) * (side / 2f)
 
     val lean = sleeveLean(openness)
     val projectedWidth = vhsProjectedWidth(spineWidth, spineAngle, camera) +
