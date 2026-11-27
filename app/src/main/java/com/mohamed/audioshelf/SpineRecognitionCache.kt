@@ -12,7 +12,7 @@ import java.security.MessageDigest
 // must receive a fresh match. Bump the algorithm version when the matcher changes.
 internal fun spineRecognitionKey(bitmap: Bitmap, title: String): String {
     val hash = MessageDigest.getInstance("SHA-256")
-    hash.update("spine-v4:$title:${bitmap.width}:${bitmap.height}:".toByteArray(Charsets.UTF_8))
+    hash.update("spine-v5:$title:${bitmap.width}:${bitmap.height}:".toByteArray(Charsets.UTF_8))
     val row = IntArray(bitmap.width)
     val bytes = ByteBuffer.allocate(bitmap.width * 4)
     for (y in 0 until bitmap.height) {
@@ -25,7 +25,7 @@ internal fun spineRecognitionKey(bitmap: Bitmap, title: String): String {
 }
 
 private fun cacheDir(context: Context) =
-    File(context.filesDir, "spine_recognition_v4").apply { mkdirs() }
+    File(context.filesDir, "spine_recognition_v5").apply { mkdirs() }
 
 private const val RETRY_MS = 86400000L
 private const val MAX_BYTES = 32L * 1024 * 1024
@@ -44,16 +44,22 @@ internal fun readSpineRecognition(context: Context, key: String): LetteringResul
             }
         }
     }
-    if (!meta.isFile || meta.length() > 256) return@runCatching null
+    if (!meta.isFile || meta.length() > 4096) return@runCatching null
     // Font matches are revisited periodically so newly available fonts can improve them.
     if (System.currentTimeMillis() - meta.lastModified() > RETRY_MS) return@runCatching null
     val fields = meta.readText().split('|')
-    if (fields.size != 3) return@runCatching null
+    if (fields.size != 4) return@runCatching null
     val score = fields[2].toFloatOrNull() ?: return@runCatching null
     if (!score.isFinite() || score !in 0f..1f) return@runCatching null
-    val match = restoreCoverFont(context, fields[0], fields[1] == "true", score)
-        ?: return@runCatching null
-    LetteringResult(null, match)
+    val match = if (fields[0].isBlank()) null else
+        restoreCoverFont(context, fields[0], fields[1] == "true", score) ?: return@runCatching null
+    val inks = fields[3].split(';').mapNotNull {
+        val pair = it.split(':')
+        if (pair.size != 2 || pair[0].isBlank()) null
+        else pair[1].toIntOrNull()?.let { color -> pair[0] to color }
+    }.toMap()
+    if (match == null && inks.isEmpty()) return@runCatching null
+    LetteringResult(null, match, inks)
 }.getOrNull()
 
 private fun atomicWrite(file: File, writer: (java.io.OutputStream) -> Unit) {
@@ -77,8 +83,9 @@ internal fun writeSpineRecognition(context: Context, key: String, result: Letter
             bitmap != null -> atomicWrite(File(root, "$key.png")) {
                 require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
             }
-            match != null -> atomicWrite(File(root, "$key.txt")) {
-                it.write("${match.family}|${match.upperCase}|${match.score}".toByteArray(Charsets.UTF_8))
+            match != null || result.wordInks.isNotEmpty() -> atomicWrite(File(root, "$key.txt")) {
+                val inks = result.wordInks.entries.joinToString(";") { (word, color) -> "$word:$color" }
+                it.write("${match?.family.orEmpty()}|${match?.upperCase ?: false}|${match?.score ?: 1f}|$inks".toByteArray(Charsets.UTF_8))
             }
             // Do not persist failed recognition: an expanded font catalog may help later.
             else -> return@runCatching

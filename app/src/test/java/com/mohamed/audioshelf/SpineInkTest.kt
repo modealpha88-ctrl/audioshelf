@@ -25,6 +25,37 @@ class SpineInkTest {
         assertTrue(spineInkContrast(corrected,cloth) >= 4.49)
     }
 
+    @Test fun titleInkPreservesGoldAndCrimsonRatherThanClothColor() {
+        for (ink in listOf(0xffd9b45d.toInt(), 0xffc51f36.toInt(), 0xfff1f3de.toInt())) {
+            val bg = 0xff183d40.toInt()
+            val pixels = IntArray(400) { bg }
+            for (y in 4..15) for (x in 5..13) pixels[y * 20 + x] = ink
+            assertEquals(ink, sampleSpineInk(pixels, 20, 20))
+        }
+    }
+
+    @Test fun backgroundChangesInsteadOfGoldOrRedInk() {
+        val cloth = 0xffd9b45d.toInt()
+        val ink = 0xffd9b45d.toInt()
+        val corrected = spineClothForInk(cloth, listOf(ink))
+        assertNotEquals(cloth, corrected)
+        assertTrue(spineInkContrast(ink, corrected) >= 4.5)
+        val red = 0xffc51f36.toInt()
+        val redCloth = spineClothForInk(red, listOf(red))
+        assertTrue(spineInkContrast(red, redCloth) >= 4.5)
+    }
+
+    @Test fun transparentMaskKeepsMultipleOriginalInkColors() {
+        val gold = 0xffd9b45d.toInt()
+        val red = 0xffc51f36.toInt()
+        val pixels = IntArray(400) { 0xff101010.toInt() }
+        for (y in 4..15) for (x in 4..8) pixels[y * 20 + x] = gold
+        for (y in 4..15) for (x in 11..15) pixels[y * 20 + x] = red
+        val mask = requireNotNull(separateSpineInk(pixels, 20, 20))
+        assertEquals(gold, mask[8 * 20 + 6])
+        assertEquals(red, mask[8 * 20 + 13])
+    }
+
     @Test fun lightClothGetsDarkerInk() {
         val cloth = 0xffeeeeee.toInt()
         assertTrue(spineInkContrast(readableSpineInk(0xffd8c9a9.toInt(),cloth),cloth) >= 4.49)

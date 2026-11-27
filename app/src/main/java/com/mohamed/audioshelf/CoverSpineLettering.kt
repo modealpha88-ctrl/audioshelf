@@ -25,7 +25,8 @@ import kotlin.math.roundToInt
 internal fun spineLetteringKey(text: String): String =
     text.lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
 
-internal data class LetteringResult(val bitmap: Bitmap?, val fontMatch: CoverFontMatch? = null)
+internal data class LetteringResult(val bitmap: Bitmap?, val fontMatch: CoverFontMatch? = null,
+    val wordInks: Map<String, Int> = emptyMap())
 // Charge positive entries by bitmap bytes and negative entries by a small fixed cost.
 private val letteringCache = object : LruCache<String, LetteringResult>(8 * 1024 * 1024) {
     override fun sizeOf(key: String, value: LetteringResult): Int =
@@ -121,8 +122,26 @@ internal suspend fun coverTitleLettering(
                 result
             }.also { lines.forEach { line -> line?.recycle() } }
         }
+        // Use OCR title words, never the generic cover palette. Keep individual
+        // words separate so a two-colour title stays two-colour when recreated.
+        val titleWords = title.split(Regex("[^\\p{L}\\p{N}]+"))
+            .map(::spineLetteringKey).filter { it.length >= 2 }.toSet()
+        val wordInks = linkedMapOf<String, Int>()
+        if (output == null) {
+            val elements = all.flatMap { it.elements }.filter {
+                spineLetteringKey(it.text) in titleWords
+            }.sortedByDescending {
+                (it.boundingBox?.width() ?: 0).toLong() * (it.boundingBox?.height() ?: 0)
+            }
+            for (element in elements.take(24)) {
+                val word = spineLetteringKey(element.text)
+                if (word in wordInks) continue
+                val box = element.boundingBox ?: continue
+                sampleCoverWordInk(bitmap, box)?.let { wordInks[word] = it }
+            }
+        }
         val fontMatch = if (output == null) matchCoverFont(context, bitmap, recognized, title) else null
-        val result = LetteringResult(output, fontMatch)
+        val result = LetteringResult(output, fontMatch, wordInks)
         if (result.bitmap != null) letteringCache.put(key, result)
         withContext(Dispatchers.IO) { writeSpineRecognition(context, key, result) }
         result

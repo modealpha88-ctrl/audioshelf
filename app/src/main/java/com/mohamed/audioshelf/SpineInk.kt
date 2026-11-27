@@ -56,7 +56,7 @@ internal fun separateSpineInk(pixels: IntArray, w: Int, h: Int): IntArray? {
     val peak = distances[(distances.lastIndex * .90).toInt()]
     if (peak < max(30.0, noise * 2.5)) return null
     val lower = max(12.0, noise * 1.6 + 5)
-    val upper = max(lower + 12, peak * .75)
+    val upper = max(lower + 12, peak * .60)
     val result = IntArray(pixels.size)
     var strong = 0
     for (i in pixels.indices) {
@@ -97,4 +97,96 @@ internal fun improveSpineBitmapContrast(bitmap: Bitmap, cloth: Int): Bitmap {
         pixels[i] = (alpha shl 24) or (corrected and 0x00ffffff)
     }
     return Bitmap.createBitmap(pixels,bitmap.width,bitmap.height,Bitmap.Config.ARGB_8888)
+}
+
+/** Find representative printed ink, never the average colour of the artwork. */
+internal fun dominantSpineInk(pixels: IntArray): Int? {
+    val counts = HashMap<Int, Int>()
+    val actual = HashMap<Int, Int>()
+    for (c in pixels) {
+        if (c ushr 24 < 220) continue
+        val bucket = ((red(c) / 24) shl 8) or ((green(c) / 24) shl 4) or (blue(c) / 24)
+        counts[bucket] = (counts[bucket] ?: 0) + 1
+        actual.putIfAbsent(bucket, c or 0xff000000.toInt())
+    }
+    val best = counts.maxByOrNull { it.value } ?: return null
+    return actual[best.key]
+}
+
+/** Estimate title ink from a word-sized OCR crop. Reject ambiguous illustration colours. */
+internal fun sampleSpineInk(pixels: IntArray, w: Int, h: Int): Int? {
+    if (w < 4 || h < 4 || w.toLong() * h != pixels.size.toLong()) return null
+    separateSpineInk(pixels, w, h)?.let { dominantSpineInk(it)?.let { c -> return c } }
+    // A second conservative path for coloured ink on illustrated backgrounds:
+    // look for a repeatable interior colour that is uncommon at the crop border.
+    fun bucket(c: Int) = ((red(c) / 32) shl 6) or ((green(c) / 32) shl 3) or (blue(c) / 32)
+    val border = HashMap<Int, Int>()
+    val inside = HashMap<Int, Int>()
+    val colors = HashMap<Int, Int>()
+    var borderN = 0
+    var insideN = 0
+    for (i in pixels.indices) {
+        val c = pixels[i]
+        if (c ushr 24 < 220) continue
+        val key = bucket(c)
+        val x = i % w; val y = i / w
+        if (x == 0 || y == 0 || x == w - 1 || y == h - 1) {
+            border[key] = (border[key] ?: 0) + 1; borderN++
+        } else {
+            inside[key] = (inside[key] ?: 0) + 1; insideN++
+            colors.putIfAbsent(key, c)
+        }
+    }
+    if (borderN == 0 || insideN == 0) return null
+    val ranked = inside.mapNotNull { (key, n) ->
+        val share = n.toDouble() / insideN
+        val edge = (border[key] ?: 0).toDouble() / borderN
+        if (share in 0.08..0.65 && share >= edge * 3 + .04) key to (share - edge) else null
+    }.sortedByDescending { it.second }
+    val first = ranked.firstOrNull() ?: return null
+    if (ranked.size > 1 && first.second < ranked[1].second * 1.25) return null
+    return colors[first.first]
+}
+
+internal fun sampleCoverWordInk(bitmap: Bitmap, original: Rect): Int? {
+    val box = Rect(original)
+    val pad = (box.height() * .08f).roundToInt().coerceAtLeast(1)
+    box.inset(-pad, -pad)
+    if (!box.intersect(0, 0, bitmap.width, bitmap.height)) return null
+    val w = box.width(); val h = box.height()
+    if (w < 4 || h < 4 || w.toLong() * h > 800000) return null
+    val pixels = IntArray(w * h)
+    bitmap.getPixels(pixels, 0, w, box.left, box.top, w, h)
+    return sampleSpineInk(pixels, w, h)
+}
+
+/** Adjust cloth, not the publisher's ink. Choose the smallest sufficient shade change. */
+internal fun spineClothForInk(cloth: Int, inks: List<Int>, minimum: Double = 4.5): Int {
+    if (inks.isEmpty()) return cloth
+    fun contrast(c: Int) = inks.minOf { spineInkContrast(it, c) }
+    if (contrast(cloth) >= minimum) return cloth
+    var best = cloth
+    var bestContrast = contrast(cloth)
+    for (step in 1..100) {
+        val amount = step / 100.0
+        for (target in listOf(0xff000000.toInt(), -1)) {
+            val candidate = blend(cloth, target, amount)
+            val score = contrast(candidate)
+            if (score >= minimum) return candidate
+            if (score > bestContrast) { best = candidate; bestContrast = score }
+        }
+    }
+    return best
+}
+
+internal fun bitmapSpineInk(bitmap: Bitmap): List<Int> {
+    val pixels = IntArray(bitmap.width * bitmap.height)
+    bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    // Include prominent different colours, not every antialiased edge or highlight.
+    val groups = pixels.filter { it ushr 24 >= 220 }.groupBy {
+        ((red(it) / 48) shl 6) or ((green(it) / 48) shl 3) or (blue(it) / 48)
+    }
+    val total = groups.values.sumOf { it.size }
+    return groups.values.sortedByDescending { it.size }.filter { it.size >= total * .08 }
+        .take(5).mapNotNull { dominantSpineInk(it.toIntArray()) }
 }

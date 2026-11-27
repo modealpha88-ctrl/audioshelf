@@ -94,7 +94,7 @@ internal class StableShelfSpines(
         val binding = store.mode(book)
         val texture = bookstoreCloth(book)
         val saved = if (binding != SpineBindingMode.CLASSIC) store.palette(book) else null
-        val palette = saved?.let { BookstoreSpineColors(Color(it.first), Color(readableSpineInk(it.second, it.first)), true) }
+        val palette = saved?.let { BookstoreSpineColors(Color(it.first), Color(it.second), true) }
             ?: bookstoreSpineColors(book.title, null, texture)
         return StableSpineEntry(binding, StableSpineVisual(palette)).also { entries.put(key, it) }
     }
@@ -147,7 +147,7 @@ internal class StableShelfSpines(
                     spineRecognitionKey(bitmap, bookstoreSpineTitle(book.title))
                 }
                 if (entry.coverHash == hash) return@launch
-                val palette = withContext(Dispatchers.Default) {
+                var palette = withContext(Dispatchers.Default) {
                     val raw = bookstoreSpineColors(book.title, drawable, bookstoreCloth(book))
                     BookstoreSpineColors(raw.cloth, Color(readableSpineInk(raw.ink.toArgb(), raw.cloth.toArgb())), raw.hasCoverPalette)
                 }
@@ -157,8 +157,22 @@ internal class StableShelfSpines(
                         val match = coverTitleLettering(context, drawable, book.coverUrl,
                             bookstoreSpineTitle(book.title))
                         withContext(Dispatchers.Default) {
-                            val rendered = match?.bitmap?.let { improveSpineBitmapContrast(it, palette.cloth.toArgb()) } ?: match?.fontMatch?.let {
-                                renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb())
+                            val exact = match?.bitmap
+                            val wordInks = match?.wordInks.orEmpty()
+                            val inks = if (exact != null) bitmapSpineInk(exact) else wordInks.values.distinct()
+                            if (inks.isNotEmpty()) {
+                                val ink = inks.first()
+                                val cloth = spineClothForInk(palette.cloth.toArgb(), inks)
+                                palette = BookstoreSpineColors(Color(cloth), Color(ink), true)
+                            }
+                            // Exact artwork retains its RGB and alpha, including metallic
+                            // highlights. When extraction fails, colour the matched font
+                            // word by word; use a local serif only if no font was matched.
+                            val font = match?.fontMatch ?: if (wordInks.isNotEmpty())
+                                CoverFontMatch("system-serif", android.graphics.Typeface.SERIF, false, 1f)
+                                else null
+                            val rendered = exact ?: font?.let {
+                                renderFontMatch(bookstoreSpineTitle(book.title), it, palette.ink.toArgb(), wordInks)
                             }
                             rendered?.let { scaled(it, 1024, 128).asImageBitmap() }
                         }
