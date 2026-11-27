@@ -94,8 +94,8 @@ import kotlin.math.sin
 
 private const val SHELF_CAMERA_WIDTHS = 2.8f
 
-// Leave eight degrees of cover visible when a neighboring book rests on its spine.
-private fun jacketAngle(openness: Float) = 82f * (1f - openness)
+// Keep a hairline of jacket art visible beside each resting spine.
+private fun jacketAngle(openness: Float) = 88.5f * (1f - openness)
 
 private fun sleeveLean(openness: Float) = 4f * vhsSmoothstep(openness)
 
@@ -262,7 +262,7 @@ internal fun VhsAudiobookShelf(
                 return if (vhsIsAlbum(ratio)) (faceWidth(ratio) / ratio * .043f).coerceAtLeast(7.dp)
                     else hardbackSpine
             }
-            val gap = bookHeight * .018f
+            val gap = bookHeight * .028f
             fun slotAt(index: Int): Dp {
                 val ratio = ratioAt(index)
                 val open = (1f - abs(index - position)).coerceIn(0f, 1f)
@@ -572,11 +572,11 @@ private fun VhsPhysicalCase(
                                 Modifier.fillMaxSize(), ornate = binding != SpineBindingMode.CLASSIC)
                         }
                         val title = bookstoreSpineTitle(book.title).uppercase()
-                        val footerHeight = height * .15f
+                        val footerHeight = height * .12f
                         val topSpace = if (illustrated) artHeight else height * .12f
-                        val titleFont = minOf(spineWidth.value * .34f,
+                        val titleFont = minOf(spineWidth.value * .44f,
                             (height - topSpace - footerHeight).value / (title.length.coerceAtLeast(1) * .58f))
-                            .coerceIn(8f, 18f)
+                            .coerceIn(8f, 21f)
                         Box(Modifier.fillMaxSize().padding(top = topSpace, bottom = footerHeight),
                             contentAlignment = Alignment.Center) {
                             Box(Modifier.layout { measurable, limits ->
@@ -592,7 +592,7 @@ private fun VhsPhysicalCase(
                                 }
                             }) {
                                 Text(title, fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.Bold, fontSize = titleFont.sp,
+                                    fontWeight = FontWeight.SemiBold, fontSize = titleFont.sp,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis, color = ink)
                             }
                         }
