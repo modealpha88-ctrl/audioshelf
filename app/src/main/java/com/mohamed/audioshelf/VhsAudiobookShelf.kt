@@ -53,6 +53,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -212,10 +214,10 @@ internal fun VhsAudiobookShelf(
             fun ratioAt(index: Int) = ratios[visible[vhsWrap(index, visible.size)].coverUrl] ?: .67f
             val mid = floor(position.toDouble()).toInt()
             val weight = vhsSmoothstep(position - mid)
-            fun caseWidth(ratio: Float) = faceWidth(ratio) + if (ratio < .86f) 8.dp else 3.dp
+            fun caseWidth(ratio: Float) = faceWidth(ratio) + if (ratio < .86f) 4.dp else 2.dp
             val openingWidth = caseWidth(ratioAt(mid)) * (1f - weight) +
                 caseWidth(ratioAt(mid + 1)) * weight
-            val gap = bookHeight * .030f
+            val gap = bookHeight * .018f
             val stageWidth = maxWidth
             val stepPx = with(density) { (spineWidth + gap).toPx() }
             var draggedPx by remember { mutableFloatStateOf(0f) }
@@ -405,15 +407,15 @@ private fun VhsPhysicalCase(
         }
     }
 
-    val edge = if (album) 3.dp else 8.dp
+    val edge = if (album) 2.dp else 4.dp
     val spineAngle = -90f * openness
     val coverAngle = 90f * (1f - openness)
-    val tilt = if (motion) (-4.5f * openness) else 0f
+    val tilt = -3.5f * openness
 
     Box(
         modifier.width(maxOf(spineWidth, coverWidth + edge)).height(height)
             .graphicsLayer {
-                transformOrigin = TransformOrigin(0f, 1f)
+                transformOrigin = TransformOrigin(.5f, 1f)
                 rotationZ = tilt
                 cameraDistance = 35f * density
             },
@@ -427,7 +429,7 @@ private fun VhsPhysicalCase(
                         cameraDistance = 34f * density
                         transformOrigin = TransformOrigin(.5f, .5f)
                     }
-                    .shadow(9.dp, RoundedCornerShape(2.dp))
+                    .shadow(5.dp, RoundedCornerShape(4.dp))
                     .clickable(enabled = openness < .50f, role = Role.Button,
                         onClickLabel = "Select " + book.title, onClick = onSelect)
                     .semantics { contentDescription = "Select audiobook: " + book.title },
@@ -441,62 +443,74 @@ private fun VhsPhysicalCase(
                         model = spineImage,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(2.dp)),
-                        contentScale = ContentScale.FillBounds,
+                            .clip(RoundedCornerShape(4.dp)),
+                        contentScale = ContentScale.Fit,
                     )
                 } else {
                     Box(Modifier.fillMaxSize()
                         .clip(RoundedCornerShape(2.dp))) {
                         val illustrated = binding == SpineBindingMode.AUTOMATIC && coverDrawable != null
-                        val artHeight = minOf(spineWidth * 1.15f, height * .24f)
-                        BookstorePrintedSpine(
-                            title = book.title, texture = texture, palette = palette,
-                            modifier = Modifier.fillMaxSize(),
-                            ornate = !illustrated && binding != SpineBindingMode.CLASSIC,
-                        )
-                        if (illustrated) {
-                            Image(
-                                painter = coverPainter,
-                                contentDescription = null,
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.align(Alignment.TopCenter)
-                                    .padding(top = 6.dp, start = 4.dp, end = 4.dp)
-                                    .fillMaxWidth().height(artHeight)
-                                    .border(.5.dp, palette.ink.copy(alpha = .65f)),
-                            )
+                        val artHeight = height * .31f
+                        val cloth = palette.cloth
+                        val ink = palette.ink
+                        if (binding == SpineBindingMode.AUTOMATIC) {
+                            Box(Modifier.fillMaxSize().background(cloth))
+                            if (illustrated) {
+                                Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(artHeight)) {
+                                    Image(coverPainter, contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize())
+                                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
+                                        0f to cloth.copy(alpha = .08f),
+                                        .60f to Color.Transparent,
+                                        1f to cloth,
+                                    )))
+                                }
+                            }
+                        } else {
+                            BookstorePrintedSpine(book.title, texture, palette,
+                                Modifier.fillMaxSize(), ornate = binding != SpineBindingMode.CLASSIC)
                         }
-                        val titleArea = if (illustrated) Modifier.fillMaxSize()
-                            .padding(top = artHeight + 10.dp, bottom = 24.dp)
-                        else Modifier.fillMaxSize()
-                        Box(titleArea, contentAlignment = Alignment.Center) {
-                            Box(
-                                Modifier.layout { measurable, limits ->
-                                    val measured = measurable.measure(Constraints(
-                                        maxWidth = limits.maxHeight.coerceAtLeast(1),
-                                        maxHeight = limits.maxWidth.coerceAtLeast(1),
-                                    ))
-                                    layout(measured.height, measured.width) {
-                                        measured.placeWithLayer(
-                                            (measured.height - measured.width) / 2,
-                                            (measured.width - measured.height) / 2,
-                                        ) { rotationZ = 90f }
-                                    }
-                                },
-                            ) {
-                                Text(bookstoreSpineTitle(book.title).uppercase(),
-                                    fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp, maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = palette.ink)
+                        val title = bookstoreSpineTitle(book.title).uppercase()
+                        val footerHeight = height * .15f
+                        val topSpace = if (illustrated) artHeight else height * .12f
+                        val titleFont = minOf(spineWidth.value * .34f,
+                            (height - topSpace - footerHeight).value / (title.length.coerceAtLeast(1) * .58f))
+                            .coerceIn(8f, 18f)
+                        Box(Modifier.fillMaxSize().padding(top = topSpace, bottom = footerHeight),
+                            contentAlignment = Alignment.Center) {
+                            Box(Modifier.layout { measurable, limits ->
+                                val measured = measurable.measure(Constraints(
+                                    maxWidth = limits.maxHeight.coerceAtLeast(1),
+                                    maxHeight = limits.maxWidth.coerceAtLeast(1),
+                                ))
+                                layout(measured.height, measured.width) {
+                                    measured.placeWithLayer(
+                                        (measured.height - measured.width) / 2,
+                                        (measured.width - measured.height) / 2,
+                                    ) { rotationZ = 90f }
+                                }
+                            }) {
+                                Text(title, fontFamily = FontFamily.Serif,
+                                    fontWeight = FontWeight.Bold, fontSize = titleFont.sp,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis, color = ink)
                             }
                         }
-                        val badge = Modifier.align(Alignment.BottomCenter)
-                            .padding(bottom = if (illustrated) 6.dp else 12.dp)
-                        Text("AUDIO", if (illustrated) badge.border(.5.dp, palette.ink)
-                            .padding(horizontal = 2.dp) else badge,
-                            color = palette.ink, fontSize = 7.sp,
-                            letterSpacing = .4.sp, fontWeight = FontWeight.Bold)
+                        Column(Modifier.align(Alignment.BottomCenter)
+                            .padding(horizontal = 3.dp, vertical = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(book.authors.substringBefore(",").substringAfterLast(" ").uppercase(),
+                                fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold,
+                                fontSize = 6.sp, letterSpacing = .5.sp, color = ink,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(Modifier.height(2.dp))
+                            Text("AUDIO", Modifier.border(.6.dp, ink.copy(alpha = .75f),
+                                RoundedCornerShape(1.dp)).padding(horizontal = 3.dp, vertical = 1.dp),
+                                color = ink, fontFamily = FontFamily.Serif,
+                                fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        }
+                        PrintedEditionFinish(book.title, Modifier.fillMaxSize())
+
                     }
                 }
                 Box(Modifier.align(Alignment.CenterStart).width(5.dp).fillMaxSize()
@@ -513,7 +527,7 @@ private fun VhsPhysicalCase(
                         rotationY = coverAngle
                         cameraDistance = 34f * density
                     }
-                    .shadow(22.dp, RoundedCornerShape(2.dp))
+                    .shadow(10.dp, RoundedCornerShape(4.dp))
                     .clickable(enabled = openness > .55f, role = Role.Button,
                         onClickLabel = "Open " + book.title, onClick = onOpen)
                     .semantics { contentDescription = "Open audiobook: " + book.title },
@@ -521,21 +535,21 @@ private fun VhsPhysicalCase(
                 // Physical side of the box: paper grain, board bevel, and cast shadow.
                 Box(Modifier.align(Alignment.CenterEnd).width(edge).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
-                        Color(0xFF3A332C), Color(0xFFE7DCC5), Color(0xFF514638),
+                        Color(0xFF28231F), palette.cloth, Color(0xFF302A25),
                     )))) {
                     if (!album) Canvas(Modifier.fillMaxSize()) {
                         var y = 2.dp.toPx()
                         while (y < size.height) {
-                            drawLine(Color(0x5C4A443C),
+                            drawLine(Color(0x244A443C),
                                 Offset(0f, y), Offset(size.width, y),
                                 strokeWidth = .5.dp.toPx())
-                            y += 3.dp.toPx()
+                            y += 2.dp.toPx()
                         }
                     }
                 }
                 Box(Modifier.width(coverWidth).height(height)
                     .align(Alignment.CenterStart)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF28252A))) {
                     if (coverDrawable != null) {
                         Image(coverPainter, contentDescription = null,
@@ -544,26 +558,49 @@ private fun VhsPhysicalCase(
                     } else {
                         ShelfTextCover(book, Modifier.fillMaxSize())
                     }
-                    Box(Modifier.align(Alignment.CenterStart).width(4.dp).fillMaxSize()
+                    Box(Modifier.align(Alignment.CenterStart).width(2.dp).fillMaxSize()
                         .background(Brush.horizontalGradient(listOf(
-                            Color(0xB5000000), Color.Transparent,
+                            Color(0x55000000), Color.Transparent,
                         ))))
                 }
+                PrintedEditionFinish(book.title, Modifier.width(coverWidth).height(height).align(Alignment.CenterStart))
                 if (openness > .96f) {
                     Box(Modifier.align(Alignment.BottomStart)
                         .padding(4.dp)
-                        .size(42.dp)
+                        .size(30.dp)
                         .shadow(5.dp, CircleShape)
                         .background(Paper.copy(alpha = .96f), CircleShape)
                         .border(1.dp, Cobalt, CircleShape)
                         .clickable(role = Role.Button, onClickLabel = "Open audiobook details",
                             onClick = onOpen),
                         contentAlignment = Alignment.Center) {
-                        Text("▶", color = Cobalt, fontSize = 18.sp,
+                        Text("▶", color = Cobalt, fontSize = 13.sp,
                             modifier = Modifier.offset(x = 1.dp))
                     }
                 }
             }
+        }
+    }
+}
+
+/** Subtle printed-stock patina and rounded edge highlights, stable for each edition. */
+@Composable
+private fun PrintedEditionFinish(seed: String, modifier: Modifier = Modifier) {
+    Canvas(modifier.clip(RoundedCornerShape(4.dp))) {
+        val random = kotlin.random.Random(seed.hashCode())
+        val hairline = .65.dp.toPx()
+        drawRoundRect(Color(0x65463B2D), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()), style = Stroke(1.5.dp.toPx()))
+        drawRoundRect(Color(0x70EEE2CC), topLeft = Offset(hairline, hairline),
+            size = Size((size.width - 2 * hairline).coerceAtLeast(0f), (size.height - 2 * hairline).coerceAtLeast(0f)),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()), style = Stroke(hairline))
+        drawRect(Brush.horizontalGradient(0f to Color(0x37000000), .09f to Color.Transparent,
+            .88f to Color.Transparent, 1f to Color(0x38000000)))
+        repeat(180) {
+            val x = random.nextFloat() * size.width
+            val y = random.nextFloat() * size.height
+            val edge = x < size.width * .07f || x > size.width * .93f || y < size.height * .025f || y > size.height * .975f
+            drawCircle(if (edge) Color(0x48E9D9BC) else Color(0x0BE9D9BC),
+                radius = (.2f + random.nextFloat() * if (edge) .9f else .35f).dp.toPx(), center = Offset(x, y))
         }
     }
 }
