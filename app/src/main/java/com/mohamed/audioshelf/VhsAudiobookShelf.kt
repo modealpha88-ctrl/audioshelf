@@ -51,6 +51,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
@@ -126,6 +128,43 @@ internal fun vhsShelfPosition(relative: Float, spine: Float, depth: Float, gap: 
 internal fun vhsProjectedWidth(width: Dp, angle: Float, camera: Dp): Dp {
     val radians = abs(angle) * PI.toFloat() / 180f
     return width * cos(radians).coerceAtLeast(0f) / (1f + width / camera * sin(radians))
+}
+
+// The hinge stays full height. Perspective shortens the opposite edge from the top,
+// so both lower corners remain on the shelf throughout the turn.
+private fun Modifier.projectShelfFace(width: Dp, angle: Float, camera: Dp, hinge: Dp, rightHinge: Boolean): Modifier {
+    val radians = abs(angle) * PI.toFloat() / 180f
+    val farScale = 1f / (1f + width / camera * sin(radians))
+    val horizontalScale = cos(radians).coerceAtLeast(0f) * farScale
+    return graphicsLayer {
+        transformOrigin = TransformOrigin(if (rightHinge) 1f else 0f, 1f)
+        translationX = hinge.toPx() + (if (rightHinge) -size.width else size.width) / 2f
+        scaleX = horizontalScale
+    }.drawWithCache {
+        val w = size.width
+        val h = size.height
+        val inset = h * (1f - farScale)
+        val matrix = android.graphics.Matrix()
+        val warp = inset > .01f && matrix.setPolyToPoly(
+            floatArrayOf(0f, 0f, w, 0f, w, h, 0f, h), 0,
+            floatArrayOf(0f, if (rightHinge) inset else 0f,
+                w, if (rightHinge) 0f else inset, w, h, 0f, h), 0, 4,
+        )
+        onDrawWithContent {
+            if (warp) {
+                val canvas = drawContext.canvas.nativeCanvas
+                val save = canvas.save()
+                try {
+                    canvas.concat(matrix)
+                    drawContent()
+                } finally {
+                    canvas.restoreToCount(save)
+                }
+            } else {
+                drawContent()
+            }
+        }
+    }
 }
 
 internal fun vhsIsAlbum(ratio: Float): Boolean = ratio in .90f..1.15f
@@ -493,12 +532,7 @@ private fun VhsPhysicalCase(
         if (openness < .999f) {
             Box(
                 Modifier.width(spineWidth).height(height)
-                    .graphicsLayer {
-                        translationX = hinge.toPx() - size.width / 2f
-                        rotationY = spineAngle
-                        cameraDistance = camera.toPx()
-                        transformOrigin = TransformOrigin(1f, 1f)
-                    }
+                    .projectShelfFace(spineWidth, spineAngle, camera, hinge, rightHinge = true)
                     .shadow(if (album) 2.dp else 5.dp, RoundedCornerShape(corner))
                     .clickable(enabled = openness < .50f, role = Role.Button,
                         onClickLabel = "Select " + book.title, onClick = onSelect)
@@ -620,12 +654,7 @@ private fun VhsPhysicalCase(
         val openCover = openness > .55f
         Box(
             Modifier.width(coverWidth + edge + reveal).height(height)
-                .graphicsLayer {
-                    translationX = hinge.toPx() + size.width / 2f
-                    transformOrigin = TransformOrigin(0f, 1f)
-                    rotationY = coverAngle
-                    cameraDistance = camera.toPx()
-                }
+                .projectShelfFace(faceWidth, coverAngle, camera, hinge, rightHinge = false)
                 .clickable(role = Role.Button,
                     onClickLabel = if (openCover) "Open audiobook" else "Select audiobook",
                     onClick = if (openCover) onOpen else onSelect)
