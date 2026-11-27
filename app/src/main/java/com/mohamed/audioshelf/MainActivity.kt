@@ -31,6 +31,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,6 +57,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -364,7 +368,7 @@ private fun AudioShelfApp(
             dismissButton = { TextButton(onClick = { confirmExit = false }) { Text("Stay") } },
         )
     }
-    val onShelf = tab == HomeTab.Library && state.selectedBook == null
+    val onShelf = state.selectedBook == null
     val shelfPrefs = remember(context) { context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE) }
     var darkShelf by rememberSaveable { mutableStateOf(shelfPrefs.getBoolean("dark_shelf", true)) }
     val shelfColors = if (darkShelf) vhsDarkColors else vhsPaperColors
@@ -410,6 +414,12 @@ private fun AudioShelfApp(
         playBook(context, controller, book, state.chapters, index, progress.positionMs)
     }
 
+    MaterialTheme(
+        colorScheme = if (onShelf) shelfColors else MaterialTheme.colorScheme,
+        shapes = if (onShelf) Shapes(extraSmall = RoundedCornerShape(3.dp),
+            small = RoundedCornerShape(5.dp), medium = RoundedCornerShape(7.dp),
+            large = RoundedCornerShape(10.dp), extraLarge = RoundedCornerShape(12.dp)) else MaterialTheme.shapes,
+    ) {
     Scaffold(
         containerColor = if (onShelf) shelfColors.background else MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -433,21 +443,21 @@ private fun AudioShelfApp(
                         selected = tab == HomeTab.Browse,
                         onClick = { selectTab(HomeTab.Browse) },
                         icon = { Icon(Icons.Default.Explore, null) },
-                        label = { Text("Browse") },
+                        label = { Text("Browse", fontFamily = FontFamily.Serif) },
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Library,
                         colors = navColors,
                         onClick = { selectTab(HomeTab.Library) },
                         icon = { Icon(Icons.Default.LibraryBooks, null) },
-                        label = { Text("Library") },
+                        label = { Text("Library", fontFamily = FontFamily.Serif) },
                     )
                     NavigationBarItem(
                         selected = tab == HomeTab.Sources,
                         colors = navColors,
                         onClick = { selectTab(HomeTab.Sources) },
                         icon = { Icon(Icons.Default.Extension, null) },
-                        label = { Text("Sources") },
+                        label = { Text("Sources", fontFamily = FontFamily.Serif) },
                     )
                 }
                 }
@@ -614,6 +624,7 @@ private fun AudioShelfApp(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -683,66 +694,109 @@ private fun CompactMiniPlayer(
     }
 }
 
+/** Shared compact editorial heading for catalogue and connection pages. */
+@Composable
+private fun EditorialPageHeader(page: String, title: String, subtitle: String) {
+    val colors = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth().padding(start = 17.dp, end = 17.dp, top = 22.dp, bottom = 15.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+            Text("AUDIO / SHELF", color = colors.primary, fontFamily = FontFamily.Serif,
+                fontSize = 11.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.SemiBold)
+            Text(page, color = colors.onBackground, fontFamily = FontFamily.Serif,
+                fontSize = 11.sp, letterSpacing = 1.6.sp)
+        }
+        Spacer(Modifier.height(20.dp))
+        Text(title, color = colors.onBackground, fontFamily = FontFamily.Serif,
+            fontSize = 29.sp, lineHeight = 33.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(subtitle, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun EditorialGrain(modifier: Modifier = Modifier) {
+    val ink = MaterialTheme.colorScheme.onSurfaceVariant
+    Canvas(modifier) {
+        repeat(1200) { i ->
+            drawCircle(ink.copy(alpha = .065f),
+                radius = if (i % 3 == 0) .8f else .35f,
+                center = androidx.compose.ui.geometry.Offset(
+                    ((i * 757 + 17) % 997) / 997f * size.width,
+                    ((i * 499 + 79) % 991) / 991f * size.height))
+        }
+    }
+}
+
+@Composable
+private fun EditorialSection(title: String, index: String) {
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(index, color = colors.primary, fontFamily = FontFamily.Serif,
+            fontSize = 11.sp, letterSpacing = 1.sp)
+        Spacer(Modifier.width(10.dp))
+        Text(title, color = colors.onSurface, fontFamily = FontFamily.Serif,
+            fontSize = 21.sp, lineHeight = 25.sp, modifier = Modifier.weight(1f))
+    }
+}
+
 @Composable
 private fun BrowseScreen(state: AudioShelfState, onSearch: (String) -> Unit, onSource: (String) -> Unit, onRetry: () -> Unit, onBook: (AudioBook) -> Unit) {
     var query by rememberSaveable { mutableStateOf(state.query) }
-
     LaunchedEffect(query) {
         delay(400)
         if (query != state.query) onSearch(query)
     }
-
-    Column(Modifier.fillMaxSize()) {
-        LargeTopAppBar(title = { Column { Text("AudioShelf"); Text("Browse and import audiobooks", style = MaterialTheme.typography.labelMedium) } })
-        SearchBar(
-            inputField = {
-                SearchBarDefaults.InputField(
-                    query = query,
-                    onQueryChange = { query = it },
-                    onSearch = {
-                        query = it
-                        onSearch(it)
-                    },
-                    expanded = false,
-                    onExpandedChange = {},
-                    placeholder = { Text("Search audiobook catalogues") },
-                    leadingIcon = {
-                        IconButton(onClick = { onSearch(query) }) {
-                            Icon(Icons.Default.Search, "Search")
-                        }
-                    },
-                    trailingIcon = { if (query.isNotEmpty()) IconButton({ query = ""; onSearch("") }) { Icon(Icons.Default.Close, null) } },
-                )
-            },
-            expanded = false,
-            onExpandedChange = {},
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        ) {}
-        SourceSelector(state.sourceId, onSource)
-        ContentList(state.browse, state.loading, state.error, query, onRetry, onBook)
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        EditorialGrain(Modifier.matchParentSize())
+        Column(Modifier.fillMaxSize()) {
+            EditorialPageHeader("BROWSE", "Discover audiobooks", "Explore catalogues and add to your collection")
+            OutlinedTextField(
+                value = query, onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 17.dp),
+                singleLine = true, placeholder = { Text("Search audiobook catalogues") },
+                leadingIcon = { IconButton(onClick = { onSearch(query) }) { Icon(Icons.Default.Search, "Search") } },
+                trailingIcon = { if (query.isNotEmpty()) IconButton({ query = ""; onSearch("") }) { Icon(Icons.Default.Close, "Clear search") } },
+                shape = RoundedCornerShape(8.dp),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onSearch(query) }),
+            )
+            SourceSelector(state.sourceId, onSource)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(if (query.isBlank()) "CATALOGUE" else "SEARCH RESULTS",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Text(if (state.loading) "LOADING" else "${state.browse.size} TITLES",
+                    color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, letterSpacing = 1.sp)
+            }
+            ContentList(state.browse, state.loading, state.error, query, onRetry, onBook)
+        }
     }
 }
 
 @Composable
 private fun SourceSelector(selectedId: String, onSource: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val options = listOf("all" to "All sources") + SourceRegistry.all().map { it.id to it.name }
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Public, null)
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(options.first { it.first == selectedId }.second, fontWeight = FontWeight.Bold)
-                    Text("Open audio and official audiobook services", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(options, key = { it.first }) { (id, label) ->
-                    FilterChip(selected = selectedId == id, onClick = { onSource(id) }, label = { Text(label) })
+    Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 14.dp)) {
+        Text("CATALOGUE / SOURCE", color = colors.onSurfaceVariant,
+            fontSize = 10.sp, letterSpacing = 1.3.sp)
+        Spacer(Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            items(options, key = { it.first }) { (id, label) ->
+                val active = selectedId == id
+                Surface(onClick = { onSource(id) }, shape = RoundedCornerShape(2.dp),
+                    color = if (active) colors.secondaryContainer else Color.Transparent,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.outline.copy(alpha = .7f))) {
+                    Text(label, modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
+                        color = if (active) colors.onSecondaryContainer else colors.onSurface,
+                        fontFamily = FontFamily.Serif, fontSize = 13.sp, maxLines = 1)
                 }
             }
         }
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = colors.outline.copy(alpha = .4f))
     }
 }
 
@@ -769,21 +823,17 @@ private fun SourcesScreen(
         uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()
     }.getOrDefault(false)
 
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    EditorialGrain(Modifier.matchParentSize())
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            LargeTopAppBar(
-                title = {
-                    Column {
-                        Text("Source repositories")
-                        Text("Add and install audiobook providers", style = MaterialTheme.typography.labelMedium)
-                    }
-                },
-            )
-            Column(Modifier.padding(horizontal = 16.dp)) {
+            EditorialPageHeader("SOURCES", "Your connections", "Manage providers and import your audiobooks")
+            Column(Modifier.padding(horizontal = 17.dp)) {
+                EditorialSection("Source repositories", "01")
                 OutlinedTextField(
                     value = repositoryUrl,
                     onValueChange = { repositoryUrl = it },
@@ -798,6 +848,7 @@ private fun SourcesScreen(
                     onClick = { onAdd(repositoryUrl.trim()) },
                     enabled = repositoryUrl.isNotBlank() && !state.repositoryBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     if (state.repositoryBusy) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -819,9 +870,10 @@ private fun SourcesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 HorizontalDivider(Modifier.padding(vertical = 18.dp))
+                EditorialSection("Server connection", "02")
                 AudioarrSource()
                 HorizontalDivider(Modifier.padding(vertical = 18.dp))
-                Text("Import audiobook by URL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                EditorialSection("Import audiobook by URL", "03")
                 Text(
                     "Paste an individual audiobook page or direct audio URL, not a website homepage. Only sites allowing third-party access are supported.",
                     style = MaterialTheme.typography.bodySmall,
@@ -844,6 +896,7 @@ private fun SourcesScreen(
                     onClick = { onImport(bookUrl.trim()) },
                     enabled = bookUrl.isNotBlank() && hasRights && !state.importBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     if (state.importBusy) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -864,13 +917,14 @@ private fun SourcesScreen(
                     },
                     enabled = canOpenWebsite,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Open website in browser")
                 }
                 HorizontalDivider(Modifier.padding(vertical = 14.dp))
-                Text("Import free podcast audiobook", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                EditorialSection("Podcast audiobooks", "04")
                 Text(
                     "Paste the public HTTPS RSS feed for a free Podiobooks or other openly distributed audiobook podcast. Only publisher-provided audio enclosures are used.",
                     style = MaterialTheme.typography.bodySmall
@@ -888,13 +942,14 @@ private fun SourcesScreen(
                     onClick = { onImportFeed(podcastUrl.trim()) },
                     enabled = podcastUrl.startsWith("https://") && !state.importBusy,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(5.dp),
                 ) {
                     Icon(Icons.Default.Podcasts, null)
                     Spacer(Modifier.width(8.dp))
                     Text(if (state.importBusy) "Importing…" else "Import RSS audiobook")
                 }
                 HorizontalDivider(Modifier.padding(vertical = 14.dp))
-                Text("Import DRM-free audio from device", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                EditorialSection("Import from device", "05")
                 Text(
                     "Choose a purchased Libro.fm MP3 or M4B file (or another audio file you are allowed to play). Files stay on your device.",
                     style = MaterialTheme.typography.bodySmall,
@@ -915,7 +970,7 @@ private fun SourcesScreen(
 
         if (state.repositories.isEmpty()) {
             item {
-                Box(Modifier.fillParentMaxHeight(.55f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                         Icon(Icons.Default.ExtensionOff, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(12.dp))
@@ -929,6 +984,7 @@ private fun SourcesScreen(
         items(state.repositories, key = SourceRepository::url) { repository ->
             RepositoryCard(repository, isInstalled, onRefresh, onRemove, onToggleProvider)
         }
+    }
     }
 }
 
@@ -946,8 +1002,7 @@ private fun TorrentPanel(onPickTorrentFile: () -> Unit) {
         }
     }
     HorizontalDivider(Modifier.padding(vertical = 14.dp))
-    Text("BitTorrent audiobook downloads", style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold)
+    EditorialSection("BitTorrent downloads", "06")
     Text("Download permitted MP3/M4B audiobooks using BitTorrent. Only audio files are selected; completed books automatically appear in Library. Peer connections share your network IP.",
         style = MaterialTheme.typography.bodySmall)
     Spacer(Modifier.height(10.dp))
@@ -1036,13 +1091,16 @@ private fun RepositoryCard(
     onRemove: (SourceRepository) -> Unit,
     onToggleProvider: (SourceProviderDefinition) -> Unit,
 ) {
-    ElevatedCard(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
+    OutlinedCard(Modifier.padding(horizontal = 17.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(5.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(.7.dp, MaterialTheme.colorScheme.outline.copy(alpha = .45f))) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(Icons.Default.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(repository.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(repository.name, fontFamily = FontFamily.Serif, fontSize = 19.sp)
                     if (repository.description.isNotBlank()) Text(repository.description, style = MaterialTheme.typography.bodySmall)
                     Text(repository.url, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -1192,24 +1250,36 @@ private fun ListeningCard(book: AudioBook, progress: ListeningProgress, onClick:
 
 @Composable
 private fun BookRow(book: AudioBook, onBook: (AudioBook) -> Unit) {
-    ElevatedCard(onClick = { onBook(book) }, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            SubcomposeAsyncImage(
-                model = book.coverUrl,
-                contentDescription = "${book.title} cover",
-                contentScale = ContentScale.Fit,
-                loading = { CoverFallback(book) },
-                error = { CoverFallback(book) },
-                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-            )
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(book.authors, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (book.language.isNotBlank()) Text(book.language, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                if (book.externalUrl.isNotBlank()) Text("Official website · External access", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+    val colors = MaterialTheme.colorScheme
+    Surface(onClick = { onBook(book) }, modifier = Modifier.fillMaxWidth(),
+        color = colors.surface, shape = RoundedCornerShape(5.dp),
+        border = androidx.compose.foundation.BorderStroke(.7.dp, colors.outline.copy(alpha = .35f))) {
+        Row(Modifier.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(64.dp).height(87.dp).clip(RoundedCornerShape(2.dp))
+                .background(colors.surfaceVariant).border(.7.dp, colors.outline.copy(alpha = .6f), RoundedCornerShape(2.dp)),
+                contentAlignment = Alignment.Center) {
+                if (book.coverUrl.isBlank()) ShelfTextCover(book, Modifier.fillMaxSize())
+                else SubcomposeAsyncImage(
+                    model = book.coverUrl, contentDescription = "${book.title} cover",
+                    contentScale = ContentScale.Fit,
+                    loading = { ShelfTextCover(book, Modifier.fillMaxSize()) },
+                    error = { ShelfTextCover(book, Modifier.fillMaxSize()) },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
-            Icon(Icons.Default.ChevronRight, null)
+            Spacer(Modifier.width(13.dp))
+            Column(Modifier.weight(1f)) {
+                Text(book.title, color = colors.onSurface, fontFamily = FontFamily.Serif,
+                    fontSize = 19.sp, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(5.dp))
+                Text(book.authors, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (book.language.isNotBlank()) Text(book.language.uppercase(), fontSize = 9.sp,
+                    letterSpacing = .8.sp, color = colors.primary)
+                if (book.externalUrl.isNotBlank()) Text("Official website · External access",
+                    style = MaterialTheme.typography.labelSmall, color = colors.primary)
+            }
+            Icon(Icons.Default.ChevronRight, "Open audiobook", tint = colors.onSurfaceVariant)
         }
     }
 }
