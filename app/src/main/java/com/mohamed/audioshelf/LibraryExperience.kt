@@ -264,13 +264,7 @@ fun LibraryBookDetailCard(book: AudioBook, progress: ListeningProgress) {
     Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = vhsPaperColors.surface,
         shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Concept C uses a physical book jacket in details too: no vinyl behind square art.
-            Box(Modifier.width(116.dp).height(145.dp)
-                .shadow(5.dp, RoundedCornerShape(3.dp))
-                .background(Color(0xFFE6D5B7))
-                .padding(start = 5.dp, end = 3.dp, top = 3.dp, bottom = 3.dp)) {
-                VhsInkRevealCover(book, Modifier.fillMaxSize())
-            }
+            VhsInkRevealCover(book)
             Spacer(Modifier.width(17.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("AUDIOBOOK", color = vhsPaperColors.onSurface.copy(alpha = .75f),

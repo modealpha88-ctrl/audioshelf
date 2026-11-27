@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -206,7 +207,15 @@ internal fun VhsAudiobookShelf(
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val bookHeight = minOf(maxWidth * .60f, 260.dp).coerceAtLeast(150.dp)
             val spineWidth = bookHeight * (142f / 840f)
-            val coverWidth = bookHeight * (474f / 900f)
+            val ratios = remember { mutableStateMapOf<String, Float>() }
+            val maxCoverWidth = maxWidth * .54f
+            fun faceWidth(ratio: Float) = minOf(bookHeight * ratio, maxCoverWidth)
+            fun ratioAt(index: Int) = ratios[visible[vhsWrap(index, visible.size)].coverUrl] ?: .67f
+            val mid = floor(position.toDouble()).toInt()
+            val weight = vhsSmoothstep(position - mid)
+            fun caseWidth(ratio: Float) = faceWidth(ratio) + if (ratio < .86f) 8.dp else 3.dp
+            val openingWidth = caseWidth(ratioAt(mid)) * (1f - weight) +
+                caseWidth(ratioAt(mid + 1)) * weight
             val gap = bookHeight * .030f
             val stageWidth = maxWidth
             val stepPx = with(density) { (spineWidth + gap).toPx() }
@@ -251,23 +260,27 @@ internal fun VhsAudiobookShelf(
                     .background(Brush.verticalGradient(listOf(
                         Color.Transparent, Color(0x14231D17), Color.Transparent,
                     ))))
-                val mid = floor(position.toDouble()).toInt()
                 for (virtualIndex in (mid - 10)..(mid + 11)) {
                     val book = visible[vhsWrap(virtualIndex, visible.size)]
                     val relative = virtualIndex - position
                     val openness = vhsSmoothstep(1f - abs(relative))
                     val x = vhsShelfPosition(relative, spineWidth.value,
-                        coverWidth.value, gap.value).dp
+                        openingWidth.value, gap.value).dp
                     // Only compose physical cases near the visible viewport.
                     // Repeated virtual copies stay off-screen and never trigger image loads.
-                    if (abs(x.value) > stageWidth.value / 2f + coverWidth.value * 1.4f) continue
+                    if (abs(x.value) > stageWidth.value / 2f + maxCoverWidth.value) continue
                     key(virtualIndex, book.sourceId, book.id) {
+                        val ratio = ratioAt(virtualIndex)
+                        val width = faceWidth(ratio)
                         VhsPhysicalCase(
                             book = book, spineRevision = spineRevision,
-                            height = bookHeight, spineWidth = spineWidth,
-                            coverWidth = coverWidth, relative = relative,
+                            height = width / ratio, spineWidth = spineWidth,
+                            album = ratio >= .86f,
+                            onRatio = { ratios[book.coverUrl] = it },
+                            coverWidth = width,
                             openness = openness, motion = motion,
-                            modifier = Modifier.offset(x = x).zIndex(
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                                .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
                             onSelect = { target = virtualIndex },
                             onOpen = { onOpen(book) },
@@ -330,13 +343,24 @@ internal fun VhsAudiobookShelf(
 }
 
 @Composable
+internal fun rememberShelfCoverPainter(book: AudioBook): AsyncImagePainter {
+    val context = LocalContext.current
+    val request = remember(context, book.coverUrl) {
+        ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
+            .size(840, 840).scale(coil.size.Scale.FIT).allowHardware(false).build()
+    }
+    return rememberAsyncImagePainter(request)
+}
+
+@Composable
 private fun VhsPhysicalCase(
     book: AudioBook,
     spineRevision: Int,
     height: Dp,
     spineWidth: Dp,
     coverWidth: Dp,
-    relative: Float,
+    album: Boolean,
+    onRatio: (Float) -> Unit,
     openness: Float,
     motion: Boolean,
     modifier: Modifier = Modifier,
@@ -354,13 +378,13 @@ private fun VhsPhysicalCase(
             runCatching { store.displayedArtwork(book, binding) }.getOrNull()
         }
     }
-    val coverRequest = remember(context, book.coverUrl) {
-        ImageRequest.Builder(context).data(book.coverUrl.ifBlank { null })
-            .size(420, 840).allowHardware(false).build()
+    val coverPainter = rememberShelfCoverPainter(book)
+    val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)?.result?.drawable
+    LaunchedEffect(book.coverUrl, coverDrawable) {
+        if (coverDrawable != null && coverDrawable.intrinsicWidth > 0 && coverDrawable.intrinsicHeight > 0) {
+            onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
+        }
     }
-    val coverPainter = rememberAsyncImagePainter(coverRequest)
-    val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)
-        ?.result?.drawable
     val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
     val savedPalette = remember(book.id, book.coverUrl, spineRevision) { store.palette(book) }
     val palette = remember(book.title, coverDrawable, savedPalette, binding, texture) {
@@ -382,17 +406,16 @@ private fun VhsPhysicalCase(
         }
     }
 
-    val lift = (openness * 11f).dp
+    val edge = if (album) 3.dp else 8.dp
     val spineAngle = -90f * openness
     val coverAngle = 90f * (1f - openness)
     val tilt = if (motion) (-4.5f * openness) else 0f
 
     Box(
-        modifier.width(coverWidth + 12.dp).height(height + 26.dp)
+        modifier.width(maxOf(spineWidth, coverWidth + edge)).height(height)
             .graphicsLayer {
-                translationY = -lift.toPx()
+                transformOrigin = TransformOrigin(0f, 1f)
                 rotationZ = tilt
-                rotationX = if (motion) 2.5f * openness else 0f
                 cameraDistance = 35f * density
             },
         contentAlignment = Alignment.Center,
@@ -467,7 +490,7 @@ private fun VhsPhysicalCase(
 
         if (openness > .001f) {
             Box(
-                Modifier.width(coverWidth + 11.dp).height(height)
+                Modifier.width(coverWidth + edge).height(height)
                     .graphicsLayer {
                         rotationY = coverAngle
                         cameraDistance = 34f * density
@@ -478,11 +501,11 @@ private fun VhsPhysicalCase(
                     .semantics { contentDescription = "Open audiobook: " + book.title },
             ) {
                 // Physical side of the box: paper grain, board bevel, and cast shadow.
-                Box(Modifier.align(Alignment.CenterEnd).width(11.dp).fillMaxSize()
+                Box(Modifier.align(Alignment.CenterEnd).width(edge).fillMaxSize()
                     .background(Brush.horizontalGradient(listOf(
                         Color(0xFF3A332C), Color(0xFFE7DCC5), Color(0xFF514638),
                     )))) {
-                    Canvas(Modifier.fillMaxSize()) {
+                    if (!album) Canvas(Modifier.fillMaxSize()) {
                         var y = 2.dp.toPx()
                         while (y < size.height) {
                             drawLine(Color(0x5C4A443C),
@@ -510,7 +533,7 @@ private fun VhsPhysicalCase(
                 }
                 if (openness > .96f) {
                     Box(Modifier.align(Alignment.BottomStart)
-                        .offset(x = (-9).dp, y = 6.dp)
+                        .padding(4.dp)
                         .size(42.dp)
                         .shadow(5.dp, CircleShape)
                         .background(Paper.copy(alpha = .96f), CircleShape)
