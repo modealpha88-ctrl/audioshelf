@@ -149,7 +149,7 @@ class SpineBindingStore(private val context: Context) {
     /** Cached palette is retained when the cover loader temporarily has no network access. */
     fun palette(book: AudioBook): Pair<Int, Int>? {
         if (book.coverUrl.isBlank()) return null
-        val key = "palette-${bookKey(book)}-${digest(book.coverUrl).take(12)}"
+        val key = "palette-v5-${bookKey(book)}-${digest(book.coverUrl).take(12)}"
         val stored = prefs.getString(key, null)?.split(':') ?: return null
         return if (stored.size == 2) runCatching {
             (stored[0].toInt() to stored[1].toInt())
@@ -158,7 +158,7 @@ class SpineBindingStore(private val context: Context) {
 
     fun savePalette(book: AudioBook, clothArgb: Int, inkArgb: Int) {
         if (book.coverUrl.isBlank()) return
-        val key = "palette-${bookKey(book)}-${digest(book.coverUrl).take(12)}"
+        val key = "palette-v5-${bookKey(book)}-${digest(book.coverUrl).take(12)}"
         val serialized = "$clothArgb:$inkArgb"
         if (prefs.getString(key, null) != serialized)
             prefs.edit().putString(key, serialized).apply()

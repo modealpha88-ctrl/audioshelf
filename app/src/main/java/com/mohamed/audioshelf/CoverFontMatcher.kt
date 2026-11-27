@@ -185,7 +185,8 @@ internal fun restoreCoverFont(context: Context, name: String, upper: Boolean, sc
 }
 
 /** Draw the full title in the chosen real font, not a stretched crop. */
-internal fun renderFontMatch(title: String, match: CoverFontMatch, ink: Int): Bitmap? {
+internal fun renderFontMatch(title: String, match: CoverFontMatch, ink: Int,
+    wordInks: Map<String, Int> = emptyMap()): Bitmap? {
     val label = if (match.upperCase) title.uppercase(java.util.Locale.ROOT) else title
     if (label.isBlank()) return null
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -201,6 +202,13 @@ internal fun renderFontMatch(title: String, match: CoverFontMatch, ink: Int): Bi
     val h = bounds.height() + 8
     if (w !in 9..4096 || h !in 9..256) return null
     return Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
-        Canvas(it).drawText(label, 4f - bounds.left, 4f - bounds.top, paint)
+        val canvas = Canvas(it)
+        val x = 4f - bounds.left
+        val y = 4f - bounds.top
+        if (wordInks.isEmpty()) canvas.drawText(label, x, y, paint)
+        else for (word in Regex("\\S+").findAll(label)) {
+            paint.color = wordInks[spineLetteringKey(word.value)] ?: ink
+            canvas.drawText(word.value, x + paint.measureText(label.substring(0, word.range.first)), y, paint)
+        }
     }
 }
