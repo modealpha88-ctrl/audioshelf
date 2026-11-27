@@ -140,6 +140,7 @@ fun AnimatedLibraryScreen(
         context.getSharedPreferences(PREF_LIBRARY_VISUALS, Context.MODE_PRIVATE)
     }
     var motion by rememberSaveable { mutableStateOf(prefs.getBoolean("motion_enabled", true)) }
+    var flipSounds by rememberSaveable { mutableStateOf(prefs.getBoolean("shelf_flip_sounds", true)) }
     val animateVisuals = systemMotionEnabled() && motion
     var search by rememberSaveable { mutableStateOf("") }
     var sortByTitle by rememberSaveable { mutableStateOf(false) }
@@ -207,6 +208,14 @@ fun AnimatedLibraryScreen(
                                     prefs.edit().putBoolean("motion_enabled", motion).apply()
                                     menuOpen = false
                                 })
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Shelf flip sounds") },
+                                trailingIcon = { Switch(flipSounds, null) },
+                                onClick = {
+                                    flipSounds = !flipSounds
+                                    prefs.edit().putBoolean("shelf_flip_sounds", flipSounds).apply()
+                                    menuOpen = false
+                                })
                             if (books.any { it.coverUrl.isBlank() }) {
                                 androidx.compose.material3.DropdownMenuItem(
                                     text = { Text("Find missing covers") },
@@ -241,6 +250,7 @@ fun AnimatedLibraryScreen(
                     spineRevision = spineRevision,
                     onOpen = onBook,
                     onBackdropCover = onBackdropCover,
+                    flipSounds = flipSounds,
                 )
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween) {

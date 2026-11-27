@@ -154,6 +154,7 @@ internal fun VhsAudiobookShelf(
     spineRevision: Int,
     onOpen: (AudioBook) -> Unit,
     onBackdropCover: (String) -> Unit = {},
+    flipSounds: Boolean = true,
 ) {
     val Ink = MaterialTheme.colorScheme.onBackground
     val Cobalt = MaterialTheme.colorScheme.primary
@@ -163,6 +164,14 @@ internal fun VhsAudiobookShelf(
     val visible = vhsFilterBooks(books, filter, progressFor)
     var target by rememberSaveable(filter, visible.size) {
         mutableIntStateOf(visible.size / 2)
+    }
+    val playFlip = rememberShelfFlipSound(flipSounds)
+    val latestPlayFlip by androidx.compose.runtime.rememberUpdatedState(playFlip)
+    fun moveTo(next: Int) {
+        if (visible.size > 1 && next != target) {
+            target = next
+            latestPlayFlip()
+        }
     }
     val position by animateFloatAsState(
         target.toFloat(),
@@ -250,7 +259,7 @@ internal fun VhsAudiobookShelf(
             Box(
                 Modifier.fillMaxWidth().height(bookHeight + 72.dp)
                     .clip(RoundedCornerShape(0.dp))
-                    .pointerInput(visible.size, stepPx) {
+                    .pointerInput(visible, stepPx, flipSounds) {
                         detectHorizontalDragGestures(
                             onDragStart = { draggedPx = 0f },
                             onHorizontalDrag = { change, dx ->
@@ -261,7 +270,7 @@ internal fun VhsAudiobookShelf(
                                 val steps = (draggedPx / stepPx).roundToInt()
                                 val delta = if (steps == 0 && abs(draggedPx) > stepPx * .22f)
                                     if (draggedPx > 0) 1 else -1 else steps
-                                target -= delta.coerceIn(-3, 3)
+                                moveTo(target - delta.coerceIn(-3, 3))
                                 draggedPx = 0f
                             },
                             onDragCancel = { draggedPx = 0f },
@@ -269,8 +278,8 @@ internal fun VhsAudiobookShelf(
                     }
                     .onKeyEvent { event ->
                         if (event.type != KeyEventType.KeyDown) false else when (event.key) {
-                            Key.DirectionLeft -> { target--; true }
-                            Key.DirectionRight -> { target++; true }
+                            Key.DirectionLeft -> { moveTo(target - 1); true }
+                            Key.DirectionRight -> { moveTo(target + 1); true }
                             Key.Enter, Key.NumPadEnter -> {
                                 selected?.let(onOpen)
                                 true
@@ -310,7 +319,7 @@ internal fun VhsAudiobookShelf(
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .offset(x = x, y = (-36).dp).zIndex(
                                 40f - abs(relative) + 100f * openness),
-                            onSelect = { target = virtualIndex },
+                            onSelect = { moveTo(virtualIndex) },
                             onOpen = { onOpen(book) },
                         )
                     }
@@ -327,7 +336,7 @@ internal fun VhsAudiobookShelf(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            IconButton(onClick = { target-- }, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = { moveTo(target - 1) }, modifier = Modifier.size(48.dp)) {
                 Text("←", fontSize = 23.sp, color = Ink)
             }
             Box(Modifier.weight(1f).height(124.dp), contentAlignment = Alignment.TopCenter) {
@@ -363,7 +372,7 @@ internal fun VhsAudiobookShelf(
                     }
                 }
             }
-            IconButton(onClick = { target++ }, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = { moveTo(target + 1) }, modifier = Modifier.size(48.dp)) {
                 Text("→", fontSize = 23.sp, color = Ink)
             }
         }
