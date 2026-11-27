@@ -56,7 +56,7 @@ internal fun separateSpineInk(pixels: IntArray, w: Int, h: Int): IntArray? {
     val peak = distances[(distances.lastIndex * .90).toInt()]
     if (peak < max(30.0, noise * 2.5)) return null
     val lower = max(12.0, noise * 1.6 + 5)
-    val upper = max(lower + 12, peak * .75)
+    val upper = max(lower + 12, peak * .60)
     val result = IntArray(pixels.size)
     var strong = 0
     for (i in pixels.indices) {
