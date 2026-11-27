@@ -448,14 +448,30 @@ private fun VhsPhysicalCase(
                 } else {
                     Box(Modifier.fillMaxSize()
                         .clip(RoundedCornerShape(2.dp))) {
+                        val illustrated = binding == SpineBindingMode.AUTOMATIC && coverDrawable != null
+                        val artHeight = minOf(spineWidth * 1.15f, height * .24f)
                         BookstorePrintedSpine(
                             title = book.title, texture = texture, palette = palette,
                             modifier = Modifier.fillMaxSize(),
-                            ornate = binding != SpineBindingMode.CLASSIC,
+                            ornate = !illustrated && binding != SpineBindingMode.CLASSIC,
                         )
-                        Box(
-                            Modifier.align(Alignment.Center)
-                                .layout { measurable, limits ->
+                        if (illustrated) {
+                            Image(
+                                painter = coverPainter,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.align(Alignment.TopCenter)
+                                    .padding(top = 6.dp, start = 4.dp, end = 4.dp)
+                                    .fillMaxWidth().height(artHeight)
+                                    .border(.5.dp, palette.ink.copy(alpha = .65f)),
+                            )
+                        }
+                        val titleArea = if (illustrated) Modifier.fillMaxSize()
+                            .padding(top = artHeight + 10.dp, bottom = 24.dp)
+                        else Modifier.fillMaxSize()
+                        Box(titleArea, contentAlignment = Alignment.Center) {
+                            Box(
+                                Modifier.layout { measurable, limits ->
                                     val measured = measurable.measure(Constraints(
                                         maxWidth = limits.maxHeight.coerceAtLeast(1),
                                         maxHeight = limits.maxWidth.coerceAtLeast(1),
@@ -467,16 +483,19 @@ private fun VhsPhysicalCase(
                                         ) { rotationZ = 90f }
                                     }
                                 },
-                        ) {
-                            Text(bookstoreSpineTitle(book.title).uppercase(),
-                                fontFamily = FontFamily.Serif,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp, maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = palette.ink)
+                            ) {
+                                Text(bookstoreSpineTitle(book.title).uppercase(),
+                                    fontFamily = FontFamily.Serif,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.sp, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = palette.ink)
+                            }
                         }
-                        Text("AUDIO", Modifier.align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp),
+                        val badge = Modifier.align(Alignment.BottomCenter)
+                            .padding(bottom = if (illustrated) 6.dp else 12.dp)
+                        Text("AUDIO", if (illustrated) badge.border(.5.dp, palette.ink)
+                            .padding(horizontal = 2.dp) else badge,
                             color = palette.ink, fontSize = 7.sp,
                             letterSpacing = .4.sp, fontWeight = FontWeight.Bold)
                     }
