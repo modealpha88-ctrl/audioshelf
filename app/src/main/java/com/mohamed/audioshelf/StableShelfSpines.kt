@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.mohamed.audioshelf.data.SpineBindingMode
@@ -56,7 +57,8 @@ internal class StableSpineEntry(
     internal var analyzing = false
     internal var preloading = false
     internal val restoreLock = Mutex()
-    internal var restored = false
+    internal var checkedCover = false
+    internal var restored by mutableStateOf(false)
     var ratio by mutableStateOf<Float?>(null)
         internal set
     internal var coverHash: String? = null
@@ -112,7 +114,8 @@ internal class StableShelfSpines(
             val saved = withContext(Dispatchers.IO) { snapshots.read(book, entry.binding) }
             if (saved != null) {
                 entry.ratio = saved.ratio
-                publish(entry, saved.visual)
+                // This is the first appearance of this entry, even during a drag.
+                entry.visual = saved.visual
                 if (saved.complete) entry.coverHash = saved.hash
             }
             entry.restored = true
@@ -143,17 +146,20 @@ internal class StableShelfSpines(
         val entry = entry(book, revision)
         restore(book, entry)
         loadArtwork(book, entry)
-        if (entry.preloading || entry.analyzing || entry.coverHash != null) return
+        if (entry.preloading || entry.analyzing || entry.checkedCover) return
         entry.preloading = true
         try {
-            val result = context.imageLoader.execute(shelfCoverRequest(context, book))
+            val result = context.imageLoader.execute(shelfCoverRequest(context, book).newBuilder()
+                .memoryCacheKey("spine-source-840-v1:" + book.coverUrl)
+                .precision(coil.size.Precision.EXACT)
+                .build())
             if (result is SuccessResult) analyze(book, entry, result.drawable)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { /* Offline cover lookup remains usable. */ }
         finally { entry.preloading = false }
     }
 
-    fun analyze(book: AudioBook, entry: StableSpineEntry, drawable: Drawable) {
+    private fun analyze(book: AudioBook, entry: StableSpineEntry, drawable: Drawable) {
         val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return
         if (entry.analyzing) return
         // Avoid repeatedly retrying failed analysis while rapidly swiping.
@@ -166,8 +172,26 @@ internal class StableShelfSpines(
                 val hash = withContext(Dispatchers.Default) {
                     spineRecognitionKey(bitmap, bookstoreSpineTitle(book.title))
                 }
-                if (entry.coverHash == hash) return@launch
+                if (entry.coverHash == hash) {
+                    entry.checkedCover = true
+                    return@launch
+                }
+                // Earlier snapshots can originate from another decode size of the same jacket.
+                // Adopt the canonical hash without exchanging their finished lettering.
+                val saved = entry.visual
+                val previousPreview = saved.preview
                 val ratio = bitmap.width.toFloat() / bitmap.height
+                if (entry.coverHash != null && previousPreview != null && withContext(Dispatchers.Default) {
+                        sameShelfJacket(previousPreview.asAndroidBitmap(), bitmap)
+                    }) {
+                    withContext(Dispatchers.IO) {
+                        snapshots.write(book, entry.binding, ShelfSnapshot(saved, ratio, hash, true))
+                    }
+                    entry.ratio = ratio
+                    entry.coverHash = hash
+                    entry.checkedCover = true
+                    return@launch
+                }
                 entry.ratio = ratio
                 val preview = withContext(Dispatchers.Default) { scaled(bitmap, 384, 512).asImageBitmap() }
                 val jacket = entry.visual.copy(preview = preview)
@@ -179,6 +203,7 @@ internal class StableShelfSpines(
                     }
                     if (classic) {
                         entry.coverHash = hash
+                        entry.checkedCover = true
                         return@launch
                     }
                 }
@@ -223,7 +248,10 @@ internal class StableShelfSpines(
                         snapshots.write(book, entry.binding, ShelfSnapshot(visual, ratio, hash, complete))
                     }
                     // Allow a later visit to retry a failed automatic match.
-                    if (lettering != null || entry.binding != SpineBindingMode.AUTOMATIC) entry.coverHash = hash
+                    if (complete) {
+                        entry.coverHash = hash
+                        entry.checkedCover = true
+                    }
                     if (palette.hasCoverPalette) withContext(Dispatchers.IO) {
                         store.savePalette(book, palette.cloth.toArgb(), palette.ink.toArgb())
                     }
@@ -242,4 +270,33 @@ internal class StableShelfSpines(
             (bitmap.width * factor).roundToInt().coerceAtLeast(1),
             (bitmap.height * factor).roundToInt().coerceAtLeast(1), true)
     }
+}
+
+private fun sameShelfJacket(saved: Bitmap, current: Bitmap): Boolean {
+    val savedRatio = saved.width.toDouble() / saved.height
+    val ratio = current.width.toDouble() / current.height
+    if (kotlin.math.abs(savedRatio / ratio - 1.0) > 0.015) return false
+    fun sample(image: Bitmap): IntArray {
+        val thumbnail = Bitmap.createScaledBitmap(image, 32, 32, true)
+        return IntArray(1024).also { pixels ->
+            thumbnail.getPixels(pixels, 0, 32, 0, 0, 32, 32)
+        }
+    }
+    return matchingShelfSamples(sample(saved), sample(current))
+}
+
+internal fun matchingShelfSamples(left: IntArray, right: IntArray): Boolean {
+    if (left.isEmpty() || left.size != right.size) return false
+    var total = 0L
+    var outliers = 0
+    for (i in left.indices) {
+        var largest = 0
+        for (shift in 0..24 step 8) {
+            val difference = kotlin.math.abs(((left[i] ushr shift) and 255) - ((right[i] ushr shift) and 255))
+            total += difference
+            largest = maxOf(largest, difference)
+        }
+        if (largest > 28) outliers++
+    }
+    return total <= left.size * 4L * 6 && outliers * 100 <= left.size * 3
 }

@@ -278,7 +278,7 @@ internal fun VhsAudiobookShelf(
     var firstShelfReady by remember(stableSpines) { mutableStateOf(false) }
     LaunchedEffect(nearby, spineRevision) {
         if (nearby.isEmpty()) return@LaunchedEffect
-        for (book in nearby.take(3)) {
+        for (book in nearby) {
             val entry = stableSpines.entry(book, spineRevision)
             stableSpines.restore(book, entry)
             entry.ratio?.let { ratios[book.coverUrl] = it }
@@ -522,17 +522,21 @@ private fun VhsPhysicalCase(
     val texture = remember(book.title, book.authors) { bookstoreCloth(book) }
     val coverPainter = rememberShelfCoverPainter(book)
     val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)?.result?.drawable
-    LaunchedEffect(entry) { stableSpines.loadArtwork(book, entry) }
-    LaunchedEffect(entry, coverDrawable) {
+    LaunchedEffect(entry) {
         stableSpines.restore(book, entry)
+        stableSpines.loadArtwork(book, entry)
+    }
+    LaunchedEffect(entry, coverDrawable) {
         if (coverDrawable != null) {
             if (coverDrawable.intrinsicWidth > 0 && coverDrawable.intrinsicHeight > 0) {
                 onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
             }
-            stableSpines.analyze(book, entry, coverDrawable)
         }
     }
 
+    // The display painter can reuse a differently sampled memory-cache image.
+    // Only the shelf's fixed-size preparation request may choose spine lettering.
+    if (!entry.restored) return
     val edge = if (album) 1.dp else 4.dp
     val corner = if (album) 1.dp else 4.dp
     val angle = jacketAngle(openness)
