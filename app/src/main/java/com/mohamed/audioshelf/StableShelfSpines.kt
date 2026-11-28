@@ -20,6 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import coil.imageLoader
 import coil.request.SuccessResult
 import kotlin.math.roundToInt
@@ -53,6 +55,10 @@ internal class StableSpineEntry(
     internal var artworkLoading = false
     internal var analyzing = false
     internal var preloading = false
+    internal val restoreLock = Mutex()
+    internal var restored = false
+    var ratio by mutableStateOf<Float?>(null)
+        internal set
     internal var coverHash: String? = null
     internal var lastAttempt = 0L
 }
@@ -67,6 +73,7 @@ internal class StableShelfSpines(
     private val scope: CoroutineScope,
 ) {
     private val store = SpineBindingStore(context)
+    private val snapshots = ShelfSnapshotStore(context)
     private val entries = LruCache<StableSpineKey, StableSpineEntry>(64)
     private var settled = true
 
@@ -99,6 +106,19 @@ internal class StableShelfSpines(
         return StableSpineEntry(binding, StableSpineVisual(palette)).also { entries.put(key, it) }
     }
 
+    suspend fun restore(book: AudioBook, entry: StableSpineEntry) {
+        entry.restoreLock.withLock {
+            if (entry.restored) return
+            val saved = withContext(Dispatchers.IO) { snapshots.read(book, entry.binding) }
+            if (saved != null) {
+                entry.ratio = saved.ratio
+                publish(entry, saved.visual)
+                if (saved.complete) entry.coverHash = saved.hash
+            }
+            entry.restored = true
+        }
+    }
+
     fun loadArtwork(book: AudioBook, entry: StableSpineEntry) {
         if (entry.artworkReady || entry.artworkLoading) return
         entry.artworkLoading = true
@@ -121,9 +141,9 @@ internal class StableShelfSpines(
     suspend fun preload(book: AudioBook, revision: Int) {
         if (book.coverUrl.isBlank()) return
         val entry = entry(book, revision)
+        restore(book, entry)
         loadArtwork(book, entry)
-        if (entry.preloading || entry.analyzing || entry.coverHash != null ||
-            entry.binding == SpineBindingMode.CLASSIC) return
+        if (entry.preloading || entry.analyzing || entry.coverHash != null) return
         entry.preloading = true
         try {
             val result = context.imageLoader.execute(shelfCoverRequest(context, book))
@@ -135,7 +155,7 @@ internal class StableShelfSpines(
 
     fun analyze(book: AudioBook, entry: StableSpineEntry, drawable: Drawable) {
         val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return
-        if (entry.analyzing || entry.binding == SpineBindingMode.CLASSIC) return
+        if (entry.analyzing) return
         // Avoid repeatedly retrying failed analysis while rapidly swiping.
         val now = android.os.SystemClock.elapsedRealtime()
         if (entry.coverHash == null && entry.lastAttempt != 0L && now - entry.lastAttempt < 15000L) return
@@ -147,11 +167,25 @@ internal class StableShelfSpines(
                     spineRecognitionKey(bitmap, bookstoreSpineTitle(book.title))
                 }
                 if (entry.coverHash == hash) return@launch
+                val ratio = bitmap.width.toFloat() / bitmap.height
+                entry.ratio = ratio
+                val preview = withContext(Dispatchers.Default) { scaled(bitmap, 384, 512).asImageBitmap() }
+                val jacket = entry.visual.copy(preview = preview)
+                if (entry.visual.preview == null || entry.binding == SpineBindingMode.CLASSIC) {
+                    publish(entry, jacket)
+                    val classic = entry.binding == SpineBindingMode.CLASSIC
+                    withContext(Dispatchers.IO) {
+                        snapshots.write(book, entry.binding, ShelfSnapshot(jacket, ratio, hash, classic))
+                    }
+                    if (classic) {
+                        entry.coverHash = hash
+                        return@launch
+                    }
+                }
                 var palette = withContext(Dispatchers.Default) {
                     val raw = bookstoreSpineColors(book.title, drawable, bookstoreCloth(book))
                     BookstoreSpineColors(raw.cloth, Color(readableSpineInk(raw.ink.toArgb(), raw.cloth.toArgb())), raw.hasCoverPalette)
                 }
-                val preview = withContext(Dispatchers.Default) { scaled(bitmap, 144, 216).asImageBitmap() }
                 val lettering = if (entry.binding == SpineBindingMode.AUTOMATIC) {
                     try {
                         val match = coverTitleLettering(context, drawable, book.coverUrl,
@@ -182,7 +216,12 @@ internal class StableShelfSpines(
                 // Do not downgrade an existing successful result on a transient failure.
                 // A different cover is allowed to replace it only with another complete result.
                 if (entry.coverHash == null || lettering != null || (entry.pendingVisual ?: entry.visual).lettering == null) {
-                    publish(entry, StableSpineVisual(palette, preview, lettering))
+                    val visual = StableSpineVisual(palette, preview, lettering)
+                    publish(entry, visual)
+                    val complete = lettering != null || entry.binding != SpineBindingMode.AUTOMATIC
+                    withContext(Dispatchers.IO) {
+                        snapshots.write(book, entry.binding, ShelfSnapshot(visual, ratio, hash, complete))
+                    }
                     // Allow a later visit to retry a failed automatic match.
                     if (lettering != null || entry.binding != SpineBindingMode.AUTOMATIC) entry.coverHash = hash
                     if (palette.hasCoverPalette) withContext(Dispatchers.IO) {

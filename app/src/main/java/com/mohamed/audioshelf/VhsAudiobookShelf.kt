@@ -209,8 +209,15 @@ internal fun VhsAudiobookShelf(
     val dark = MaterialTheme.colorScheme.background == vhsDarkColors.background
     var filter by rememberSaveable { mutableStateOf(ArchiveFilter.ALL) }
     val visible = vhsFilterBooks(books, filter, progressFor)
+    val selectionContext = LocalContext.current.applicationContext
+    val selectionPrefs = remember(selectionContext) {
+        selectionContext.getSharedPreferences("shelf_selection", android.content.Context.MODE_PRIVATE)
+    }
+    fun selectionId(book: AudioBook) = "${book.sourceId.length}:${book.sourceId}${book.id}"
     var target by rememberSaveable(filter, visible.size) {
-        mutableIntStateOf(visible.size / 2)
+        val saved = selectionPrefs.getString(filter.name, null)
+        val index = visible.indexOfFirst { selectionId(it) == saved }
+        mutableIntStateOf(if (index >= 0) index else visible.size / 2)
     }
     val playFlip = rememberShelfFlipSound(flipSounds)
     val latestPlayFlip by androidx.compose.runtime.rememberUpdatedState(playFlip)
@@ -257,15 +264,31 @@ internal fun VhsAudiobookShelf(
     val stableSpines = remember(shelfContext, shelfScope) { StableShelfSpines(shelfContext, shelfScope) }
     val shelfSettled = !dragging && abs(position - target.toFloat()) < .01f
     SideEffect { stableSpines.setSettled(shelfSettled) }
+    LaunchedEffect(selected?.sourceId, selected?.id, filter, shelfSettled) {
+        if (shelfSettled && selected != null) selectionPrefs.edit()
+            .putString(filter.name, selectionId(selected)).apply()
+    }
     val centerIndex = if (visible.isEmpty()) 0 else vhsWrap(position.roundToInt(), visible.size)
     val nearby = remember(visible, centerIndex) {
         if (visible.isEmpty()) emptyList() else listOf(0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5)
             .map { visible[vhsWrap(centerIndex + it, visible.size)] }
             .distinctBy { it.sourceId to it.id }
     }
+    val ratios = remember { mutableStateMapOf<String, Float>() }
+    var firstShelfReady by remember(stableSpines) { mutableStateOf(false) }
     LaunchedEffect(nearby, spineRevision) {
+        if (nearby.isEmpty()) return@LaunchedEffect
+        for (book in nearby.take(3)) {
+            val entry = stableSpines.entry(book, spineRevision)
+            stableSpines.restore(book, entry)
+            entry.ratio?.let { ratios[book.coverUrl] = it }
+        }
+        firstShelfReady = true
         // One request at a time; prioritise the center and both immediate neighbors.
-        for (book in nearby) stableSpines.preload(book, spineRevision)
+        for (book in nearby) {
+            stableSpines.preload(book, spineRevision)
+            stableSpines.entry(book, spineRevision).ratio?.let { ratios[book.coverUrl] = it }
+        }
     }
 
     Column(
@@ -305,10 +328,14 @@ internal fun VhsAudiobookShelf(
             return@Column
         }
 
+        if (!firstShelfReady) {
+            Spacer(Modifier.fillMaxWidth().height(280.dp))
+            return@Column
+        }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val bookHeight = minOf(maxWidth * .60f, 260.dp).coerceAtLeast(150.dp)
             val hardbackSpine = bookHeight * (142f / 840f)
-            val ratios = remember { mutableStateMapOf<String, Float>() }
+
             val maxCoverWidth = maxWidth * .54f
             fun faceWidth(ratio: Float) = minOf(bookHeight * ratio, if (vhsIsAlbum(ratio)) maxWidth * .49f else maxCoverWidth)
             fun ratioAt(index: Int) = ratios[visible[vhsWrap(index, visible.size)].coverUrl] ?: .67f
@@ -497,6 +524,7 @@ private fun VhsPhysicalCase(
     val coverDrawable = (coverPainter.state as? AsyncImagePainter.State.Success)?.result?.drawable
     LaunchedEffect(entry) { stableSpines.loadArtwork(book, entry) }
     LaunchedEffect(entry, coverDrawable) {
+        stableSpines.restore(book, entry)
         if (coverDrawable != null) {
             if (coverDrawable.intrinsicWidth > 0 && coverDrawable.intrinsicHeight > 0) {
                 onRatio(coverDrawable.intrinsicWidth.toFloat() / coverDrawable.intrinsicHeight)
@@ -707,6 +735,9 @@ private fun VhsPhysicalCase(
                     Image(coverPainter, contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit)
+                } else if (spinePreview != null) {
+                    Image(spinePreview, contentDescription = null,
+                        modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 } else {
                     ShelfTextCover(book, Modifier.fillMaxSize())
                 }

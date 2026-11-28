@@ -63,8 +63,8 @@ android {
         applicationId = "com.mohamed.audioshelf"
         minSdk = 26
         targetSdk = 35
-        versionCode = 60
-        versionName = "0.6.13"
+        versionCode = 61
+        versionName = "0.6.14"
     }
 
     sourceSets.getByName("main").assets.srcDir(spineFontAssets)
